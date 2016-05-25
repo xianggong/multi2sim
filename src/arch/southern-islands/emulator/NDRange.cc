@@ -18,6 +18,7 @@
  */
 
 #include <arch/southern-islands/disassembler/Argument.h>
+#include <arch/southern-islands/disassembler/Instruction.h>
 #include <arch/southern-islands/driver/Driver.h>
 #include <arch/southern-islands/driver/Kernel.h>
 #include <src/lib/cpp/Misc.h>
@@ -378,6 +379,32 @@ void NDRange::WakeupContext()
 	}                                                                            
 }
 
+unsigned NDRange::getSecondPC() const
+{
+	char * buffer = getInstructionBuffer();
+	unsigned rel_addr = 0;
+	Instruction inst;
+
+	while (buffer < getInstructionBuffer() + getInstructionBufferSize())
+	{
+		// Decode instruction
+		inst.Decode(buffer, rel_addr);
+		auto format = inst.getFormat();
+		auto bytes = inst.getBytes();
+
+		// Check if S_ENDPGM is the last instruction
+		if (format == Instruction::FormatSOPP && bytes->sopp.op == 1)
+			// Second PC starts right after S_ENDPGM
+			if (rel_addr + inst.getSize() < getInstructionBufferSize())
+				return rel_addr + inst.getSize();
+
+		buffer += inst.getSize();
+		rel_addr += inst.getSize();
+	}
+
+	// No second PC, return 0
+	return 0;
+}
 
 }
 
