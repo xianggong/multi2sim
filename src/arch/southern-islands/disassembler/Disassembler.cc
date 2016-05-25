@@ -250,6 +250,7 @@ void Disassembler::DisassembleBuffer(std::ostream& os, const char *buffer, int s
 
 	Instruction inst;
 
+	int endpgm_count = 0;
 	// Read through instructions to find labels.
 	while (buffer < original_buffer + size)
 	{
@@ -260,6 +261,8 @@ void Disassembler::DisassembleBuffer(std::ostream& os, const char *buffer, int s
 
 		// If ENDPGM, break.
 		if (format == Instruction::FormatSOPP && bytes->sopp.op == 1)
+			endpgm_count++;
+		if (endpgm_count == 2)
 			break;
 
 		/* If the instruction branches, insert the label into 
@@ -305,6 +308,7 @@ void Disassembler::DisassembleBuffer(std::ostream& os, const char *buffer, int s
 	// Reset to disassemble.
 	buffer = original_buffer;
 	rel_addr = 0;
+	endpgm_count = 0;
 
 	// Disassemble
 	while (buffer < original_buffer + size)
@@ -340,6 +344,8 @@ void Disassembler::DisassembleBuffer(std::ostream& os, const char *buffer, int s
 
 		// Break at end of program.
 		if (format == Instruction::FormatSOPP && bytes->sopp.op == 1)
+			endpgm_count++;
+		if (endpgm_count == 2)
 			break;
 
 		// Increment instruction pointer

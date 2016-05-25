@@ -197,13 +197,10 @@ WorkGroup::WorkGroup(NDRange *ndrange, unsigned id)
 		wavefront = (*wf_i).get();
 
 		// Set PC based on WorkGroup ID
+		unsigned pc = 0;
 		if (wavefront->getWorkGroup()->getId() % 2)
-		{
-			unsigned pc = wavefront->getWorkGroup()->getNDRange()->getSecondPC();
-			wavefront->setPC(pc);
-			printf("wg = %d, pc = %d\n", wavefront->getWorkGroup()->getId(), pc);
-		}
-
+			pc = wavefront->getWorkGroup()->getNDRange()->getSecondPC();
+		wavefront->setPC(pc);
 
 		switch(ndrange->getStage())
 		{
