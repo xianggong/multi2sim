@@ -454,6 +454,9 @@ public:
 	/// Set last_work_group_sent
 	void setLastWorkgroupSent(bool value) { last_work_group_sent = value; }
 
+	/// Has the last work group sent
+	bool LastWorkGroupSent() const { return last_work_group_sent; }
+
 	/// Set const_buf_table
 	void setConstBufferTable(unsigned value) { const_buf_table = value; }
 
