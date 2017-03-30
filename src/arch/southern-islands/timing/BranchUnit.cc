@@ -91,6 +91,13 @@ void BranchUnit::Complete()
 		if (compute_unit->getTiming()->getCycle() < uop->write_ready)
 			break;
 	
+		// Update uop info
+		uop->cycle_finish = compute_unit->getTiming()->getCycle();
+		uop->cycle_length = uop->cycle_finish - uop->cycle_start;
+			
+		// Trace for m2svis
+		Timing::m2svis << uop->getLifeCycleInCSV("Branch");
+		
 		// Record trace
 		Timing::trace << misc::fmt("si.end_inst "
 				"id=%lld "
@@ -143,6 +150,9 @@ void BranchUnit::Write()
 		// Stall if width has been reached
 		if (instructions_processed > width)
 		{
+			// Update stall write
+			uop->cycle_write_stall++;
+
 			// Trace
 			Timing::trace << misc::fmt("si.inst "
 					"id=%lld "
@@ -163,6 +173,9 @@ void BranchUnit::Write()
 		// Stall if the write buffer is full.
 		if ((int) write_buffer.size() == write_buffer_size) 
 		{ 		
+			// Update stall write
+			uop->cycle_write_stall++;
+			
 			// Trace
 			Timing::trace << misc::fmt("si.inst "
 					"id=%lld "
@@ -181,6 +194,10 @@ void BranchUnit::Write()
 		// Update Uop write ready cycle
 		uop->write_ready = compute_unit->getTiming()->
 			getCycle() + write_latency;
+
+		// Update uop cycle
+		uop->cycle_write_begin = uop->execute_ready;
+		uop->cycle_write_active = compute_unit->getTiming()->getCycle();
 
 		// Trace
 		Timing::trace << misc::fmt("si.inst "
@@ -229,6 +246,9 @@ void BranchUnit::Execute()
 		// Stall if width has been reached
 		if (instructions_processed > width)
 		{
+			// Update stall execution 
+			uop->cycle_execute_stall++;
+			
 			// Trace
 			Timing::trace << misc::fmt("si.inst "
 					"id=%lld "
@@ -249,6 +269,9 @@ void BranchUnit::Execute()
 		// Stall if the exec buffer is full.
 		if ((int) exec_buffer.size() == exec_buffer_size)             
 		{ 		
+			// Update stall execution 
+			uop->cycle_execute_stall++;
+			
 			// Trace
 			Timing::trace << misc::fmt("si.inst "
 					"id=%lld "
@@ -267,6 +290,10 @@ void BranchUnit::Execute()
 		// Update Uop exec ready cycle
 		uop->execute_ready = compute_unit->getTiming()->
 			getCycle() + exec_latency;
+
+		// Update uop cycle
+		uop->cycle_execute_begin = uop->read_ready;
+		uop->cycle_execute_active = compute_unit->getTiming()->getCycle();
 
 		// Trace
 		Timing::trace << misc::fmt("si.inst "
@@ -315,6 +342,9 @@ void BranchUnit::Read()
 		// Stall if width has been reached
 		if (instructions_processed > width)
 		{
+			// Update uop stall read
+			uop->cycle_read_stall++;
+			
 			// Trace
 			Timing::trace << misc::fmt("si.inst "
 					"id=%lld "
@@ -335,6 +365,9 @@ void BranchUnit::Read()
 		// Stall if the read buffer is full.
 		if ((int) read_buffer.size() == read_buffer_size)
 		{ 		
+			// Update uop stall
+			uop->cycle_read_stall++;
+			
 			// Trace
 			Timing::trace << misc::fmt("si.inst "
 					"id=%lld "
@@ -353,6 +386,10 @@ void BranchUnit::Read()
 		// Update Uop read ready cycle
 		uop->read_ready = compute_unit->getTiming()->
 			getCycle() + read_latency;
+
+		// Update uop cycle
+		uop->cycle_read_begin = uop->decode_ready;
+		uop->cycle_read_active = compute_unit->getTiming()->getCycle();
 
 		// Trace
 		Timing::trace << misc::fmt("si.inst "
@@ -401,6 +438,9 @@ void BranchUnit::Decode()
 		// Stall if width has been reached
 		if (instructions_processed > width)
 		{
+			// Update uop stall decode
+			uop->cycle_decode_stall++;
+			
 			// Trace
 			Timing::trace << misc::fmt("si.inst "
 					"id=%lld "
@@ -421,6 +461,9 @@ void BranchUnit::Decode()
 		// Stall if the decode buffer is full.
 		if ((int) decode_buffer.size() == decode_buffer_size)
 		{ 		
+			// Update uop stall decode
+			uop->cycle_decode_stall++;
+			
 			// Trace
 			Timing::trace << misc::fmt("si.inst "
 					"id=%lld "
@@ -439,6 +482,10 @@ void BranchUnit::Decode()
 		// Update Uop write ready cycle
 		uop->decode_ready = compute_unit->getTiming()->
 			getCycle() + decode_latency;
+
+		// Update uop cycle
+		uop->cycle_decode_begin = uop->issue_ready;
+		uop->cycle_decode_active = compute_unit->getTiming()->getCycle();
 
 		// Trace
 		Timing::trace << misc::fmt("si.inst "

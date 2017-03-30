@@ -53,6 +53,10 @@ std::string Timing::pipeline_debug_file;
 
 misc::Debug Timing::pipeline_debug;
 
+std::string Timing::m2svis_file;
+
+misc::Debug Timing::m2svis;
+
 const std::string Timing::help_message =
 	"The Southern Islands GPU configuration file is a plain text INI file\n"
 	"defining the parameters of the Southern Islands model for a detailed\n"
@@ -672,6 +676,11 @@ void Timing::RegisterOptions()
 	command_line->RegisterString("--si-debug <file>", pipeline_debug_file,
 			"Reports the details of the SI pipeline units in every "
 			"cycle.");
+
+	// Option --si-vis
+	command_line->RegisterString("--si-vis <file>", m2svis_file,
+			"Reports the details of the SI pipeline units for M2SVIS "
+			"visualization tool.");
 }
 
 
@@ -687,6 +696,9 @@ void Timing::ProcessOptions()
 	{
 		// Set the debug file only if this is a detailed simulation
 		pipeline_debug.setPath(pipeline_debug_file);
+
+		// Set the m2svis file only if this is a detailed simulation
+		m2svis.setPath(m2svis_file);
 
 		// First: parse configuration. This initializes all configuration
 		// static variables in class Timing, Gpu, ComputeUnit, ...

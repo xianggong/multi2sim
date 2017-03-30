@@ -203,6 +203,76 @@ public:
 
 	/// Lds access witness
 	int lds_witness = 0;
+
+	// Cycle when UOP start
+	long long cycle_start = 0;
+
+	// Cycle when UOP finish
+	long long cycle_finish = 0;
+
+	// Cycle of UOP execution
+	long long cycle_length = 0;
+
+	// Cycle when UOP fetch stage begins
+	long long cycle_fetch_begin = 0;
+
+	// Cycle of stall in fetch stage
+	long long cycle_fetch_stall = 0;
+
+	// Cycle when UOP is active in fetch unit
+	long long cycle_fetch_active = 0;
+
+	// Cycle when UOP issue stage begins
+	long long cycle_issue_begin = 0;
+
+	// Cycle of stall in issue stage
+	long long cycle_issue_stall = 0;
+
+	// Cycle when UOP is active in issue unit
+	long long cycle_issue_active = 0;
+
+	// Cycle when UOP decode stage begins
+	long long cycle_decode_begin = 0;
+
+	// Cycle of stall in decode stage
+	long long cycle_decode_stall = 0;
+
+	// Cycle when UOP is active in decode unit
+	long long cycle_decode_active = 0;
+
+	// Cycle when UOP read stage begins
+	long long cycle_read_begin = 0;
+
+	// Cycle of stall in read stage
+	long long cycle_read_stall = 0;
+
+	// Cycle when UOP is active in read unit
+	long long cycle_read_active = 0;
+
+	// Cycle when UOP execute stage begins
+	long long cycle_execute_begin = 0;
+
+	// Cycle of stall in execution stage
+	long long cycle_execute_stall = 0;
+
+	// Cycle when UOP is active in execute unit
+	long long cycle_execute_active = 0;
+
+	// Cycle when UOP write stage begins
+	long long cycle_write_begin = 0;
+
+	// Cycle of stall in write stage
+	long long cycle_write_stall = 0;
+
+	// Cycle when UOP is active in write unit
+	long long cycle_write_active = 0;
+
+	// Cycle of stall to complete the uop
+	long long cycle_complete_stall = 0;
+
+	// Get uop life cycle in csv format string
+	std::string getLifeCycleInCSV(const char *execunit);
+
 };
 
 }

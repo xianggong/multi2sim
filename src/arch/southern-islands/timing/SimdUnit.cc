@@ -98,6 +98,13 @@ void SimdUnit::Complete()
 		if (compute_unit->getTiming()->getCycle() < uop->execute_ready)
 			break;
 
+		// Update uop info
+		uop->cycle_finish = compute_unit->getTiming()->getCycle();
+		uop->cycle_length = uop->cycle_finish - uop->cycle_start;
+
+		// Trace for m2svis
+		Timing::m2svis << uop->getLifeCycleInCSV("SIMD");
+
 		// Trace
 		Timing::trace << misc::fmt("si.end_inst "
 				"id=%lld "
@@ -151,6 +158,9 @@ void SimdUnit::Execute()
 		// Stall if width has been reached
 		if (instructions_processed > width)
 		{
+			// Update uop stall
+			uop->cycle_execute_stall++;
+			
 			// Trace
 			Timing::trace << misc::fmt("si.inst "
 					"id=%lld "
@@ -171,6 +181,9 @@ void SimdUnit::Execute()
 		// Stall if there is not room in the exec buffer
 		if (int(exec_buffer.size()) == exec_buffer_size)
 		{
+			// Update uop stall
+			uop->cycle_execute_stall++;
+			
 			// Trace
 			Timing::trace << misc::fmt("si.inst "
 					"id=%lld "
@@ -189,6 +202,22 @@ void SimdUnit::Execute()
 		// subwavefronts
 		uop->execute_ready = compute_unit->getTiming()->getCycle() +
 				read_exec_write_latency;
+
+		// Update uop cycle
+		int read_latency = 1;
+		int execute_latency = 6;
+		int write_latency = 1;
+
+		uop->cycle_read_begin = uop->decode_ready;
+		uop->cycle_read_active = uop->decode_ready;
+		uop->read_ready = uop->cycle_read_active + read_latency;
+
+		uop->cycle_execute_begin = uop->read_ready;
+		uop->cycle_execute_active = uop->read_ready + uop->cycle_execute_stall;
+
+		uop->cycle_write_begin = uop->execute_ready - write_latency;
+		uop->cycle_write_active = uop->execute_ready - write_latency;
+		uop->write_ready = uop->execute_ready;
 
 		// Update wavefront pool entry
 		uop->getWavefrontPoolEntry()->ready_next_cycle = true;
@@ -244,6 +273,9 @@ void SimdUnit::Decode()
 		// Stall if width has been reached
 		if (instructions_processed > width)
 		{
+			// Update uop stall
+			uop->cycle_decode_stall++;
+
 			// Trace
 			Timing::trace << misc::fmt("si.inst "
 					"id=%lld "
@@ -264,6 +296,9 @@ void SimdUnit::Decode()
 		// Stall if there is not room in the decode buffer
 		if (int(decode_buffer.size()) == decode_buffer_size)
 		{
+			// Update uop stall
+			uop->cycle_decode_stall++;
+			
 			// Trace
 			Timing::trace << misc::fmt("si.inst "
 					"id=%lld "
@@ -281,6 +316,10 @@ void SimdUnit::Decode()
 		// Update uop
 		uop->decode_ready = compute_unit->getTiming()->getCycle() +
 				decode_latency;
+
+		// Update uop cycle
+		uop->cycle_decode_begin = uop->issue_ready;
+		uop->cycle_decode_active = compute_unit->getTiming()->getCycle();
 
 		//if (si_spatial_report_active)
 		//	SIComputeUnitReportNewALUInst(simd->compute_unit);

@@ -54,6 +54,9 @@ class Timing : public comm::Timing
 	// Pipeline debug file name
 	static std::string pipeline_debug_file;
 
+	// m2svis file name
+	static std::string m2svis_file;
+
 	// If true
 	// how a message describing the format for the x86 configuration file
 	// Passed with option --x86-help
@@ -125,6 +128,8 @@ public:
 	// Pipeline debug
 	static misc::Debug pipeline_debug;
 
+	// Output for m2s visualization tool
+	static misc::Debug m2svis;
 
 
 	//

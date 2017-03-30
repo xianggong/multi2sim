@@ -104,6 +104,13 @@ void VectorMemoryUnit::Complete()
 		assert(uop->getWavefrontPoolEntry()->lgkm_cnt > 0);
 		uop->getWavefrontPoolEntry()->lgkm_cnt--;
 		
+		// Update uop info
+		uop->cycle_finish = compute_unit->getTiming()->getCycle();
+		uop->cycle_length = uop->cycle_finish - uop->cycle_start;
+			
+		// Trace for m2svis
+		Timing::m2svis << uop->getLifeCycleInCSV("SIMD");
+
 		// Record trace
 		Timing::trace << misc::fmt("si.end_inst "
 				"id=%lld "
@@ -153,6 +160,9 @@ void VectorMemoryUnit::Write()
 		// Stall if width has been reached
 		if (instructions_processed > width)
 		{
+			// Update uop stall write
+			uop->cycle_write_stall++;
+
 			// Trace
 			Timing::trace << misc::fmt("si.inst "
 					"id=%lld "
@@ -173,6 +183,9 @@ void VectorMemoryUnit::Write()
 		// Stall if the write buffer is full.
 		if ((int) write_buffer.size() == write_buffer_size) 
 		{ 		
+			// Update uop stall write
+			uop->cycle_write_stall++;
+
 			// Trace
 			Timing::trace << misc::fmt("si.inst "
 					"id=%lld "
@@ -191,6 +204,10 @@ void VectorMemoryUnit::Write()
 		// Update Uop write ready cycle
 		uop->write_ready = compute_unit->getTiming()->
 			getCycle() + write_latency;
+
+		// Update uop cycle
+		uop->cycle_write_begin = uop->execute_ready;
+		uop->cycle_write_active = compute_unit->getTiming()->getCycle();
 
 		// Trace
 		Timing::trace << misc::fmt("si.inst "
@@ -242,6 +259,9 @@ void VectorMemoryUnit::Memory()
 		// Stall if width has been reached
 		if (instructions_processed > width)
 		{
+			// Update stall execution 
+			uop->cycle_execute_stall++;
+
 			// Trace
 			Timing::trace << misc::fmt("si.inst "
 					"id=%lld "
@@ -262,6 +282,9 @@ void VectorMemoryUnit::Memory()
 		// Stall if there is no room in the memory buffer
 		if ((int) mem_buffer.size() == max_inflight_mem_accesses)
 		{ 		
+			// Update stall execution 
+			uop->cycle_execute_stall++;
+
 			// Trace
 			Timing::trace << misc::fmt("si.inst "
 					"id=%lld "
@@ -381,6 +404,12 @@ void VectorMemoryUnit::Memory()
 		if (!all_work_items_accessed)
 			continue;
 
+		// Update uop execute ready cycle for m2svis tool
+		uop->execute_ready = compute_unit->getTiming()->getCycle();
+
+		// Update uop cycle
+		uop->cycle_execute_begin = uop->read_ready;
+		uop->cycle_execute_active = compute_unit->getTiming()->getCycle();
 
 		// Trace
 		Timing::trace << misc::fmt("si.inst "
@@ -429,6 +458,9 @@ void VectorMemoryUnit::Read()
 		// Stall if width has been reached
 		if (instructions_processed > width)
 		{
+			// Update uop stall read
+			uop->cycle_read_stall++;
+
 			// Trace
 			Timing::trace << misc::fmt("si.inst "
 					"id=%lld "
@@ -449,6 +481,9 @@ void VectorMemoryUnit::Read()
 		// Stall if the read buffer is full.
 		if ((int) read_buffer.size() == read_buffer_size)
 		{ 		
+			// Update uop stall read
+			uop->cycle_read_stall++;
+
 			// Trace
 			Timing::trace << misc::fmt("si.inst "
 					"id=%lld "
@@ -467,6 +502,10 @@ void VectorMemoryUnit::Read()
 		// Update Uop read ready cycle
 		uop->read_ready = compute_unit->getTiming()->
 			getCycle() + read_latency;
+
+		// Update uop cycle
+		uop->cycle_read_begin = uop->decode_ready;
+		uop->cycle_read_active = compute_unit->getTiming()->getCycle();
 
 		// Trace
 		Timing::trace << misc::fmt("si.inst "
@@ -515,6 +554,9 @@ void VectorMemoryUnit::Decode()
 		// Stall if width has been reached
 		if (instructions_processed > width)
 		{
+			// Update uop stall decode
+			uop->cycle_decode_stall++;
+
 			// Trace
 			Timing::trace << misc::fmt("si.inst "
 					"id=%lld "
@@ -535,6 +577,9 @@ void VectorMemoryUnit::Decode()
 		// Stall if the decode buffer is full.
 		if ((int) decode_buffer.size() == decode_buffer_size)
 		{ 		
+			// Update uop stall decode
+			uop->cycle_decode_stall++;
+
 			// Trace
 			Timing::trace << misc::fmt("si.inst "
 					"id=%lld "
@@ -553,6 +598,10 @@ void VectorMemoryUnit::Decode()
 		// Update Uop write ready cycle
 		uop->decode_ready = compute_unit->getTiming()->
 			getCycle() + decode_latency;
+
+		// Update uop cycle
+		uop->cycle_decode_begin = uop->issue_ready;
+		uop->cycle_decode_active = compute_unit->getTiming()->getCycle();
 
 		// Trace
 		Timing::trace << misc::fmt("si.inst "

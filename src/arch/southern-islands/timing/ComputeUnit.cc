@@ -126,6 +126,10 @@ void ComputeUnit::IssueToExecutionUnit(FetchBuffer *fetch_buffer,
 		execution_unit->Issue(std::move(*oldest_uop_iterator));
 		fetch_buffer->Remove(oldest_uop_iterator);
 
+		// Update uop info
+		uop->cycle_issue_begin = uop->fetch_ready;
+		uop->cycle_issue_active = timing->getCycle();
+
 		// Trace
 		Timing::trace << misc::fmt("si.inst "
 				"id=%lld "
@@ -171,6 +175,9 @@ void ComputeUnit::Issue(FetchBuffer *fetch_buffer)
 		// Skip uops that have not completed fetch
 		if (timing->getCycle() < uop->fetch_ready)
 			continue;
+
+		// Update UOP info for m2svis
+		uop->cycle_issue_stall++;
 
 		// Trace
 		Timing::trace << misc::fmt("si.inst "
@@ -400,6 +407,11 @@ void ComputeUnit::Fetch(FetchBuffer *fetch_buffer,
 		// instruction will have been fetched, as per the latency
 		// of the instruction memory.
 		uop->fetch_ready = timing->getCycle() + fetch_latency;
+
+		// Update UOP info for m2svis
+		uop->cycle_start = timing->getCycle();
+		uop->cycle_fetch_begin = timing->getCycle();
+		uop->cycle_fetch_active = timing->getCycle();
 
 		// Insert uop into fetch buffer
 		uop->getWorkGroup()->inflight_instructions++;
@@ -631,6 +643,8 @@ void ComputeUnit::UpdateFetchVisualization(FetchBuffer *fetch_buffer)
 		// Skip all uops that have not yet completed the fetch
 		if (timing->getCycle() < uop->fetch_ready)
 			break;
+
+		uop->cycle_issue_stall++;
 
 		// Trace
 		Timing::trace << misc::fmt("si.inst "

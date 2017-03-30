@@ -128,6 +128,9 @@ void ScalarUnit::Complete()
 			 uop->getWavefrontPoolEntry()->vm_cnt ||
 			 uop->getWavefrontPoolEntry()->exp_cnt))
 		{
+			// Update uop complete stall
+			uop->cycle_complete_stall++;
+
 			// Trace
 			Timing::trace << misc::fmt("si.inst "
 					"id=%lld "
@@ -242,6 +245,13 @@ void ScalarUnit::Complete()
 			}
 		}
 
+		// Update uop info
+		uop->cycle_finish = compute_unit->getTiming()->getCycle();
+		uop->cycle_length = uop->cycle_finish - uop->cycle_start;
+
+		// Trace for m2svis
+		Timing::m2svis << uop->getLifeCycleInCSV("Scalar");
+
 		// Trace
 		Timing::trace << misc::fmt("si.end_inst "
 				"id=%lld "
@@ -295,6 +305,9 @@ void ScalarUnit::Write()
 			// Stall if width has been reached
 			if (instructions_processed > width)
 			{
+				// Update write stall
+				uop->cycle_write_stall++;
+
 				// Trace
 				Timing::trace << misc::fmt("si.inst "
 						"id=%lld "
@@ -315,6 +328,9 @@ void ScalarUnit::Write()
 			// Stall if there is not room in the exec buffer
 			if ((int) write_buffer.size() == write_buffer_size)
 			{
+				// Update write stall
+				uop->cycle_write_stall++;
+
 				// Trace
 				Timing::trace << misc::fmt("si.inst "
 						"id=%lld "
@@ -332,6 +348,11 @@ void ScalarUnit::Write()
 			// Update Uop write ready cycle
 			uop->write_ready = compute_unit->getTiming()->
 					getCycle() + write_latency;
+
+			// Update uop cycle
+			uop->cycle_write_begin = compute_unit->getTiming()->getCycle() 
+										- uop->cycle_write_stall;
+			uop->cycle_write_active = compute_unit->getTiming()->getCycle();
 
 			// Trace
 			Timing::trace << misc::fmt("si.inst "
@@ -362,6 +383,9 @@ void ScalarUnit::Write()
 			// Stall if the width has been reached
 			if (instructions_processed > width)
 			{
+				// Update write stall
+				uop->cycle_write_stall++;
+
 				// Trace
 				Timing::trace << misc::fmt("si.inst "
 						"id=%lld "
@@ -382,6 +406,9 @@ void ScalarUnit::Write()
 			// Stall if the write buffer is full
 			if ((int) write_buffer.size() == write_buffer_size)
 			{
+				// Update write stall
+				uop->cycle_write_stall++;
+
 				// Trace
 				Timing::trace << misc::fmt("si.inst "
 						"id=%lld "
@@ -403,6 +430,9 @@ void ScalarUnit::Write()
 			// Stall if the write buffer is full
 			if ((int) write_buffer.size() == write_buffer_size)
 			{
+				// Update write stall
+				uop->cycle_write_stall++;
+
 				// Trace
 				Timing::trace << misc::fmt("si.inst "
 						"id=%lld "
@@ -420,6 +450,10 @@ void ScalarUnit::Write()
 			// Update uop write ready
 			uop->write_ready = compute_unit->getTiming()->
 					getCycle() + write_latency;
+
+			// Update uop cycle
+			uop->cycle_write_begin = uop->execute_ready;
+			uop->cycle_write_active = compute_unit->getTiming()->getCycle();
 
 			// Trace
 			Timing::trace << misc::fmt("si.inst "
@@ -471,6 +505,9 @@ void ScalarUnit::Execute()
 		// Stall if width has been reached
 		if (instructions_processed > width)
 		{
+			// Update execution stall
+			uop->cycle_execute_stall++;
+
 			// Trace
 			Timing::trace << misc::fmt("si.inst "
 					"id=%lld "
@@ -491,6 +528,9 @@ void ScalarUnit::Execute()
 		// Stall if there is no room in the exec buffer
 		if ((int) exec_buffer.size() == exec_buffer_size)
 		{
+			// Update execution stall
+			uop->cycle_execute_stall++;
+
 			// Trace
 			Timing::trace << misc::fmt("si.inst "
 					"id=%lld "
@@ -528,6 +568,10 @@ void ScalarUnit::Execute()
 					mem::Module::AccessType::AccessLoad,
 					phys_addr, &uop->global_memory_witness);
 
+			// Update uop cycle
+			uop->cycle_execute_begin = uop->read_ready;
+			uop->cycle_execute_active = compute_unit->getTiming()->getCycle();
+
 			// Trace
 			Timing::trace << misc::fmt("si.inst "
 					"id=%lld "
@@ -551,6 +595,10 @@ void ScalarUnit::Execute()
 		{
 			uop->execute_ready = compute_unit->getTiming()->
 					getCycle() + exec_latency;
+
+			// Update uop cycle
+			uop->cycle_execute_begin = uop->read_ready;
+			uop->cycle_execute_active = compute_unit->getTiming()->getCycle();
 
 			// Trace
 			Timing::trace << misc::fmt("si.inst "
@@ -602,6 +650,9 @@ void ScalarUnit::Read()
 		// Stall if the decode width has been reached
 		if (instructions_processed > width)
 		{
+			// Update read stall
+			uop->cycle_read_stall++;
+
 			// Trace
 			Timing::trace << misc::fmt("si.inst "
 					"id=%lld "
@@ -622,6 +673,9 @@ void ScalarUnit::Read()
 		// Stall if read buffer is full
 		if ((int) read_buffer.size() == read_buffer_size)
 		{
+			// Update read stall
+			uop->cycle_read_stall++;
+
 			// Trace
 			Timing::trace << misc::fmt("si.inst "
 					"id=%lld "
@@ -639,6 +693,10 @@ void ScalarUnit::Read()
 		// Update uop read ready
 		uop->read_ready = compute_unit->getTiming()->getCycle() +
 				read_latency;
+
+		// Update uop cycle
+		uop->cycle_read_begin = uop->decode_ready;
+		uop->cycle_read_active = compute_unit->getTiming()->getCycle();
 
 		// Trace
 		Timing::trace << misc::fmt("si.inst "
@@ -667,7 +725,7 @@ void ScalarUnit::Decode()
 	// Internal variables
 	int instructions_processed = 0;
 
-	// Sanity check decode buffer
+	// Sanity check issue buffer
 	assert((int) issue_buffer.size() <= issue_buffer_size);
 
 	// Initialize iterator
@@ -689,6 +747,9 @@ void ScalarUnit::Decode()
 		// Stall if the issue width has been reached
 		if (instructions_processed > width)
 		{
+			// Update decode stall
+			uop->cycle_decode_stall++;
+
 			// Trace
 			Timing::trace << misc::fmt("si.inst "
 					"id=%lld "
@@ -709,6 +770,9 @@ void ScalarUnit::Decode()
 		// Stall if decode buffer is full
 		if ((int) decode_buffer.size() == decode_buffer_size)
 		{
+			// Update decode stall
+			uop->cycle_decode_stall++;
+
 			// Trace
 			Timing::trace << misc::fmt("si.inst "
 					"id=%lld "
@@ -726,6 +790,10 @@ void ScalarUnit::Decode()
 		// Update uop decode ready
 		uop->decode_ready = compute_unit->getTiming()->getCycle() +
 				decode_latency;
+
+		// Update uop cycle
+		uop->cycle_decode_begin = uop->issue_ready;
+		uop->cycle_decode_active = compute_unit->getTiming()->getCycle();
 
 		// Trace
 		Timing::trace << misc::fmt("si.inst "
