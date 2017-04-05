@@ -21,7 +21,7 @@
 #define ARCH_SOUTHERN_ISLANDS_DISASSEMBLER_INSTRUCTION_H
 
 #include <lib/cpp/String.h>
-
+#include <map>
 
 namespace SI
 {
@@ -78,6 +78,9 @@ public:
 	
 	/// String map to convert values of type Format
 	static const misc::StringMap format_map;
+
+	/// Reverse format map, convert from type enum to string
+	static const std::map<enum Instruction::Format, std::string> format_map_reverse;
 
 	/// Instruction category enumeration
 	enum Category
@@ -579,6 +582,9 @@ public:
 	int getOp() { return info ? info->op : 0; }
 	Opcode getOpcode() { return info ? info->opcode : OpcodeInvalid; }
 	Format getFormat() { return info ? info->fmt : FormatInvalid; }
+	std::string getFormatString() { 
+		return format_map_reverse.find(getFormat())->second; 
+	};
 	const char *getName() { return info ? info->name : "<unknown>"; }
 	Bytes *getBytes() { return &bytes; }
 	int getSize() { return size; }

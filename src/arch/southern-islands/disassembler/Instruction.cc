@@ -61,6 +61,28 @@ const misc::StringMap Instruction::format_map =
 	{ "exp", FormatEXP }
 };
 
+const std::map<enum Instruction::Format, std::string> Instruction::format_map_reverse = {
+	{ FormatInvalid,  "<invalid>" },
+	{ FormatSOP2,  "sop2" },
+	{ FormatSOPK,  "sopk" },
+	{ FormatSOP1,  "sop1" },
+	{ FormatSOPC,  "sopc" },
+	{ FormatSOPP,  "sopp" },
+	{ FormatSMRD,  "smrd" },
+	{ FormatVOP2,  "vop2" },
+	{ FormatVOP1,  "vop1" },
+	{ FormatVOPC,  "vopc" },
+	{ FormatVOP3a,  "vop3a" },
+	{ FormatVOP3b,  "vop3b" },
+	{ FormatVINTRP,  "vintrp" },
+	{ FormatDS,  "ds" },
+	{ FormatMUBUF,  "mubuf" },
+	{ FormatMTBUF,  "mtbuf" },
+	{ FormatMIMG,  "mimg" },
+	{ FormatEXP,  "exp"  }
+};
+
+
 const misc::StringMap Instruction::sdst_map =
 {
 	{"reserved", 0},

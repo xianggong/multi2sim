@@ -250,7 +250,7 @@ void ScalarUnit::Complete()
 		uop->cycle_length = uop->cycle_finish - uop->cycle_start;
 
 		// Trace for m2svis
-		Timing::m2svis << uop->getLifeCycleInCSV("Scalar");
+		Timing::m2svis << uop->getLifeCycleInCSV("scalar");
 
 		// Trace
 		Timing::trace << misc::fmt("si.end_inst "

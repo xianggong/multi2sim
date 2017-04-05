@@ -109,7 +109,7 @@ void VectorMemoryUnit::Complete()
 		uop->cycle_length = uop->cycle_finish - uop->cycle_start;
 			
 		// Trace for m2svis
-		Timing::m2svis << uop->getLifeCycleInCSV("SIMD");
+		Timing::m2svis << uop->getLifeCycleInCSV("simd-m");
 
 		// Record trace
 		Timing::trace << misc::fmt("si.end_inst "
@@ -206,7 +206,8 @@ void VectorMemoryUnit::Write()
 			getCycle() + write_latency;
 
 		// Update uop cycle
-		uop->cycle_write_begin = uop->execute_ready;
+		uop->cycle_write_begin = compute_unit->getTiming()->getCycle() 
+									- uop->cycle_write_stall;
 		uop->cycle_write_active = compute_unit->getTiming()->getCycle();
 
 		// Trace
