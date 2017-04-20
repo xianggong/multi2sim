@@ -24,113 +24,99 @@
 
 #include "SyncStack.h"
 
-namespace Kepler
-{
+namespace Kepler {
 
 // Main class of ReturnAddressStack
-class ReturnAddressStack
-{
-        class ReturnAddressStackEntry
-        {
+class ReturnAddressStack {
+  class ReturnAddressStackEntry {
+    // Counter, used for debug
+    unsigned counter;
 
-        		// Counter, used for debug
-        		unsigned counter;
+    // Return Address
+    unsigned return_address;
 
-                // Return Address
-                unsigned return_address;
+    // Active mask
+    unsigned active_mask;
 
-                // Active mask
-                unsigned active_mask;
+    // SyncStack handler
+    std::unique_ptr<SyncStack> sync_stack;
 
-                // SyncStack handler
-                std::unique_ptr<SyncStack> sync_stack;
+   public:
+    ReturnAddressStackEntry(unsigned ret, unsigned active_mask,
+                            std::unique_ptr<SyncStack>& ss, unsigned counter) {
+      this->active_mask = active_mask;
+      this->counter = counter;
+      return_address = ret;
+      sync_stack = std::move(ss);
+    }
 
-        public:
+    ReturnAddressStackEntry(ReturnAddressStackEntry& entry) {
+      this->active_mask = active_mask;
+      this->counter = entry.getCounter();
+      this->return_address = entry.getReturnAddress();
+      this->sync_stack = std::move(*(entry.getSyncStack()));
+    }
 
-                ReturnAddressStackEntry(unsigned ret, unsigned active_mask,
-                		std::unique_ptr<SyncStack>& ss, unsigned counter)
-                {
-                	this->active_mask = active_mask;
-                	this->counter = counter;
-                	return_address = ret;
-                	sync_stack = std::move(ss);
-                }
+    std::unique_ptr<SyncStack>* getSyncStack() { return &sync_stack; }
 
-                ReturnAddressStackEntry(ReturnAddressStackEntry &entry)
-                {
-                	this->active_mask = active_mask;
-                	this->counter = entry.getCounter();
-                	this->return_address = entry.getReturnAddress();
-                	this->sync_stack = std::move(*(entry.getSyncStack()));
-                }
+    /// Get return address
+    unsigned getReturnAddress() { return return_address; }
 
-                std::unique_ptr<SyncStack>* getSyncStack() { return &sync_stack; }
+    /// Get active mask
+    unsigned getActiveMask() { return active_mask; }
 
-                /// Get return address
-                unsigned getReturnAddress() { return return_address; }
+    /// Get counter
+    unsigned getCounter() { return counter; }
+  };
 
-                /// Get active mask
-                unsigned getActiveMask() { return active_mask; }
+  // A counter recording every sync stack "id"
+  static unsigned common_counter;
 
-                /// Get counter
-                unsigned getCounter() { return counter; }
-        };
+  // Modeled the stack as a list, recording the return address of CAL
+  // and the sync stack of all previous contexts.
+  std::list<std::unique_ptr<ReturnAddressStackEntry>> ret_stack;
 
+ public:
+  /// Get sync stack of top entry
+  std::unique_ptr<SyncStack>* getTopSyncStack() const {
+    assert(ret_stack.size());
+    return ret_stack.begin()->get()->getSyncStack();
+  }
 
-        // A counter recording every sync stack "id"
-     	static unsigned common_counter;
+  /// Get return address of top entry
+  unsigned getActiveMask() const {
+    assert(ret_stack.size());
+    return ret_stack.begin()->get()->getActiveMask();
+  }
 
-        // Modeled the stack as a list, recording the return address of CAL
-        // and the sync stack of all previous contexts.
-        std::list<std::unique_ptr<ReturnAddressStackEntry>> ret_stack;
+  /// Get return address of top entry
+  unsigned getReturnAddress() const {
+    assert(ret_stack.size());
+    return ret_stack.begin()->get()->getReturnAddress();
+  }
 
-public:
+  /// push the return address and sync stack handler
+  /// into return addrress stack
+  /// \param ret_addr the return address to be stored
+  /// \param ss the sync stack's handler to be stored
+  void push(unsigned ret_addr, unsigned am, std::unique_ptr<SyncStack>& ss);
 
+  /// This function pops the top entry of the return address stack
+  /// \return false if return address stack is empty before or after popping.
+  bool pop();
 
-        /// Get sync stack of top entry
-        std::unique_ptr<SyncStack>* getTopSyncStack() const
-		{
-        	assert(ret_stack.size());
-        	return ret_stack.begin()->get()->getSyncStack();
-		}
+  void Dump(std::ostream& os = std::cout) const;
 
-        /// Get return address of top entry
-        unsigned getActiveMask() const
-        {
-        	assert(ret_stack.size());
-        	return ret_stack.begin()->get()->getActiveMask();
-        }
-
-        /// Get return address of top entry
-        unsigned getReturnAddress() const
-        {
-        	assert(ret_stack.size());
-        	return ret_stack.begin()->get()->getReturnAddress();
-        }
-
-        /// push the return address and sync stack handler
-        /// into return addrress stack
-        /// \param ret_addr the return address to be stored
-        /// \param ss the sync stack's handler to be stored
-        void push(unsigned ret_addr, unsigned am, std::unique_ptr<SyncStack>& ss);
-
-        /// This function pops the top entry of the return address stack
-        /// \return false if return address stack is empty before or after popping.
-        bool pop();
-
-        void Dump(std::ostream &os = std::cout) const;
-
-        /// Dump synchronization stack into output stream
-        /*
-        friend std::ostream &operator<<(std::ostream &os,
-                        const ReturnAddressStack &sync_stack) {
-                sync_stack.Dump(os);
-                return os;
-        }
-        */
-
+  /// Dump synchronization stack into output stream
+  /*
+  friend std::ostream &operator<<(std::ostream &os,
+                  const ReturnAddressStack &sync_stack) {
+          sync_stack.Dump(os);
+          return os;
+  }
+  */
 };
 
-}        // namespace
+}  // namespace
 
 #endif

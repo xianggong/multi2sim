@@ -26,225 +26,198 @@
 
 #include <lib/cpp/Debug.h>
 
-
-namespace mem
-{
-
+namespace mem {
 
 /// Memory management unit. This class represents a 32-bit physical memory
 /// space and provides virtual-to-physical memory translations. The physical
 /// memory space supports creation of multiple virtual memory spaces.
-class Mmu
-{
-public:
+class Mmu {
+ public:
+  // Forward declaration
+  class Space;
 
-	// Forward declaration
-	class Space;
+  /// Log base 2 of the page size
+  static const unsigned LogPageSize = 12;
 
-	/// Log base 2 of the page size
-	static const unsigned LogPageSize = 12;
+  /// Size of a memory page
+  static const unsigned PageSize = 1u << LogPageSize;
 
-	/// Size of a memory page
-	static const unsigned PageSize = 1u << LogPageSize;
+  /// Mask to apply on a byte address to discard the page offset
+  static const unsigned PageMask = ~(PageSize - 1);
 
-	/// Mask to apply on a byte address to discard the page offset
-	static const unsigned PageMask = ~(PageSize - 1);
+  /// Access types to memory pages
+  enum AccessType { AccessInvalid, AccessRead, AccessWrite, AccessExecute };
 
-	/// Access types to memory pages
-	enum AccessType
-	{
-		AccessInvalid,
-		AccessRead,
-		AccessWrite,
-		AccessExecute
-	};
+  /// One page in the MMU
+  class Page {
+    // Virtual address space that the page belongs to
+    Space* space;
 
-	/// One page in the MMU
-	class Page
-	{
-		// Virtual address space that the page belongs to
-		Space *space;
+    // The page virtual address
+    unsigned virtual_address;
 
-		// The page virtual address
-		unsigned virtual_address;
+    // The page physical address
+    unsigned physical_address;
 
-		// The page physical address
-		unsigned physical_address;
+    // Statistics
+    long long num_read_accesses = 0;
+    long long num_write_accesses = 0;
+    long long num_execute_accesses = 0;
 
-		// Statistics
-		long long num_read_accesses = 0;
-		long long num_write_accesses = 0;
-		long long num_execute_accesses = 0;
+   public:
+    /// Constructor
+    Page(Space* space, unsigned virtual_address, unsigned physical_address)
+        : space(space),
+          virtual_address(virtual_address),
+          physical_address(physical_address) {
+      assert((virtual_address & ~PageMask) == 0);
+      assert((physical_address & ~PageMask) == 0);
+    }
 
-	public:
+    /// Return the virtual address space that the page belongs to
+    Space* getSpace() const { return space; }
 
-		/// Constructor
-		Page(Space *space,
-				unsigned virtual_address,
-				unsigned physical_address) :
-				space(space),
-				virtual_address(virtual_address),
-				physical_address(physical_address)
-		{
-			assert((virtual_address & ~PageMask) == 0);
-			assert((physical_address & ~PageMask) == 0);
-		}
+    /// Return the page's virtual address
+    unsigned getVirtualAddress() const { return virtual_address; }
 
-		/// Return the virtual address space that the page belongs to
-		Space *getSpace() const { return space; }
+    /// Return the page's physical address
+    unsigned getPhysicalAddress() const { return physical_address; }
+  };
 
-		/// Return the page's virtual address
-		unsigned getVirtualAddress() const { return virtual_address; }
+  /// Virtual memory space in the MMU
+  class Space {
+    // Name of the irtual memory space
+    std::string name;
 
-		/// Return the page's physical address
-		unsigned getPhysicalAddress() const { return physical_address; }
-	};
+    // Memory management unit that it belongs to
+    Mmu* mmu;
 
-	/// Virtual memory space in the MMU
-	class Space
-	{
-		// Name of the irtual memory space
-		std::string name;
+    // Hash table of pages in this virtual space indexed by their
+    // virtual address.
+    std::unordered_map<unsigned, Page*> virtual_pages;
 
-		// Memory management unit that it belongs to
-		Mmu *mmu;
+   public:
+    /// Constructor
+    Space(const std::string& name, Mmu* mmu);
 
-		// Hash table of pages in this virtual space indexed by their
-		// virtual address.
-		std::unordered_map<unsigned, Page *> virtual_pages;
+    /// Return the name of the virtual memory space
+    const std::string& getName() const { return name; }
 
-	public:
+    /// Return memory management unit that the virtual memory
+    /// space belongs to.
+    Mmu* getMmu() const { return mmu; }
 
-		/// Constructor
-		Space(const std::string &name, Mmu *mmu);
+    /// Add a new page to the virtual address space. A page must
+    /// not exist with the same address.
+    void addPage(Page* page);
 
-		/// Return the name of the virtual memory space
-		const std::string &getName() const { return name; }
+    /// Return the page associated with the given virtual address,
+    /// or `nullptr` if none is. Argument \a virtual_address must be
+    /// a multiple of the page size.
+    Page* getPage(unsigned virtual_address);
+  };
 
-		/// Return memory management unit that the virtual memory
-		/// space belongs to.
-		Mmu *getMmu() const { return mmu; }
+ private:
+  // Output report file, as set by the user
+  static std::string report_file_name;
 
-		/// Add a new page to the virtual address space. A page must
-		/// not exist with the same address.
-		void addPage(Page *page);
+  // File to dump MMU debug information, as set by the user
+  static std::string debug_file;
 
-		/// Return the page associated with the given virtual address,
-		/// or `nullptr` if none is. Argument \a virtual_address must be
-		/// a multiple of the page size.
-		Page *getPage(unsigned virtual_address);
-	};
+  // Debugger for MMU
+  static misc::Debug debug;
 
-private:
+  // Name of the MMU
+  std::string name;
 
-	// Output report file, as set by the user
-	static std::string report_file_name;
+  // Top of the physical address space. Every time a new page is
+  // allocated, this value is incremented by PageSize.
+  unsigned top_physical_address = 0;
 
-	// File to dump MMU debug information, as set by the user
-	static std::string debug_file;
+  // Vector containing all virtual address spaces
+  std::vector<std::unique_ptr<Space>> spaces;
 
-	// Debugger for MMU
-	static misc::Debug debug;
-	
-	// Name of the MMU
-	std::string name;
+  // Vector containing all allocated pages
+  std::vector<std::unique_ptr<Page>> pages;
 
-	// Top of the physical address space. Every time a new page is
-	// allocated, this value is incremented by PageSize.
-	unsigned top_physical_address = 0;
+  // Hash table of pages indexed by their physical address
+  std::unordered_map<unsigned, Page*> physical_pages;
 
-	// Vector containing all virtual address spaces
-	std::vector<std::unique_ptr<Space>> spaces;
+ public:
+  //
+  // Static members
+  //
 
-	// Vector containing all allocated pages
-	std::vector<std::unique_ptr<Page>> pages;
+  /// Register command-line options
+  static void RegisterOptions();
 
-	// Hash table of pages indexed by their physical address
-	std::unordered_map<unsigned, Page *> physical_pages;
+  /// Process command-line options
+  static void ProcessOptions();
 
-public:
+  //
+  // Class members
+  //
 
-	//
-	// Static members
-	//
+  /// Constructor
+  ///
+  /// \param name
+  ///	Name of the MMU used for debugging purposes.
+  ///
+  Mmu(const std::string& name = "");
 
-	/// Register command-line options
-	static void RegisterOptions();
+  /// Return the name of the MMU
+  const std::string& getName() const { return name; }
 
-	/// Process command-line options
-	static void ProcessOptions();
+  /// Create a new virtual address space
+  ///
+  /// \param name
+  ///	Name of the virtual address space used for debugging purposes.
+  ///
+  Space* newSpace(const std::string& name = "");
 
+  /// Translate virtual to physical address.
+  ///
+  /// \param space
+  ///	Virtual address space.
+  ///
+  /// \param virtual_address
+  ///	Virtual memory address.
+  ///
+  /// \return
+  ///	Associated physical address. If no page is currently allocated
+  ///	for this virtual address, a new one is internally created. A
+  ///	valid physical address is returned in all cases.
+  ///
+  unsigned TranslateVirtualAddress(Space* space, unsigned virtual_address);
 
+  /// Translate physical to virtual address.
+  ///
+  /// \param physical_address
+  ///	Physical memory address to translate.
+  ///
+  /// \param space
+  ///	Output argument containing the virtual memory space that the
+  ///	physical address is associated with, or `nullptr` if the
+  ///	physical address is invalid.
+  ///
+  /// \param virtual_address
+  ///	Output argument containing the virtual memory address that the
+  ///	physical address is associated with, or 0 if the physical
+  ///	address is invalid.
+  ///
+  /// \return
+  ///	The function returns `true` only if the physical memory address
+  ///	is associated to a valid virtual address and the translation was
+  ///	successful.
+  ///
+  bool TranslatePhysicalAddress(unsigned physical_address, Space*& space,
+                                unsigned& virtual_address);
 
-
-	//
-	// Class members
-	//
-
-	/// Constructor
-	///
-	/// \param name
-	///	Name of the MMU used for debugging purposes.
-	///
-	Mmu(const std::string &name = "");
-
-	/// Return the name of the MMU
-	const std::string &getName() const { return name; }
-
-	/// Create a new virtual address space
-	///
-	/// \param name
-	///	Name of the virtual address space used for debugging purposes.
-	///
-	Space *newSpace(const std::string &name = "");
-
-	/// Translate virtual to physical address.
-	///
-	/// \param space
-	///	Virtual address space.
-	///
-	/// \param virtual_address
-	///	Virtual memory address.
-	///
-	/// \return
-	///	Associated physical address. If no page is currently allocated
-	///	for this virtual address, a new one is internally created. A
-	///	valid physical address is returned in all cases.
-	///
-	unsigned TranslateVirtualAddress(Space *space,
-			unsigned virtual_address);
-
-	/// Translate physical to virtual address.
-	///
-	/// \param physical_address
-	///	Physical memory address to translate.
-	///
-	/// \param space
-	///	Output argument containing the virtual memory space that the
-	///	physical address is associated with, or `nullptr` if the
-	///	physical address is invalid.
-	///
-	/// \param virtual_address
-	///	Output argument containing the virtual memory address that the
-	///	physical address is associated with, or 0 if the physical
-	///	address is invalid.
-	///
-	/// \return
-	///	The function returns `true` only if the physical memory address
-	///	is associated to a valid virtual address and the translation was
-	///	successful.
-	///
-	bool TranslatePhysicalAddress(unsigned physical_address,
-			Space *&space,
-			unsigned &virtual_address);
-	
-	/// Return `true` if the provided physical address is currently mapped
-	/// to a valid virtual address.
-	bool isValidPhysicalAddress(unsigned physical_address);
+  /// Return `true` if the provided physical address is currently mapped
+  /// to a valid virtual address.
+  bool isValidPhysicalAddress(unsigned physical_address);
 };
-
 
 }  // namespace mem
 
 #endif
-

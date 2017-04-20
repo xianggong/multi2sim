@@ -28,41 +28,36 @@
 #include "debug.h"
 #include "hsa.h"
 
-hsa_status_t HSA_API hsa_system_get_info(
-		hsa_system_info_t attribute, void *value)
-{
-	struct __attribute__ ((packed))
-	{
-		uint32_t status;
-		uint32_t attribute;
-		uint32_t value;
-	} data;
-	data.attribute = attribute;
-	data.value = (uint32_t)value;
+hsa_status_t HSA_API hsa_system_get_info(hsa_system_info_t attribute,
+                                         void *value) {
+  struct __attribute__((packed)) {
+    uint32_t status;
+    uint32_t attribute;
+    uint32_t value;
+  } data;
+  data.attribute = attribute;
+  data.value = (uint32_t)value;
 
-	if (!hsa_runtime)
-	{
-		return HSA_STATUS_ERROR_NOT_INITIALIZED;
-	}
+  if (!hsa_runtime) {
+    return HSA_STATUS_ERROR_NOT_INITIALIZED;
+  }
 
-	ioctl(hsa_runtime->fd, SystemGetInfo, &data);
-	return data.status;
+  ioctl(hsa_runtime->fd, SystemGetInfo, &data);
+  return data.status;
 }
 
-
-hsa_status_t HSA_API
-    hsa_system_extension_supported(uint16_t extension, uint16_t version_major,
-                                   uint16_t version_minor, bool *result)
-{
-	__HSA_RUNTIME_NOT_IMPLEMENTED__
-	return HSA_STATUS_SUCCESS;
+hsa_status_t HSA_API hsa_system_extension_supported(uint16_t extension,
+                                                    uint16_t version_major,
+                                                    uint16_t version_minor,
+                                                    bool *result) {
+  __HSA_RUNTIME_NOT_IMPLEMENTED__
+  return HSA_STATUS_SUCCESS;
 }
 
-
-hsa_status_t HSA_API
-    hsa_system_get_extension_table(uint16_t extension, uint16_t version_major,
-                                   uint16_t version_minor, void *table)
-{
-	__HSA_RUNTIME_NOT_IMPLEMENTED__
-	return HSA_STATUS_SUCCESS;
+hsa_status_t HSA_API hsa_system_get_extension_table(uint16_t extension,
+                                                    uint16_t version_major,
+                                                    uint16_t version_minor,
+                                                    void *table) {
+  __HSA_RUNTIME_NOT_IMPLEMENTED__
+  return HSA_STATUS_SUCCESS;
 }

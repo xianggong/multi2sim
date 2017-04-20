@@ -17,173 +17,153 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "Cpu.h"
 #include "Thread.h"
+#include "Cpu.h"
 #include "Timing.h"
 
+namespace x86 {
 
-namespace x86
-{
+const char* Thread::commit_stall_error =
+    "The CPU commit stage has not received any instruction for 1M "
+    "cycles. Most likely, this means that a deadlock condition "
+    "occurred in the management of some modeled structure (network, "
+    "cache system, core queues, etc.).\n";
 
-const char *Thread::commit_stall_error =
-	"The CPU commit stage has not received any instruction for 1M "
-	"cycles. Most likely, this means that a deadlock condition "
-	"occurred in the management of some modeled structure (network, "
-	"cache system, core queues, etc.).\n";
+bool Thread::canCommit() {
+  // Get current cycle
+  long long cycle = cpu->getCycle();
 
+  // Sanity check - If the context is running, we assume that something is
+  // going wrong if more than 1M cycles go by without committing a uop.
+  if (!context || !context->getState(Context::StateRunning))
+    last_commit_cycle = cycle;
+  if (cycle - last_commit_cycle > 1000000) {
+    // Show warning
+    misc::Warning(
+        "[x86] %s: simulation ended due to a commit "
+        "stall.\n\t%s",
+        name.c_str(), commit_stall_error);
 
-bool Thread::canCommit()
-{
-	// Get current cycle
-	long long cycle = cpu->getCycle();
+    // Print state of the core
+    std::cerr << *core;
 
-	// Sanity check - If the context is running, we assume that something is
-	// going wrong if more than 1M cycles go by without committing a uop.
-	if (!context || !context->getState(Context::StateRunning))
-		last_commit_cycle = cycle;
-	if (cycle - last_commit_cycle > 1000000)
-	{
-		// Show warning
-		misc::Warning("[x86] %s: simulation ended due to a commit "
-				"stall.\n\t%s",
-				name.c_str(),
-				commit_stall_error);
+    // Finish simulation
+    esim::Engine* esim_engine = esim::Engine::getInstance();
+    esim_engine->Finish("Stall");
+  }
 
-		// Print state of the core
-		std::cerr << *core;
+  // If there is no instruction in the reorder buffer, cannot commit
+  if (reorder_buffer.empty()) return false;
 
-		// Finish simulation
-		esim::Engine *esim_engine = esim::Engine::getInstance();
-		esim_engine->Finish("Stall");
-	}
+  // Get instruction from reorder buffer head
+  assert(reorder_buffer.size());
+  std::shared_ptr<Uop> uop = reorder_buffer.front();
+  assert(uop->getThread() == this);
 
-	// If there is no instruction in the reorder buffer, cannot commit
-	if (reorder_buffer.empty())
-		return false;
+  // Stores must be ready in order to commit
+  if (uop->getOpcode() == Uinst::OpcodeStore)
+    return register_file->isUopReady(uop.get());
 
-	// Get instruction from reorder buffer head
-	assert(reorder_buffer.size());
-	std::shared_ptr<Uop> uop = reorder_buffer.front();
-	assert(uop->getThread() == this);
-
-	// Stores must be ready in order to commit
-	if (uop->getOpcode() == Uinst::OpcodeStore)
-		return register_file->isUopReady(uop.get());
-	
-	// Instructions other than stores must be completed
-	return uop->completed;
+  // Instructions other than stores must be completed
+  return uop->completed;
 }
 
+void Thread::Commit(int quantum) {
+  // Sanity: context must be mapped
+  assert(context);
 
-void Thread::Commit(int quantum)
-{
-	// Sanity: context must be mapped
-	assert(context);
+  // Commit stage for thread
+  while (quantum && canCommit()) {
+    // Get instruction at the head of the reorder buffer
+    assert(reorder_buffer.size());
+    std::shared_ptr<Uop> uop = reorder_buffer.front();
+    assert(uop->getThread() == this);
 
-	// Commit stage for thread
-	while (quantum && canCommit())
-	{
-		// Get instruction at the head of the reorder buffer
-		assert(reorder_buffer.size());
-		std::shared_ptr<Uop> uop = reorder_buffer.front();
-		assert(uop->getThread() == this);
+    // Recover from mispeculation if this is the first uop of a
+    // sequence of mispredicted instructions.
+    //
+    // NOTE - Even when the recovery kind (RecoverKind) has been
+    // set to the writeback stage, there is a chance that a
+    // leading mispeculated instruction has made it here. This is
+    // the case of a mispeculated store, which did not have the
+    // chance to get to the writeback stage before it commits.
+    //
+    if (uop->first_speculative_mode) {
+      // Clear thread structures
+      Recover();
 
-		// Recover from mispeculation if this is the first uop of a
-		// sequence of mispredicted instructions.
-		//
-		// NOTE - Even when the recovery kind (RecoverKind) has been
-		// set to the writeback stage, there is a chance that a
-		// leading mispeculated instruction has made it here. This is
-		// the case of a mispeculated store, which did not have the
-		// chance to get to the writeback stage before it commits.
-		//
-		if (uop->first_speculative_mode)
-		{
-			// Clear thread structures
-			Recover();
+      // Nothing left to do
+      return;
+    }
 
-			// Nothing left to do
-			return;
-		}
-	
-		// Free physical registers
-		assert(!uop->speculative_mode);
-		register_file->CommitUop(uop.get());
-		
-		// Branches update branch predictor and BTB
-		if (uop->getFlags() & Uinst::FlagCtrl)
-		{
-			branch_predictor->Update(uop.get());
-			branch_predictor->UpdateBtb(uop.get());
-			num_btb_writes++;
-		}
+    // Free physical registers
+    assert(!uop->speculative_mode);
+    register_file->CommitUop(uop.get());
 
-		// Trace cache
-		if (TraceCache::isPresent())
-			trace_cache->RecordUop(uop.get());
+    // Branches update branch predictor and BTB
+    if (uop->getFlags() & Uinst::FlagCtrl) {
+      branch_predictor->Update(uop.get());
+      branch_predictor->UpdateBtb(uop.get());
+      num_btb_writes++;
+    }
 
-		// Save last commit cycle
-		last_commit_cycle = cpu->getCycle();
+    // Trace cache
+    if (TraceCache::isPresent()) trace_cache->RecordUop(uop.get());
 
-		// Record committed uops of each kind
-		incNumCommittedUinsts(uop->getOpcode());
-		core->incNumCommittedUinsts(uop->getOpcode());
-		cpu->incNumCommittedUinsts(uop->getOpcode());
-		if (!uop->mop_index)
-			cpu->incNumCommittedInstructions();
+    // Save last commit cycle
+    last_commit_cycle = cpu->getCycle();
 
-		// Trace cache statistics
-		if (uop->from_trace_cache)
-			trace_cache->incNumCommittedUinsts();
-		
-		// Statistics for branch instructions
-		if (uop->getFlags() & Uinst::FlagCtrl)
-		{
-			// Number of branches
-			num_branches++;
-			core->incNumBranches();
-			cpu->incNumBranches();
+    // Record committed uops of each kind
+    incNumCommittedUinsts(uop->getOpcode());
+    core->incNumCommittedUinsts(uop->getOpcode());
+    cpu->incNumCommittedUinsts(uop->getOpcode());
+    if (!uop->mop_index) cpu->incNumCommittedInstructions();
 
-			// Mispredicted branches
-			if (uop->neip != uop->predicted_neip)
-			{
-				num_mispredicted_branches++;
-				core->incNumMispredictedBranches();
-				cpu->incNumMispredictedBranches();
-			}
-		}
+    // Trace cache statistics
+    if (uop->from_trace_cache) trace_cache->incNumCommittedUinsts();
 
-		// Trace
-		if (Timing::trace)
-		{
-			// Output
-			Timing::trace << misc::fmt("x86.inst "
-					"id=%lld "
-					"core=%d "
-					"stg=\"co\"\n",
-					uop->getIdInCore(),
-					core->getId());
+    // Statistics for branch instructions
+    if (uop->getFlags() & Uinst::FlagCtrl) {
+      // Number of branches
+      num_branches++;
+      core->incNumBranches();
+      cpu->incNumBranches();
 
-			// Keep uop for later
-			cpu->InsertInTraceList(uop);
-		}
+      // Mispredicted branches
+      if (uop->neip != uop->predicted_neip) {
+        num_mispredicted_branches++;
+        core->incNumMispredictedBranches();
+        cpu->incNumMispredictedBranches();
+      }
+    }
 
-		// Remove uop from reorder buffer
-		ExtractFromReorderBuffer(uop.get());
+    // Trace
+    if (Timing::trace) {
+      // Output
+      Timing::trace << misc::fmt(
+          "x86.inst "
+          "id=%lld "
+          "core=%d "
+          "stg=\"co\"\n",
+          uop->getIdInCore(), core->getId());
 
-		// Consume quantum
-		quantum--;
+      // Keep uop for later
+      cpu->InsertInTraceList(uop);
+    }
 
-		// Statistics
-		num_reorder_buffer_reads++;
-		core->incNumReorderBufferReads();
-	}
+    // Remove uop from reorder buffer
+    ExtractFromReorderBuffer(uop.get());
 
-	// If context eviction signal is activated and pipeline is empty,
-	// deallocate context.
-	if (context->evict_signal && isPipelineEmpty())
-		EvictContext();
+    // Consume quantum
+    quantum--;
+
+    // Statistics
+    num_reorder_buffer_reads++;
+    core->incNumReorderBufferReads();
+  }
+
+  // If context eviction signal is activated and pipeline is empty,
+  // deallocate context.
+  if (context->evict_signal && isPipelineEmpty()) EvictContext();
 }
-
 }
-

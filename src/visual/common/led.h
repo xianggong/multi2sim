@@ -17,22 +17,18 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-
 #ifndef VISUAL_COMMON_LED_H
 #define VISUAL_COMMON_LED_H
 
 #include <gtk/gtk.h>
 
-
 struct vi_led_t;
 
-struct vi_led_t *vi_led_create(int radius);
-void vi_led_free(struct vi_led_t *led);
+struct vi_led_t* vi_led_create(int radius);
+void vi_led_free(struct vi_led_t* led);
 
-void vi_led_set_color(struct vi_led_t *led, GdkColor *color);
+void vi_led_set_color(struct vi_led_t* led, GdkColor* color);
 
-GtkWidget *vi_led_get_widget(struct vi_led_t *led);
-
+GtkWidget* vi_led_get_widget(struct vi_led_t* led);
 
 #endif
-

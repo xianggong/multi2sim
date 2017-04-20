@@ -20,340 +20,300 @@
 #ifndef ARCH_X86_TIMING_REGISTER_FILE_H
 #define ARCH_X86_TIMING_REGISTER_FILE_H
 
+#include <arch/x86/emulator/Uinst.h>
 #include <lib/cpp/Debug.h>
 #include <lib/cpp/IniFile.h>
-#include <arch/x86/emulator/Uinst.h>
 
 #include "Uop.h"
 
-
-namespace x86
-{
+namespace x86 {
 
 // Forward declaration
 class Thread;
 class Core;
 
 // class register file
-class RegisterFile
-{
-public:
+class RegisterFile {
+ public:
+  /// Minimum size of integer register file
+  static const int MinIntegerSize;
 
-	/// Minimum size of integer register file
-	static const int MinIntegerSize;
+  /// Minimum size of floating-point register file
+  static const int MinFloatingPointSize;
 
-	/// Minimum size of floating-point register file
-	static const int MinFloatingPointSize;
+  /// Minimum size of XMM register file
+  static const int MinXmmSize;
 
-	/// Minimum size of XMM register file
-	static const int MinXmmSize;
+  /// Privacy kinds for register file
+  enum Kind { KindInvalid = 0, KindShared, KindPrivate };
 
-	/// Privacy kinds for register file
-	enum Kind
-	{
-		KindInvalid = 0,
-		KindShared,
-		KindPrivate
-	};
+  /// String map for values of type Kind
+  static misc::StringMap KindMap;
 
-	/// String map for values of type Kind
-	static misc::StringMap KindMap;
+ private:
+  //
+  // Class members
+  //
 
-private:
+  // Core that the register file belongs to, initialized in constructor
+  Core* core;
 
-	//
-	// Class members
-	//
+  // Thread that the register file belongs to, initialized in constructor
+  Thread* thread;
 
-	// Core that the register file belongs to, initialized in constructor
-	Core *core;
+  // Structure of physical register
+  struct PhysicalRegister {
+    // Flag indicating whether the result of this physical register
+    // is still being computed.
+    bool pending = false;
 
-	// Thread that the register file belongs to, initialized in constructor
-	Thread *thread;
+    // Number of logical registers mapped to this physical register
+    int busy = 0;
+  };
 
-	// Structure of physical register
-	struct PhysicalRegister
-	{
-		// Flag indicating whether the result of this physical register
-		// is still being computed.
-		bool pending = false;
+  //
+  // Integer registers
+  //
 
-		// Number of logical registers mapped to this physical register
-		int busy = 0;
-	};
+  // Integer register aliasing table
+  int integer_rat[Uinst::DepIntCount];
 
+  // Integer physical registers
+  std::unique_ptr<PhysicalRegister[]> integer_registers;
 
+  // List of free integer physical registers
+  std::unique_ptr<int[]> free_integer_registers;
 
+  // Number of free integer physical registers
+  int num_free_integer_registers = 0;
 
-	//
-	// Integer registers
-	//
+  // Number of reads to the integer RAT
+  long long num_integer_rat_reads = 0;
 
-	// Integer register aliasing table
-	int integer_rat[Uinst::DepIntCount];
+  // Number of writes to the integer RAT
+  long long num_integer_rat_writes = 0;
 
-	// Integer physical registers
-	std::unique_ptr<PhysicalRegister[]> integer_registers;
+  // Number of occupied integer registers
+  int num_occupied_integer_registers = 0;
 
-	// List of free integer physical registers
-	std::unique_ptr<int[]> free_integer_registers;
+  // Request an integer physical register, and return its identifier
+  int RequestIntegerRegister();
 
-	// Number of free integer physical registers
-	int num_free_integer_registers = 0;
+  //
+  // Floating-point registers
+  //
 
-	// Number of reads to the integer RAT
-	long long num_integer_rat_reads = 0;
+  // Floating-point register aliasing table
+  int floating_point_rat[Uinst::DepFpCount];
 
-	// Number of writes to the integer RAT
-	long long num_integer_rat_writes = 0;
+  // Floating-point physical registers
+  std::unique_ptr<PhysicalRegister[]> floating_point_registers;
 
-	// Number of occupied integer registers
-	int num_occupied_integer_registers = 0;
+  // List of free floating-point physical registers
+  std::unique_ptr<int[]> free_floating_point_registers;
 
-	// Request an integer physical register, and return its identifier
-	int RequestIntegerRegister();
+  // Number of free floating-point physical registers
+  int num_free_floating_point_registers = 0;
 
+  // Value between 0 and 7 indicating the top of the stack in the
+  // floating-point register stack
+  int floating_point_top = 0;
 
+  // Number of reads to the floating-point RAT
+  long long num_floating_point_rat_reads = 0;
 
+  // Number of writes to the floating-point RAT
+  long long num_floating_point_rat_writes = 0;
 
-	//
-	// Floating-point registers
-	//
+  // Number of occupied float point registers
+  int num_occupied_floating_point_registers = 0;
 
-	// Floating-point register aliasing table
-	int floating_point_rat[Uinst::DepFpCount];
+  // Request a floating-point physical register, and return its
+  // identifier
+  int RequestFloatingPointRegister();
 
-	// Floating-point physical registers
-	std::unique_ptr<PhysicalRegister[]> floating_point_registers;
+  //
+  // XMM registers
+  //
 
-	// List of free floating-point physical registers
-	std::unique_ptr<int[]> free_floating_point_registers;
+  // XMM register aliasing table
+  int xmm_rat[Uinst::DepXmmCount];
 
-	// Number of free floating-point physical registers
-	int num_free_floating_point_registers = 0;
+  // XMM physical registers
+  std::unique_ptr<PhysicalRegister[]> xmm_registers;
 
-	// Value between 0 and 7 indicating the top of the stack in the
-	// floating-point register stack
-	int floating_point_top = 0;
+  // List of free XMM physical registers
+  std::unique_ptr<int[]> free_xmm_registers;
 
-	// Number of reads to the floating-point RAT
-	long long num_floating_point_rat_reads = 0;
+  // Number of free XMM physical registers
+  int num_free_xmm_registers = 0;
 
-	// Number of writes to the floating-point RAT
-	long long num_floating_point_rat_writes = 0;
+  // Number of reads to the XMM RAT
+  long long num_xmm_rat_reads = 0;
 
-	// Number of occupied float point registers
-	int num_occupied_floating_point_registers= 0;
+  // Number of writes to the XMM RAT
+  long long num_xmm_rat_writes = 0;
 
-	// Request a floating-point physical register, and return its
-	// identifier
-	int RequestFloatingPointRegister();
+  // Number of occupied XMM registers
+  int num_occupied_xmm_registers = 0;
 
+  // Request an XMM physical register and return its identifier
+  int RequestXmmRegister();
 
+  //
+  // Configuration
+  //
 
+  // Private/shared register file
+  static Kind kind;
 
-	//
-	// XMM registers
-	//
-	
-	// XMM register aliasing table
-	int xmm_rat[Uinst::DepXmmCount];
+  // Total size of integer register file
+  static int integer_size;
 
-	// XMM physical registers
-	std::unique_ptr<PhysicalRegister[]> xmm_registers;
+  // Total size of floating-point register file
+  static int floating_point_size;
 
-	// List of free XMM physical registers
-	std::unique_ptr<int[]> free_xmm_registers;
+  // Total size of XMM register file
+  static int xmm_size;
 
-	// Number of free XMM physical registers
-	int num_free_xmm_registers = 0;
+  // Per-thread size of integer register file
+  static int integer_local_size;
 
-	// Number of reads to the XMM RAT
-	long long num_xmm_rat_reads = 0;
+  // Per-thread size of floating-point register file
+  static int floating_point_local_size;
 
-	// Number of writes to the XMM RAT
-	long long num_xmm_rat_writes = 0;
+  // Per-thread size of XMM register file
+  static int xmm_local_size;
 
-	// Number of occupied XMM registers
-	int num_occupied_xmm_registers= 0;
+ public:
+  //
+  // Class Error
+  //
 
-	// Request an XMM physical register and return its identifier
-	int RequestXmmRegister();
+  /// Exception for X86 register file
+  class Error : public misc::Error {
+   public:
+    Error(const std::string& message) : misc::Error(message) {
+      AppendPrefix("X86 register file");
+    }
+  };
 
+  //
+  // Static members
+  //
 
+  // File to dump debug information
+  static std::string debug_file;
 
+  // Debug information
+  static misc::Debug debug;
 
-	//
-	// Configuration
-	//
+  /// Read register file configuration from configuration file
+  static void ParseConfiguration(misc::IniFile* ini_file);
 
-	// Private/shared register file
-	static Kind kind;
+  /// Return the register file kind, as configured by the user
+  static Kind getKind() { return kind; }
 
-	// Total size of integer register file
-	static int integer_size;
+  /// Return the integer register file size, as configured by the user.
+  static int getIntegerSize() { return integer_size; }
 
-	// Total size of floating-point register file
-	static int floating_point_size;
+  /// Return the floating-point register file size, as configured.
+  static int getFloatingPointSize() { return floating_point_size; }
 
-	// Total size of XMM register file
-	static int xmm_size;
+  /// Return the XMM register file size, as configured by the user.
+  static int getXmmSize() { return xmm_size; }
 
-	// Per-thread size of integer register file
-	static int integer_local_size;
+  //
+  // Class members
+  //
 
-	// Per-thread size of floating-point register file
-	static int floating_point_local_size;
+  /// Constructor
+  RegisterFile(Thread* thread);
 
-	// Per-thread size of XMM register file
-	static int xmm_local_size;
+  /// Dump a plain-text representation of the object into the given output
+  /// stream, or into the standard output if argument \a os is committed.
+  void Dump(std::ostream& os = std::cout) const;
 
-public:
+  /// Same as Dump()
+  friend std::ostream& operator<<(std::ostream& os,
+                                  const RegisterFile& register_file) {
+    register_file.Dump(os);
+    return os;
+  }
 
-	//
-	// Class Error
-	//
+  /// Return true if there are enough available physical registers to
+  /// rename the given uop.
+  bool canRename(Uop* uop);
 
-	/// Exception for X86 register file
-	class Error : public misc::Error
-	{
-	public:
+  /// Perform register renaming on the given uop. This operation renames
+  /// source and destination registers, requesting as many physical
+  /// registers as needed for the uop.
+  void Rename(Uop* uop);
 
-		Error(const std::string &message) : misc::Error(message)
-		{
-			AppendPrefix("X86 register file");
-		}
-	};
+  /// Check if input dependencies are resolved
+  bool isUopReady(Uop* uop);
 
+  /// Update the state of the register file when an uop completes, that
+  /// is, when its results are written back.
+  void WriteUop(Uop* uop);
 
+  /// Update the state of the register file when an uop is recovered from
+  /// speculative execution
+  void UndoUop(Uop* uop);
 
-	//
-	// Static members
-	//
+  /// Update the state of the register file when an uop commits
+  void CommitUop(Uop* uop);
 
-	// File to dump debug information
-	static std::string debug_file;
+  /// Check integrity of register file
+  void CheckRegisterFile();
 
-	// Debug information
-	static misc::Debug debug;
-	
-	/// Read register file configuration from configuration file
-	static void ParseConfiguration(misc::IniFile *ini_file);
+  /// Check if integer register at certain index is free.
+  /// Used only in testing.
+  bool isIntegerRegisterFree(int index) {
+    if (integer_registers[index].busy > 0) return false;
+    return true;
+  }
 
-	/// Return the register file kind, as configured by the user
-	static Kind getKind() { return kind; }
+  /// Check if floating point register at certain index is free
+  /// Used only in testing.
+  bool isFloatingPointRegisterFree(int index) {
+    if (floating_point_registers[index].busy > 0) return false;
+    return true;
+  }
 
-	/// Return the integer register file size, as configured by the user.
-	static int getIntegerSize() { return integer_size; }
+  /// Check if xmm register at certain index is free
+  /// Used only in testing
+  bool isXmmRegisterFree(int index) {
+    if (xmm_registers[index].busy > 0) return false;
+    return true;
+  }
 
-	/// Return the floating-point register file size, as configured.
-	static int getFloatingPointSize() { return floating_point_size; }
+  //
+  // Statistics
+  //
 
-	/// Return the XMM register file size, as configured by the user.
-	static int getXmmSize() { return xmm_size; }
+  /// Return the number of reads to the integer RAT
+  long long getNumIntegerRatReads() const { return num_integer_rat_reads; }
 
+  /// Return the number of writes to the integer RAT
+  long long getNumIntegerRatWrites() const { return num_integer_rat_writes; }
 
+  /// Return the number of reads to the floating-point RAT
+  long long getNumFloatingPointRatReads() const {
+    return num_floating_point_rat_reads;
+  }
 
+  /// Return the number of writes to the floating-point RAT
+  long long getNumFloatingPointRatWrites() const {
+    return num_floating_point_rat_writes;
+  }
 
-	//
-	// Class members
-	//
+  /// Return the number of reads to the XMM RAT
+  long long getNumXmmRatReads() const { return num_xmm_rat_reads; }
 
-	/// Constructor
-	RegisterFile(Thread *thread);
-
-	/// Dump a plain-text representation of the object into the given output
-	/// stream, or into the standard output if argument \a os is committed.
-	void Dump(std::ostream &os = std::cout) const;
-	
-	/// Same as Dump()
-	friend std::ostream &operator<<(std::ostream &os,
-			const RegisterFile &register_file)
-	{
-		register_file.Dump(os);
-		return os;
-	}
-
-	/// Return true if there are enough available physical registers to
-	/// rename the given uop.
-	bool canRename(Uop *uop);
-
-	/// Perform register renaming on the given uop. This operation renames
-	/// source and destination registers, requesting as many physical
-	/// registers as needed for the uop.
-	void Rename(Uop *uop);
-
-	/// Check if input dependencies are resolved
-	bool isUopReady(Uop *uop);
-
-	/// Update the state of the register file when an uop completes, that
-	/// is, when its results are written back.
-	void WriteUop(Uop *uop);
-
-	/// Update the state of the register file when an uop is recovered from
-	/// speculative execution
-	void UndoUop(Uop *uop);
-
-	/// Update the state of the register file when an uop commits
-	void CommitUop(Uop *uop);
-
-	/// Check integrity of register file
-	void CheckRegisterFile();
-
-	/// Check if integer register at certain index is free.
-	/// Used only in testing.
-	bool isIntegerRegisterFree(int index)
-	{
-		if (integer_registers[index].busy > 0)
-			return false;
-		return true;
-	}
-
-	/// Check if floating point register at certain index is free
-	/// Used only in testing.
-	bool isFloatingPointRegisterFree(int index)
-	{
-		if (floating_point_registers[index].busy > 0)
-			return false;
-		return true;
-	}
-
-	/// Check if xmm register at certain index is free
-	/// Used only in testing
-	bool isXmmRegisterFree(int index)
-	{
-		if (xmm_registers[index].busy > 0)
-			return false;
-		return true;
-	}
-
-
-
-
-	//
-	// Statistics
-	//
-
-	/// Return the number of reads to the integer RAT
-	long long getNumIntegerRatReads() const { return num_integer_rat_reads; }
-
-	/// Return the number of writes to the integer RAT
-	long long getNumIntegerRatWrites() const { return num_integer_rat_writes; }
-
-	/// Return the number of reads to the floating-point RAT
-	long long getNumFloatingPointRatReads() const { return num_floating_point_rat_reads; }
-
-	/// Return the number of writes to the floating-point RAT
-	long long getNumFloatingPointRatWrites() const { return num_floating_point_rat_writes; }
-
-	/// Return the number of reads to the XMM RAT
-	long long getNumXmmRatReads() const { return num_xmm_rat_reads; }
-
-	/// Return the number of writes to the XMM RAT
-	long long getNumXmmRatWrites() const { return num_xmm_rat_writes; }
+  /// Return the number of writes to the XMM RAT
+  long long getNumXmmRatWrites() const { return num_xmm_rat_writes; }
 };
-
 }
 
 #endif
-

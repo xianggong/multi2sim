@@ -24,15 +24,15 @@
 
 struct thread_list_t;
 
-typedef int (*thread_list_visit_func_t)(void *object, void *user_data);
+typedef int (*thread_list_visit_func_t)(void* object, void* user_data);
 
-struct thread_list_t *thread_list_create(void);
-void thread_list_free(struct thread_list_t *list);
+struct thread_list_t* thread_list_create(void);
+void thread_list_free(struct thread_list_t* list);
 
-void thread_list_insert(struct thread_list_t *list, void *data);
-int thread_list_remove(struct thread_list_t *list, void *data);
+void thread_list_insert(struct thread_list_t* list, void* data);
+int thread_list_remove(struct thread_list_t* list, void* data);
 
-void thread_list_visit(struct thread_list_t *list,
-	thread_list_visit_func_t visit_func, void *context);
+void thread_list_visit(struct thread_list_t* list,
+                       thread_list_visit_func_t visit_func, void* context);
 
 #endif

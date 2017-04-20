@@ -40,8 +40,7 @@ namespace internal {
 // Skips to the first non-space char in str. Returns an empty string if str
 // contains only whitespace characters.
 static const char* SkipSpaces(const char* str) {
-  while (IsSpace(*str))
-    str++;
+  while (IsSpace(*str)) str++;
   return str;
 }
 
@@ -69,8 +68,7 @@ const char* TypedTestCasePState::VerifyRegisteredTestNames(
 
     bool found = false;
     for (DefinedTestIter it = defined_test_names_.begin();
-         it != defined_test_names_.end();
-         ++it) {
+         it != defined_test_names_.end(); ++it) {
       if (name == *it) {
         found = true;
         break;
@@ -86,8 +84,7 @@ const char* TypedTestCasePState::VerifyRegisteredTestNames(
   }
 
   for (DefinedTestIter it = defined_test_names_.begin();
-       it != defined_test_names_.end();
-       ++it) {
+       it != defined_test_names_.end(); ++it) {
     if (tests.count(*it) == 0) {
       errors << "You forgot to list test " << *it << ".\n";
     }

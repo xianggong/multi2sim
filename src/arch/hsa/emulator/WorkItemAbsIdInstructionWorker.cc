@@ -20,64 +20,50 @@
 #include "WorkItemAbsIdInstructionWorker.h"
 #include "WorkItem.h"
 
-namespace HSA 
-{
+namespace HSA {
 
 WorkItemAbsIdInstructionWorker::WorkItemAbsIdInstructionWorker(
-		WorkItem *work_item, StackFrame *stack_frame) :
-		HsaInstructionWorker(work_item, stack_frame) 
-{
-}	
+    WorkItem* work_item, StackFrame* stack_frame)
+    : HsaInstructionWorker(work_item, stack_frame) {}
 
-
-void WorkItemAbsIdInstructionWorker::RetrieveOperandValue()
-{
-	operand_value_retriever->Retrieve(instruction, 1, &dimension);
+void WorkItemAbsIdInstructionWorker::RetrieveOperandValue() {
+  operand_value_retriever->Retrieve(instruction, 1, &dimension);
 }
 
+void WorkItemAbsIdInstructionWorker::RetrieveAbsoluteId() {
+  switch (dimension) {
+    case 0:
 
-void WorkItemAbsIdInstructionWorker::RetrieveAbsoluteId()
-{
-	switch(dimension)
-	{
-	case 0:
+      absolute_id = work_item->getAbsoluteIdX();
+      break;
 
-		absolute_id = work_item->getAbsoluteIdX();
-		break;
+    case 1:
 
-	case 1:
+      absolute_id = work_item->getAbsoluteIdY();
+      break;
 
-		absolute_id = work_item->getAbsoluteIdY();
-		break;
+    case 2:
 
-	case 2:
+      absolute_id = work_item->getAbsoluteIdZ();
+      break;
 
-		absolute_id = work_item->getAbsoluteIdZ();
-		break;
+    default:
 
-	default:
-
-		throw misc::Error("Trying to getting work item absolute id "
-				"other than x, y and z axis.");
-	}
+      throw misc::Error(
+          "Trying to getting work item absolute id "
+          "other than x, y and z axis.");
+  }
 }
 
-
-void WorkItemAbsIdInstructionWorker::WriteResultBack()
-{
-	operand_value_writer->Write(instruction, 0, &absolute_id);
-	work_item->MovePcForwardByOne();
+void WorkItemAbsIdInstructionWorker::WriteResultBack() {
+  operand_value_writer->Write(instruction, 0, &absolute_id);
+  work_item->MovePcForwardByOne();
 }
 
-
-void WorkItemAbsIdInstructionWorker::Execute(BrigCodeEntry *instruction) 
-{
-	this->instruction = instruction;
-	RetrieveOperandValue();
-	RetrieveAbsoluteId();
-	WriteResultBack();
+void WorkItemAbsIdInstructionWorker::Execute(BrigCodeEntry* instruction) {
+  this->instruction = instruction;
+  RetrieveOperandValue();
+  RetrieveAbsoluteId();
+  WriteResultBack();
 }
-
 }
-
-

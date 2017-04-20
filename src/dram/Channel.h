@@ -28,116 +28,98 @@
 #include "Rank.h"
 #include "Scheduler.h"
 
-
-namespace dram
-{
+namespace dram {
 
 // Forward declarations
 class Controller;
 class Scheduler;
 
+class Channel {
+  int id;
 
-class Channel
-{
-	int id;
+  // Pointer to the owning controller.
+  Controller* controller;
 
-	// Pointer to the owning controller.
-	Controller *controller;
+  // Channel geometry
+  int num_ranks;
+  int num_banks;
 
-	// Channel geometry
-	int num_ranks;
-	int num_banks;
+  // Pointer to the bank whose front command should be run next.
+  Bank* next_scheduled_bank = nullptr;
 
-	// Pointer to the bank whose front command should be run next.
-	Bank *next_scheduled_bank = nullptr;
+  // List of ranks contained in this channel
+  std::vector<std::unique_ptr<Rank>> ranks;
 
-	// List of ranks contained in this channel
-	std::vector<std::unique_ptr<Rank>> ranks;
+  // Pointer to the scheduler instance that determines what commands
+  // are run.
+  std::unique_ptr<Scheduler> scheduler;
 
-	// Pointer to the scheduler instance that determines what commands
-	// are run.
-	std::unique_ptr<Scheduler> scheduler;
+  // Total number of commands in bank queues under this channel
+  int num_commands_in_queue = 0;
 
-	// Total number of commands in bank queues under this channel
-	int num_commands_in_queue = 0;
+ public:
+  Channel(int id, Controller* parent, int num_ranks, int num_banks,
+          int num_rows, int num_columns, int num_bits,
+          SchedulerType scheduler_type);
 
-public:
+  /// Returns the id of this channel, which is unique in the controller
+  /// that this channel belongs to.
+  int getId() const { return id; }
 
-	Channel(int id,
-			Controller *parent,
-			int num_ranks,
-			int num_banks,
-			int num_rows,
-			int num_columns,
-			int num_bits,
-			SchedulerType scheduler_type);
+  /// Returns a rank belonging to this channel with the specified id.
+  Rank* getRank(int id) const { return ranks[id].get(); }
 
-	/// Returns the id of this channel, which is unique in the controller
-	/// that this channel belongs to.
-	int getId() const { return id; }
+  /// Returns the controller that this channel belongs to.
+  Controller* getController() const { return controller; }
 
-	/// Returns a rank belonging to this channel with the specified id.
-	Rank *getRank(int id) const { return ranks[id].get(); }
+  /// Returns the number of ranks in this channel.
+  int getNumRanks() const { return num_ranks; }
 
-	/// Returns the controller that this channel belongs to.
-	Controller *getController() const { return controller; }
+  /// Returns the number of banks in each rank in this channel.
+  int getNumBanks() const { return num_banks; }
 
-	/// Returns the number of ranks in this channel.
-	int getNumRanks() const { return num_ranks; }
+  /// Returns the total number of banks in this channel.
+  int getNumBanksTotal() const { return num_banks * num_ranks; }
 
-	/// Returns the number of banks in each rank in this channel.
-	int getNumBanks() const { return num_banks; }
+  /// Call the scheduler for this channel.  This function will only
+  /// invoke the scheduler if it is not already scheduled to run.  The
+  /// scheduler will keep reinvoking itself while there are commands in
+  /// any bank queue under the channel.
+  ///
+  /// \param after
+  /// The number of cycles that the scheduler should be invoked after.
+  /// For outside calls this should probably always stay at the default
+  /// 1.  The scheduler itself will reschedule itself further in the
+  /// future in some cases.
+  void CallScheduler(int after = 1);
 
-	/// Returns the total number of banks in this channel.
-	int getNumBanksTotal() const { return num_banks * num_ranks; }
+  /// Event handler that runs the scheduler.
+  static void SchedulerHandler(esim::Event*, esim::Frame*);
 
-	/// Call the scheduler for this channel.  This function will only
-	/// invoke the scheduler if it is not already scheduled to run.  The
-	/// scheduler will keep reinvoking itself while there are commands in
-	/// any bank queue under the channel.
-	///
-	/// \param after
-	/// The number of cycles that the scheduler should be invoked after.
-	/// For outside calls this should probably always stay at the default
-	/// 1.  The scheduler itself will reschedule itself further in the
-	/// future in some cases.
-	void CallScheduler(int after = 1);
+  /// Schedules commands from all the bank queues under this channel,
+  /// in the correct order according to the scheduling policy.
+  void RunScheduler();
 
-	/// Event handler that runs the scheduler.
-	static void SchedulerHandler(esim::Event *, esim::Frame *);
+  /// Calculates the cycle that the command passed can be run in first,
+  /// given the current state of the system.
+  long long CalculateReadyCycle(Command* cmd);
 
-	/// Schedules commands from all the bank queues under this channel,
-	/// in the correct order according to the scheduling policy.
-	void RunScheduler();
+  /// Dump the object to an output stream.
+  void dump(std::ostream& os = std::cout) const;
 
-	/// Calculates the cycle that the command passed can be run in first,
-	/// given the current state of the system.
-	long long CalculateReadyCycle(Command *cmd);
-
-	/// Dump the object to an output stream.
-	void dump(std::ostream &os = std::cout) const;
-
-	/// Dump object with the << operator
-	friend std::ostream &operator<<(std::ostream &os,
-			const Channel &object)
-	{
-		object.dump(os);
-		return os;
-	}
+  /// Dump object with the << operator
+  friend std::ostream& operator<<(std::ostream& os, const Channel& object) {
+    object.dump(os);
+    return os;
+  }
 };
 
+class SchedulerFrame : public esim::Frame {
+ public:
+  SchedulerFrame() {}
 
-class SchedulerFrame : public esim::Frame
-{
-
-public:
-	SchedulerFrame()
-	{
-	}
-
-	Channel *channel;
+  Channel* channel;
 };
-
 
 }  // namespace dram
 

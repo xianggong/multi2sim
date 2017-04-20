@@ -23,85 +23,74 @@
 #include <lib/cpp/IniFile.h>
 #include <lib/esim/Engine.h>
 
-namespace SI 
-{
+namespace SI {
 
-static void Cleanup()
-{
-        esim::Engine::Destroy();
-        Timing::Destroy();
-        comm::ArchPool::Destroy();
+static void Cleanup() {
+  esim::Engine::Destroy();
+  Timing::Destroy();
+  comm::ArchPool::Destroy();
 }
-
 
 // This test checks to see if the correct error message is returned when
 // a frequency is passed that is larger than the acceptable bounds
-TEST(TestTiming, config_section_device_frequency_0)
-{
-	// Cleanup singleton instances
-	Cleanup();
+TEST(TestTiming, config_section_device_frequency_0) {
+  // Cleanup singleton instances
+  Cleanup();
 
-	// Create config file
-	std::string config =
-			"[ Device ]\n"
-			"Frequency = 10000000";
-	
-	// Load config file
-	misc::IniFile ini_file;
-	ini_file.LoadFromString(config);
+  // Create config file
+  std::string config =
+      "[ Device ]\n"
+      "Frequency = 10000000";
 
-	// Try ParseConfiguration for invalid frequency
-	std::string message;
-	try
-	{
-		Timing::ParseConfiguration(&ini_file);
-	}
-	catch(misc::Error &error)
-	{
-		message = error.getMessage();
-	}
+  // Load config file
+  misc::IniFile ini_file;
+  ini_file.LoadFromString(config);
 
-	// Check error message
-	EXPECT_REGEX_MATCH(misc::fmt(".*%s: The value for 'Frequency' "
-			"must be between 1MHz and 1000GHz.\n.*",
-			ini_file.getPath().c_str()).c_str(),
-			message.c_str());
+  // Try ParseConfiguration for invalid frequency
+  std::string message;
+  try {
+    Timing::ParseConfiguration(&ini_file);
+  } catch (misc::Error& error) {
+    message = error.getMessage();
+  }
+
+  // Check error message
+  EXPECT_REGEX_MATCH(misc::fmt(".*%s: The value for 'Frequency' "
+                               "must be between 1MHz and 1000GHz.\n.*",
+                               ini_file.getPath().c_str())
+                         .c_str(),
+                     message.c_str());
 }
-
 
 // This test checks to see if the correct error message is returned when
 // a frequency is passed that is smaller than the acceptable bounds
-TEST(TestTiming, config_section_device_frequency_1)
-{
-	// Cleanup singleton instances
-	Cleanup();
+TEST(TestTiming, config_section_device_frequency_1) {
+  // Cleanup singleton instances
+  Cleanup();
 
-	// Try frequency lower than bounds
-	std::string config =
-		"[ Device ]\n"
-		"Frequency = 0";
+  // Try frequency lower than bounds
+  std::string config =
+      "[ Device ]\n"
+      "Frequency = 0";
 
-	// Load config file
-	misc::IniFile ini_file;
-	ini_file.LoadFromString(config);
+  // Load config file
+  misc::IniFile ini_file;
+  ini_file.LoadFromString(config);
 
-	// Try ParseConfiguration for invalid frequency
-	std::string message;
-	try
-	{
-		Timing::ParseConfiguration(&ini_file);
-	}
-	catch(misc::Error &error)
-	{
-		message = error.getMessage();
-	}
+  // Try ParseConfiguration for invalid frequency
+  std::string message;
+  try {
+    Timing::ParseConfiguration(&ini_file);
+  } catch (misc::Error& error) {
+    message = error.getMessage();
+  }
 
-	// Check error message
-	EXPECT_REGEX_MATCH(misc::fmt(".*%s: The value for 'Frequency' "
-			"must be between 1MHz and 1000GHz.\n.*",
-			ini_file.getPath().c_str()).c_str(),
-			message.c_str());
+  // Check error message
+  EXPECT_REGEX_MATCH(misc::fmt(".*%s: The value for 'Frequency' "
+                               "must be between 1MHz and 1000GHz.\n.*",
+                               ini_file.getPath().c_str())
+                         .c_str(),
+                     message.c_str());
 }
 
-
-} // namespace SI
+}  // namespace SI

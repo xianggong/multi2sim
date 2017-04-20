@@ -24,30 +24,28 @@
 #include "../include/hsa_ext_finalize.h"
 
 #define __HSA_RUNTIME_NOT_IMPLEMENTED__ \
-		panic("HSA runtime function %s not implemented\n", __FUNCTION__);
+  panic("HSA runtime function %s not implemented\n", __FUNCTION__);
 
 // Function code to pass as a first argument of a system call
-enum hsa_abi_call_t
-{
-	hsa_abi_invalid,
+enum hsa_abi_call_t {
+  hsa_abi_invalid,
 #define DEFCALL(name, code, func) name,
 #include "../../src/arch/hsa/driver/Driver.def"
 #undef DEFCALL
-	hsa_abi_call_count
+  hsa_abi_call_count
 };
 
 // A global data structure
-extern struct hsa_runtime_t *hsa_runtime;
+extern struct hsa_runtime_t* hsa_runtime;
 
 // An hsa_runtime is a data structure that holds informations of current
 // execution of the runtime
-struct hsa_runtime_t
-{
-	// File descriptor to communicate with the hsa driver
-	int fd;
+struct hsa_runtime_t {
+  // File descriptor to communicate with the hsa driver
+  int fd;
 };
 
 /// The global hsa runtime instance
-struct hsa_runtime_t *hsa_runtime;
+struct hsa_runtime_t* hsa_runtime;
 
 #endif /* RUNTIME_HSA_HSA_H_ */

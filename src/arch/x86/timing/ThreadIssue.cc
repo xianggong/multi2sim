@@ -23,246 +23,219 @@
 #include "Thread.h"
 #include "Timing.h"
 
+namespace x86 {
 
-namespace x86
-{
+int Thread::IssueLoadQueue(int quantum) {
+  // List iterators
+  auto it = load_queue.begin();
+  auto e = load_queue.end();
 
-int Thread::IssueLoadQueue(int quantum)
-{
-	// List iterators
-	auto it = load_queue.begin();
-	auto e = load_queue.end();
+  // Traverse list
+  while (it != e && quantum > 0) {
+    // Get the uop and forward iterator
+    std::shared_ptr<Uop> uop = *it;
+    ++it;
 
-	// Traverse list
-	while (it != e && quantum > 0)
-	{
-		// Get the uop and forward iterator
-		std::shared_ptr<Uop> uop = *it;
-		++it;
+    // If the uop is not ready, skip it
+    if (!register_file->isUopReady(uop.get())) continue;
 
-		// If the uop is not ready, skip it
-		if (!register_file->isUopReady(uop.get()))
-			continue;
+    // Check that memory system is accessible
+    if (!data_module->canAccess(uop->physical_address)) continue;
 
-		// Check that memory system is accessible
-		if (!data_module->canAccess(uop->physical_address))
-			continue;
+    // Remove uop from load queue
+    ExtractFromLoadQueue(uop.get());
 
-		// Remove uop from load queue
-		ExtractFromLoadQueue(uop.get());
+    // Access memory system
+    cpu->MemoryAccess(data_module, mem::Module::AccessLoad,
+                      uop->physical_address, uop);
 
-		// Access memory system
-		cpu->MemoryAccess(data_module,
-				mem::Module::AccessLoad,
-				uop->physical_address,
-				uop);
+    // Mark uop as issued
+    uop->issued = true;
+    uop->issue_when = cpu->getCycle();
 
-		// Mark uop as issued
-		uop->issued = true;
-		uop->issue_when = cpu->getCycle();
-		
-		// Increment the number of issued instructions of this kind
-		incNumIssuedUinsts(uop->getOpcode());
-		core->incNumIssuedUinsts(uop->getOpcode());
-		cpu->incNumIssuedUinsts(uop->getOpcode());
+    // Increment the number of issued instructions of this kind
+    incNumIssuedUinsts(uop->getOpcode());
+    core->incNumIssuedUinsts(uop->getOpcode());
+    cpu->incNumIssuedUinsts(uop->getOpcode());
 
-		// Increment number of reads from load-store-queue
-		num_load_store_queue_reads++;
-		core->incNumLoadStoreQueueReads();
+    // Increment number of reads from load-store-queue
+    num_load_store_queue_reads++;
+    core->incNumLoadStoreQueueReads();
 
-		// Increment per-thread number of reads from registers
-		num_integer_register_reads += uop->getNumIntegerInputs();
-		num_floating_point_register_reads += uop->getNumFloatingPointInputs();
-		num_xmm_register_reads += uop->getNumXmmInputs();
+    // Increment per-thread number of reads from registers
+    num_integer_register_reads += uop->getNumIntegerInputs();
+    num_floating_point_register_reads += uop->getNumFloatingPointInputs();
+    num_xmm_register_reads += uop->getNumXmmInputs();
 
-		// Increment per-core number of reads from registers
-		core->incNumIntegerRegisterReads(uop->getNumIntegerInputs());
-		core->incNumFloatingPointRegisterReads(uop->getNumFloatingPointInputs());
-		core->incNumXmmRegisterReads(uop->getNumXmmInputs());
+    // Increment per-core number of reads from registers
+    core->incNumIntegerRegisterReads(uop->getNumIntegerInputs());
+    core->incNumFloatingPointRegisterReads(uop->getNumFloatingPointInputs());
+    core->incNumXmmRegisterReads(uop->getNumXmmInputs());
 
-		// Increment number of issued micro-instructions coming from
-		// the trace cache
-		if (uop->from_trace_cache)
-			trace_cache->incNumIssuedUinsts();
-	
-		// One more instruction issued, update quantum
-		quantum--;
+    // Increment number of issued micro-instructions coming from
+    // the trace cache
+    if (uop->from_trace_cache) trace_cache->incNumIssuedUinsts();
 
-		// Trace
-		Timing::trace << misc::fmt("x86.inst "
-				"id=%lld "
-				"core=%d "
-				"stg=\"i\"\n",
-				uop->getIdInCore(),
-				core->getId());
-	}
+    // One more instruction issued, update quantum
+    quantum--;
 
-	// Return remaining quantum
-	return quantum;
+    // Trace
+    Timing::trace << misc::fmt(
+        "x86.inst "
+        "id=%lld "
+        "core=%d "
+        "stg=\"i\"\n",
+        uop->getIdInCore(), core->getId());
+  }
+
+  // Return remaining quantum
+  return quantum;
 }
 
+int Thread::IssueStoreQueue(int quantum) {
+  // List iterators
+  auto it = store_queue.begin();
+  auto e = store_queue.end();
 
-int Thread::IssueStoreQueue(int quantum)
-{
-	// List iterators
-	auto it = store_queue.begin();
-	auto e = store_queue.end();
+  // Traverse list
+  while (it != e && quantum > 0) {
+    // Get the uop and forward iterator
+    std::shared_ptr<Uop> uop = *it;
+    ++it;
 
-	// Traverse list
-	while (it != e && quantum > 0)
-	{
-		// Get the uop and forward iterator
-		std::shared_ptr<Uop> uop = *it;
-		++it;
+    // Sanity
+    assert(uop->getOpcode() == Uinst::OpcodeStore);
 
-		// Sanity
-		assert(uop->getOpcode() == Uinst::OpcodeStore);
+    // Only committed stores can issue
+    if (uop->in_reorder_buffer) break;
 
-		// Only committed stores can issue
-		if (uop->in_reorder_buffer)
-			break;
+    // Check that memory system is ready
+    if (!data_module->canAccess(uop->physical_address)) break;
 
-		// Check that memory system is ready
-		if (!data_module->canAccess(uop->physical_address))
-			break;
+    // Remove store from store queue
+    ExtractFromStoreQueue(uop.get());
 
-		// Remove store from store queue
-		ExtractFromStoreQueue(uop.get());
+    // Issue store to memory system
+    cpu->MemoryAccess(data_module, mem::Module::AccessStore,
+                      uop->physical_address, uop);
 
-		// Issue store to memory system
-		cpu->MemoryAccess(data_module,
-				mem::Module::AccessStore,
-				uop->physical_address,
-				uop);
+    // Mark uop as issued
+    uop->issued = true;
+    uop->issue_when = cpu->getCycle();
 
-		// Mark uop as issued
-		uop->issued = true;
-		uop->issue_when = cpu->getCycle();
-		
-		// Increment the number of issued instructions of this kind
-		incNumIssuedUinsts(uop->getOpcode());
-		core->incNumIssuedUinsts(uop->getOpcode());
-		cpu->incNumIssuedUinsts(uop->getOpcode());
+    // Increment the number of issued instructions of this kind
+    incNumIssuedUinsts(uop->getOpcode());
+    core->incNumIssuedUinsts(uop->getOpcode());
+    cpu->incNumIssuedUinsts(uop->getOpcode());
 
-		// Increment number of reads from load-store-queue
-		num_load_store_queue_reads++;
-		core->incNumLoadStoreQueueReads();
+    // Increment number of reads from load-store-queue
+    num_load_store_queue_reads++;
+    core->incNumLoadStoreQueueReads();
 
-		// Increment per-thread number of reads from registers
-		num_integer_register_reads += uop->getNumIntegerInputs();
-		num_floating_point_register_reads += uop->getNumFloatingPointInputs();
-		num_xmm_register_reads += uop->getNumXmmInputs();
+    // Increment per-thread number of reads from registers
+    num_integer_register_reads += uop->getNumIntegerInputs();
+    num_floating_point_register_reads += uop->getNumFloatingPointInputs();
+    num_xmm_register_reads += uop->getNumXmmInputs();
 
-		// Increment per-core number of reads from registers
-		core->incNumIntegerRegisterReads(uop->getNumIntegerInputs());
-		core->incNumFloatingPointRegisterReads(uop->getNumFloatingPointInputs());
-		core->incNumXmmRegisterReads(uop->getNumXmmInputs());
+    // Increment per-core number of reads from registers
+    core->incNumIntegerRegisterReads(uop->getNumIntegerInputs());
+    core->incNumFloatingPointRegisterReads(uop->getNumFloatingPointInputs());
+    core->incNumXmmRegisterReads(uop->getNumXmmInputs());
 
-		// Increment number of issued micro-instructions coming from
-		// the trace cache
-		if (uop->from_trace_cache)
-			trace_cache->incNumIssuedUinsts();
-	
-		// One more instruction issued, update quantum
-		quantum--;
-	}
+    // Increment number of issued micro-instructions coming from
+    // the trace cache
+    if (uop->from_trace_cache) trace_cache->incNumIssuedUinsts();
 
-	// Return remaining quantum
-	return quantum;
+    // One more instruction issued, update quantum
+    quantum--;
+  }
+
+  // Return remaining quantum
+  return quantum;
 }
 
+int Thread::IssueLoadStoreQueue(int quantum) {
+  // Give priority to loads versus stores
+  quantum = IssueLoadQueue(quantum);
+  quantum = IssueStoreQueue(quantum);
 
-int Thread::IssueLoadStoreQueue(int quantum)
-{
-	// Give priority to loads versus stores
-	quantum = IssueLoadQueue(quantum);
-	quantum = IssueStoreQueue(quantum);
-
-	// Return remaining unused quantum
-	return quantum;
+  // Return remaining unused quantum
+  return quantum;
 }
 
+int Thread::IssueInstructionQueue(int quantum) {
+  // List iterators
+  auto it = instruction_queue.begin();
+  auto e = instruction_queue.end();
 
-int Thread::IssueInstructionQueue(int quantum)
-{
-	// List iterators
-	auto it = instruction_queue.begin();
-	auto e = instruction_queue.end();
+  // Traverse list
+  while (it != e && quantum > 0) {
+    // Get the uop and forward iterator
+    std::shared_ptr<Uop> uop = *it;
+    ++it;
 
-	// Traverse list
-	while (it != e && quantum > 0)
-	{
-		// Get the uop and forward iterator
-		std::shared_ptr<Uop> uop = *it;
-		++it;
+    // Sanity
+    assert(!(uop->getFlags() & Uinst::FlagMem));
 
-		// Sanity
-		assert(!(uop->getFlags() & Uinst::FlagMem));
+    // If the uop is not ready, skip it
+    if (!register_file->isUopReady(uop.get())) continue;
 
-		// If the uop is not ready, skip it
-		if (!register_file->isUopReady(uop.get()))
-			continue;
+    // Run the instruction in its corresponding functional unit in
+    // the ALU. If the instruction does not require a functional
+    // unit, a latency of 1 is returned by ALU::Reserve(). If there
+    // is no functional unit available, it returns 0.
+    Alu* alu = core->getAlu();
+    int latency = alu->Reserve(uop.get());
+    if (!latency) continue;
 
-		// Run the instruction in its corresponding functional unit in
-		// the ALU. If the instruction does not require a functional
-		// unit, a latency of 1 is returned by ALU::Reserve(). If there
-		// is no functional unit available, it returns 0.
-		Alu *alu = core->getAlu();
-		int latency = alu->Reserve(uop.get());
-		if (!latency)
-			continue;
+    // Instruction was successfully issued, remove from instruction
+    // queue.
+    ExtractFromInstructionQueue(uop.get());
 
-		// Instruction was successfully issued, remove from instruction
-		// queue.
-		ExtractFromInstructionQueue(uop.get());
+    // Instruction has been issued
+    uop->issued = true;
+    uop->issue_when = cpu->getCycle();
 
-		// Instruction has been issued
-		uop->issued = true;
-		uop->issue_when = cpu->getCycle();
+    // Schedule instruction in event queue
+    assert(latency > 0);
+    core->InsertInEventQueue(uop, latency);
 
-		// Schedule instruction in event queue
-		assert(latency > 0);
-		core->InsertInEventQueue(uop, latency);
-		
-		// Increment the number of issued instructions of this kind
-		incNumIssuedUinsts(uop->getOpcode());
-		core->incNumIssuedUinsts(uop->getOpcode());
-		cpu->incNumIssuedUinsts(uop->getOpcode());
+    // Increment the number of issued instructions of this kind
+    incNumIssuedUinsts(uop->getOpcode());
+    core->incNumIssuedUinsts(uop->getOpcode());
+    cpu->incNumIssuedUinsts(uop->getOpcode());
 
-		// Increment number of reads from instruction queue
-		num_instruction_queue_reads++;
-		core->incNumInstructionQueueReads();
+    // Increment number of reads from instruction queue
+    num_instruction_queue_reads++;
+    core->incNumInstructionQueueReads();
 
-		// Increment per-thread number of reads from registers
-		num_integer_register_reads += uop->getNumIntegerInputs();
-		num_floating_point_register_reads += uop->getNumFloatingPointInputs();
-		num_xmm_register_reads += uop->getNumXmmInputs();
+    // Increment per-thread number of reads from registers
+    num_integer_register_reads += uop->getNumIntegerInputs();
+    num_floating_point_register_reads += uop->getNumFloatingPointInputs();
+    num_xmm_register_reads += uop->getNumXmmInputs();
 
-		// Increment per-core number of reads from registers
-		core->incNumIntegerRegisterReads(uop->getNumIntegerInputs());
-		core->incNumFloatingPointRegisterReads(uop->getNumFloatingPointInputs());
-		core->incNumXmmRegisterReads(uop->getNumXmmInputs());
+    // Increment per-core number of reads from registers
+    core->incNumIntegerRegisterReads(uop->getNumIntegerInputs());
+    core->incNumFloatingPointRegisterReads(uop->getNumFloatingPointInputs());
+    core->incNumXmmRegisterReads(uop->getNumXmmInputs());
 
-		// Increment number of issued micro-instructions coming from
-		// the trace cache
-		if (uop->from_trace_cache)
-			trace_cache->incNumIssuedUinsts();
-	
-		// One more instruction issued, update quantum
-		quantum--;
-		
-		// Trace
-		Timing::trace << misc::fmt("x86.inst "
-				"id=%lld "
-				"core=%d "
-				"stg=\"i\"\n",
-				uop->getIdInCore(),
-				core->getId());
-	}
-	
-	// Return remaining unused quantum
-	return quantum;
+    // Increment number of issued micro-instructions coming from
+    // the trace cache
+    if (uop->from_trace_cache) trace_cache->incNumIssuedUinsts();
+
+    // One more instruction issued, update quantum
+    quantum--;
+
+    // Trace
+    Timing::trace << misc::fmt(
+        "x86.inst "
+        "id=%lld "
+        "core=%d "
+        "stg=\"i\"\n",
+        uop->getIdInCore(), core->getId());
+  }
+
+  // Return remaining unused quantum
+  return quantum;
 }
-
 }
-

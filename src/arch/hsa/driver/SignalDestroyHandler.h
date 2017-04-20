@@ -22,24 +22,21 @@
 
 #include "DriverCallHandler.h"
 
-namespace HSA
-{
+namespace HSA {
 class SignalManager;
 
-class SignalDestroyHandler: public DriverCallHandler
-{
-	struct __attribute__ ((packed)) Data
-	{
-		uint32_t status;
-		uint64_t signal;
-	};
+class SignalDestroyHandler : public DriverCallHandler {
+  struct __attribute__((packed)) Data {
+    uint32_t status;
+    uint64_t signal;
+  };
 
-	SignalManager *signal_manager;
+  SignalManager* signal_manager;
 
-public:
-	SignalDestroyHandler(SignalManager *signal_manager);
-	virtual ~SignalDestroyHandler();
-	void Process(mem::Memory *memory, uint32_t args_ptr);
+ public:
+  SignalDestroyHandler(SignalManager* signal_manager);
+  virtual ~SignalDestroyHandler();
+  void Process(mem::Memory* memory, uint32_t args_ptr);
 };
 
 }  // namespace HSA

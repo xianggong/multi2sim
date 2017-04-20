@@ -22,37 +22,32 @@
 
 #include <memory/Manager.h>
 
-namespace HSA
-{
+namespace HSA {
 
 /// A segment manager is a tool that manages the addresses in a memory segment.
-class SegmentManager : public mem::Manager
-{
-protected:
+class SegmentManager : public mem::Manager {
+ protected:
+  // The flat address that is mapped to the beginning of the segment
+  // Set to 0, so that all the segment address is actually flat address
+  unsigned base_address = 0;
 
-	// The flat address that is mapped to the beginning of the segment
-	// Set to 0, so that all the segment address is actually flat address
-	unsigned base_address = 0;
+  // The size of the segment requires
+  unsigned size;
 
-	// The size of the segment requires
-	unsigned size;
+ public:
+  /// Constructor
+  SegmentManager(mem::Memory* memory, unsigned size);
 
-public:
+  /// Destructor
+  virtual ~SegmentManager();
 
-	/// Constructor
-	SegmentManager(mem::Memory *memory, unsigned size);
+  /// Allocate memory from the segment, returns the in-segment address
+  unsigned Allocate(unsigned size, unsigned alignment = 1);
 
-	/// Destructor
-	virtual ~SegmentManager();
-
-	/// Allocate memory from the segment, returns the in-segment address
-	unsigned Allocate(unsigned size, unsigned alignment = 1);
-
-	/// Convert inner-segment address to flat address
-	unsigned getFlatAddress(unsigned address);
-
+  /// Convert inner-segment address to flat address
+  unsigned getFlatAddress(unsigned address);
 };
 
 }  // namespace HSA
 
-#endif 
+#endif

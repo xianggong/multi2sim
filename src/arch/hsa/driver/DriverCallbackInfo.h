@@ -20,87 +20,60 @@
 #ifndef ARCH_HSA_DRIVER_DRIVERCALLBACKINFO_H
 #define ARCH_HSA_DRIVER_DRIVERCALLBACKINFO_H
 
-namespace HSA
-{
+namespace HSA {
 class WorkItem;
 
-/// DriverCallbackInfo holds information that need to be passed to the 
+/// DriverCallbackInfo holds information that need to be passed to the
 /// callback function.
-class DriverCallbackInfo
-{
-protected:
-	
-	// The workitem that the callback is working on 
-	WorkItem *work_item;
+class DriverCallbackInfo {
+ protected:
+  // The workitem that the callback is working on
+  WorkItem* work_item;
 
-	// The guest memory 
-	mem::Memory *memory;
+  // The guest memory
+  mem::Memory* memory;
 
-	// The address of the argument that have been passed to the driver
-	// call
-	unsigned args_ptr;
+  // The address of the argument that have been passed to the driver
+  // call
+  unsigned args_ptr;
 
-public:
+ public:
+  /// Constructor
+  DriverCallbackInfo(WorkItem* work_item, mem::Memory* memory,
+                     unsigned args_ptr)
+      : work_item(work_item), memory(memory), args_ptr(args_ptr) {}
 
-	/// Constructor
-	DriverCallbackInfo(WorkItem *work_item, mem::Memory *memory,
-			unsigned args_ptr):
-			work_item(work_item),
-			memory(memory),
-			args_ptr(args_ptr)
-	{
-	}
+  /// Virtual distructor
+  virtual ~DriverCallbackInfo() {}
 
-	/// Virtual distructor
-	virtual ~DriverCallbackInfo(){}
+  /// Get argument pointer
+  unsigned getArgsPtr() const { return args_ptr; }
 
-	/// Get argument pointer
-	unsigned getArgsPtr() const
-	{
-		return args_ptr;
-	}
+  /// Get guest memory
+  mem::Memory* getMemory() const { return memory; }
 
-	/// Get guest memory
-	mem::Memory* getMemory() const
-	{
-		return memory;
-	}
-
-	/// Get workitem
-	WorkItem* getWorkItem() const
-	{
-		return work_item;
-	}
-
+  /// Get workitem
+  WorkItem* getWorkItem() const { return work_item; }
 };
-
 
 /// Information required by iterate next function
-class AgentIterateNextInfo : public DriverCallbackInfo
-{
-protected:
+class AgentIterateNextInfo : public DriverCallbackInfo {
+ protected:
+  unsigned long long last_component_handler;
 
-	unsigned long long last_component_handler;
+ public:
+  /// Constructor
+  AgentIterateNextInfo(WorkItem* work_item, mem::Memory* memory,
+                       unsigned args_ptr,
+                       unsigned long long last_component_handler)
+      : DriverCallbackInfo(work_item, memory, args_ptr),
+        last_component_handler(last_component_handler) {}
 
-public:
-
-	/// Constructor
-	AgentIterateNextInfo(WorkItem *work_item, mem::Memory *memory,
-			unsigned args_ptr,
-			unsigned long long last_component_handler):
-			DriverCallbackInfo(work_item, memory, args_ptr),
-			last_component_handler(last_component_handler)
-	{}
-
-	/// Get last component handler
-	unsigned long long getLastComponentHandler() const
-	{
-		return last_component_handler;
-	}
-
+  /// Get last component handler
+  unsigned long long getLastComponentHandler() const {
+    return last_component_handler;
+  }
 };
-
 }
 
 #endif
-

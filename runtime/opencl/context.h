@@ -22,27 +22,21 @@
 
 #include "opencl.h"
 
-
 /* Context Object */
-struct _cl_context
-{
-	/* List of devices - elements of type opencl_device_t */
-	struct list_t *device_list;
+struct _cl_context {
+  /* List of devices - elements of type opencl_device_t */
+  struct list_t* device_list;
 
-	/* Properties */
-	size_t prop_count;
-	cl_context_properties *props;
+  /* Properties */
+  size_t prop_count;
+  cl_context_properties* props;
 };
 
-
-struct opencl_context_t *opencl_context_create(void);
-void opencl_context_free(struct opencl_context_t *context);
+struct opencl_context_t* opencl_context_create(void);
+void opencl_context_free(struct opencl_context_t* context);
 
 /* Return TRUE if the device is associated with the context. */
-int opencl_context_has_device(struct opencl_context_t *context,
-	struct opencl_device_t *device);
-
-
+int opencl_context_has_device(struct opencl_context_t* context,
+                              struct opencl_device_t* device);
 
 #endif
-

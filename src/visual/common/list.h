@@ -17,7 +17,6 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-
 #ifndef VISUAL_COMMON_LIST_H
 #define VISUAL_COMMON_LIST_H
 
@@ -25,32 +24,29 @@
 
 #include <lib/util/string.h>
 
-
 extern char vi_list_image_close_path[MAX_PATH_SIZE];
 extern char vi_list_image_close_sel_path[MAX_PATH_SIZE];
 
-typedef void (*vi_list_get_elem_name_func_t)(void *elem, char *buf, int size);
-typedef void (*vi_list_get_elem_desc_func_t)(void *elem, char *buf, int size);
+typedef void (*vi_list_get_elem_name_func_t)(void* elem, char* buf, int size);
+typedef void (*vi_list_get_elem_desc_func_t)(void* elem, char* buf, int size);
 
 #define VI_LIST_FOR_EACH(list, iter) \
-	for ((iter) = 0; (iter) < vi_list_count((list)); (iter)++)
+  for ((iter) = 0; (iter) < vi_list_count((list)); (iter)++)
 
 struct vi_list_t;
 
-struct vi_list_t *vi_list_create(char *title, int width, int height,
-	vi_list_get_elem_name_func_t get_elem_name,
-	vi_list_get_elem_name_func_t get_elem_desc);
-void vi_list_free(struct vi_list_t *list);
+struct vi_list_t* vi_list_create(char* title, int width, int height,
+                                 vi_list_get_elem_name_func_t get_elem_name,
+                                 vi_list_get_elem_name_func_t get_elem_desc);
+void vi_list_free(struct vi_list_t* list);
 
-int vi_list_count(struct vi_list_t *list);
-void vi_list_add(struct vi_list_t *list, void *elem);
-void *vi_list_get(struct vi_list_t *list, int index);
-void *vi_list_remove_at(struct vi_list_t *list, int index);
+int vi_list_count(struct vi_list_t* list);
+void vi_list_add(struct vi_list_t* list, void* elem);
+void* vi_list_get(struct vi_list_t* list, int index);
+void* vi_list_remove_at(struct vi_list_t* list, int index);
 
-void vi_list_refresh(struct vi_list_t *list);
+void vi_list_refresh(struct vi_list_t* list);
 
-GtkWidget *vi_list_get_widget(struct vi_list_t *list);
-
+GtkWidget* vi_list_get_widget(struct vi_list_t* list);
 
 #endif
-

@@ -17,7 +17,6 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-
 // This file contains the implementation of the x86 context scheduler. The
 // following definitions are assumed in the description of the algorithm:
 //
@@ -46,17 +45,22 @@
 //     subsequent actions to force the scheduler to run in the next cycle.
 //
 //   - Check the list of running contexts for any unmapped context. Map them by
-//     selecting the node that has the lowest number of contexts currently mapped
-//     to it. The context will always execute on that node, unless it changes its
+//     selecting the node that has the lowest number of contexts currently
+//     mapped
+//     to it. The context will always execute on that node, unless it changes
+//     its
 //     affinity.
 //
 //   - For each node:
 //
-//         - If the allocated context is not in 'Running' state, signal eviction.
+//         - If the allocated context is not in 'Running' state, signal
+//         eviction.
 //
-//         - If the allocated context has exhausted its quantum, signal eviction.
+//         - If the allocated context has exhausted its quantum, signal
+//         eviction.
 //           As an exception, the context will continue running if there is no
-//           other candidate in the mapped context list; in this case, the running
+//           other candidate in the mapped context list; in this case, the
+//           running
 //           context resets its quantum to keep the scheduler from trying to
 //           evict the context right away.
 //
@@ -78,417 +82,353 @@
 //     to quantum expiration only when this variable indicates so.
 //
 
-#include "Cpu.h"
 #include "Thread.h"
+#include "Cpu.h"
 #include "Timing.h"
 
+namespace x86 {
 
-namespace x86
-{
+void Thread::MapContext(Context* context) {
+  // Sanity
+  assert(context);
+  assert(!context->core);
+  assert(!context->thread);
+  assert(!context->getState(Context::StateMapped));
+  assert(!context->getState(Context::StateAlloc));
 
-void Thread::MapContext(Context *context)
-{
-	// Sanity
-	assert(context);
-	assert(!context->core);
-	assert(!context->thread);
-	assert(!context->getState(Context::StateMapped));
-	assert(!context->getState(Context::StateAlloc));
+  // Update context state
+  context->core = core;
+  context->thread = this;
+  context->setState(Context::StateMapped);
 
-	// Update context state
-	context->core = core;
-	context->thread = this;
-	context->setState(Context::StateMapped);
+  // Add context to the node's mapped list
+  context->mapped_contexts_iterator =
+      mapped_contexts.insert(mapped_contexts.end(), context);
 
-	// Add context to the node's mapped list
-	context->mapped_contexts_iterator = mapped_contexts.insert(
-			mapped_contexts.end(), context);
-
-	// Debug
-	Emulator::context_debug << misc::fmt("@%lld Context %d mapped "
-			"to Core %d Thread %d\n",
-			cpu->getCycle(),
-			context->getId(),
-			core->getId(),
-			getIdInCore());
+  // Debug
+  Emulator::context_debug << misc::fmt(
+      "@%lld Context %d mapped "
+      "to Core %d Thread %d\n",
+      cpu->getCycle(), context->getId(), core->getId(), getIdInCore());
 }
 
+void Thread::UnmapContext(Context* context) {
+  // Sanity
+  assert(context);
+  assert(context->thread);
+  assert(context->getState(Context::StateMapped));
+  assert(!context->getState(Context::StateAlloc));
+  assert(this->context != context);
 
-void Thread::UnmapContext(Context *context)
-{
-	// Sanity
-	assert(context);
-	assert(context->thread);
-	assert(context->getState(Context::StateMapped));
-	assert(!context->getState(Context::StateAlloc));
-	assert(this->context != context);
+  // Update context state
+  context->clearState(Context::StateMapped);
 
-	// Update context state
-	context->clearState(Context::StateMapped);
+  // Remove context from thread's mapped list
+  mapped_contexts.erase(context->mapped_contexts_iterator);
+  context->core = nullptr;
+  context->thread = nullptr;
 
-	// Remove context from thread's mapped list
-	mapped_contexts.erase(context->mapped_contexts_iterator);
-	context->core = nullptr;
-	context->thread = nullptr;
+  // Debug
+  Emulator::context_debug << misc::fmt(
+      "@%lld Context %d unmapped "
+      "from thread %s\n",
+      cpu->getCycle(), context->getId(), name.c_str());
 
-	// Debug
-	Emulator::context_debug << misc::fmt("@%lld Context %d unmapped "
-			"from thread %s\n",
-			cpu->getCycle(),
-			context->getId(),
-			name.c_str());
+  // If context has finished, free it
+  if (context->getState(Context::StateFinished)) {
+    // Trace
+    Timing::trace << misc::fmt(
+        "x86.end_ctx "
+        "ctx=%d\n",
+        context->getId());
 
-	// If context has finished, free it
-	if (context->getState(Context::StateFinished))
-	{
-		// Trace
-		Timing::trace << misc::fmt("x86.end_ctx "
-				"ctx=%d\n",
-				context->getId());
-
-		// Free context
-		Emulator *emulator = Emulator::getInstance();
-		emulator->FreeContext(context);
-	}
+    // Free context
+    Emulator* emulator = Emulator::getInstance();
+    emulator->FreeContext(context);
+  }
 }
 
+void Thread::EvictContextSignal() {
+  // Sanity
+  assert(context);
+  assert(context->getState(Context::StateAlloc));
+  assert(context->getState(Context::StateMapped));
+  assert(!context->evict_signal);
+  assert(context->thread == this);
+  assert(context->core = core);
 
-void Thread::EvictContextSignal()
-{
-	// Sanity
-	assert(context);
-	assert(context->getState(Context::StateAlloc));
-	assert(context->getState(Context::StateMapped));
-	assert(!context->evict_signal);
-	assert(context->thread == this);
-	assert(context->core = core);
+  // Set eviction signal
+  context->evict_signal = true;
 
-	// Set eviction signal
-	context->evict_signal = true;
+  // Debug
+  Emulator::context_debug << misc::fmt(
+      "@%lld Context %d signaled for "
+      "eviction from thread %s\n",
+      cpu->getCycle(), context->getId(), name.c_str());
 
-	// Debug
-	Emulator::context_debug << misc::fmt("@%lld Context %d signaled for "
-			"eviction from thread %s\n",
-			cpu->getCycle(),
-			context->getId(),
-			name.c_str());
-
-	// If pipeline is already empty for the thread, effective eviction can
-	// happen right away.
-	if (isPipelineEmpty())
-		EvictContext();
+  // If pipeline is already empty for the thread, effective eviction can
+  // happen right away.
+  if (isPipelineEmpty()) EvictContext();
 }
 
+void Thread::EvictContext() {
+  // Sanity
+  assert(context);
+  assert(context->getState(Context::StateAlloc));
+  assert(context->getState(Context::StateMapped));
+  assert(!context->getState(Context::StateSpecMode));
+  assert(reorder_buffer.empty());
+  assert(context->evict_signal);
 
-void Thread::EvictContext()
-{
-	// Sanity
-	assert(context);
-	assert(context->getState(Context::StateAlloc));
-	assert(context->getState(Context::StateMapped));
-	assert(!context->getState(Context::StateSpecMode));
-	assert(reorder_buffer.empty());
-	assert(context->evict_signal);
+  // Update context state
+  context->clearState(Context::StateAlloc);
+  context->evict_cycle = cpu->getCycle();
+  context->evict_signal = 0;
 
-	// Update context state
-	context->clearState(Context::StateAlloc);
-	context->evict_cycle = cpu->getCycle();
-	context->evict_signal = 0;
+  // Debug
+  Emulator::context_debug << misc::fmt(
+      "@%lld Context %d evicted "
+      "from Core %d Thread %d\n",
+      cpu->getCycle(), context->getId(), core->getId(), getIdInCore());
 
-	// Debug
-	Emulator::context_debug << misc::fmt("@%lld Context %d evicted "
-			"from Core %d Thread %d\n",
-			cpu->getCycle(),
-			context->getId(),
-			core->getId(),
-			getIdInCore());
+  // Trace
+  Timing::trace << misc::fmt(
+      "x86.unmap_ctx "
+      "ctx=%d "
+      "core=%d "
+      "thread=%d\n",
+      context->getId(), core->getId(), id_in_core);
 
-	// Trace
-	Timing::trace << misc::fmt("x86.unmap_ctx "
-			"ctx=%d "
-			"core=%d "
-			"thread=%d\n",
-			context->getId(),
-			core->getId(),
-			id_in_core);
-	
-	// Update thread state
-	context = nullptr;
-	fetch_neip = 0;
+  // Update thread state
+  context = nullptr;
+  fetch_neip = 0;
 }
 
+void Thread::Schedule() {
+  // Actions for the context allocated to this thread
+  if (context) {
+    // Sanity
+    assert(context->getState(Context::StateAlloc));
+    assert(context->getState(Context::StateMapped));
 
-void Thread::Schedule()
-{
-	// Actions for the context allocated to this thread
-	if (context)
-	{
-		// Sanity
-		assert(context->getState(Context::StateAlloc));
-		assert(context->getState(Context::StateMapped));
+    // Context not in 'running' state
+    if (!context->evict_signal && !context->getState(Context::StateRunning)) {
+      // Debug
+      Emulator::context_debug << misc::fmt(
+          "@%lld Context %d "
+          "in Core %d Thread %d not "
+          "in Running state anymore\n",
+          cpu->getCycle(), context->getId(), core->getId(), getIdInCore());
 
-		// Context not in 'running' state
-		if (!context->evict_signal && !context->getState(Context::StateRunning))
-		{
-			// Debug
-			Emulator::context_debug << misc::fmt(
-					"@%lld Context %d "
-					"in Core %d Thread %d not "
-					"in Running state anymore\n",
-					cpu->getCycle(),
-					context->getId(),
-					core->getId(),
-					getIdInCore());
+      // Evict context
+      EvictContextSignal();
+    }
 
-			// Evict context
-			EvictContextSignal();
-		}
+    // Context lost affinity with the thread
+    if (!context->evict_signal && !context->thread_affinity->Test(id_in_cpu)) {
+      // Debug
+      Emulator::context_debug << misc::fmt(
+          "@%lld Context %d "
+          "lost affinity with Core %d "
+          "Thread %d - rescheduling\n",
+          cpu->getCycle(), context->getId(), core->getId(), getIdInCore());
 
-		// Context lost affinity with the thread
-		if (!context->evict_signal && !context->thread_affinity->Test(id_in_cpu))
-		{
-			// Debug
-			Emulator::context_debug << misc::fmt(
-					"@%lld Context %d "
-					"lost affinity with Core %d "
-					"Thread %d - rescheduling\n",
-					cpu->getCycle(),
-					context->getId(),
-					core->getId(),
-					getIdInCore());
-			
-			// Evict context
-			EvictContextSignal();
-		}
+      // Evict context
+      EvictContextSignal();
+    }
 
-		// Context quantum expired
-		if (!context->evict_signal && cpu->getCycle()
-				>= context->allocate_cycle
-				+ Cpu::getContextQuantum())
-		{
-			// Debug
-			Emulator::context_debug << misc::fmt("@%lld Context "
-					"%d quantum expired\n",
-					cpu->getCycle(),
-					context->getId());
+    // Context quantum expired
+    if (!context->evict_signal &&
+        cpu->getCycle() >= context->allocate_cycle + Cpu::getContextQuantum()) {
+      // Debug
+      Emulator::context_debug << misc::fmt(
+          "@%lld Context "
+          "%d quantum expired\n",
+          cpu->getCycle(), context->getId());
 
-			// If there are no other contexts to run on this thread,
-			// allocate a new quantum and return
-			assert(mapped_contexts.size() >= 1);
-			if (mapped_contexts.size() == 1)
-			{
-				// Debug
-				Emulator::context_debug << misc::fmt(
-						"\tOnly context %d mapped\n",
-						context->getId());
-				
-				// Renew quantum
-				assert(mapped_contexts.front() == context);
-				context->allocate_cycle = cpu->getCycle();
-				return;
-			}
+      // If there are no other contexts to run on this thread,
+      // allocate a new quantum and return
+      assert(mapped_contexts.size() >= 1);
+      if (mapped_contexts.size() == 1) {
+        // Debug
+        Emulator::context_debug
+            << misc::fmt("\tOnly context %d mapped\n", context->getId());
 
-			// Find a running context mapped to the same node
-			bool found = false;
-			for (Context *temp_context : mapped_contexts)
-			{
-				// Debug
-				Emulator::context_debug << misc::fmt(
-						"\tCandidate context %d (%s)\n",
-						temp_context->getId(),
-						Context::StateMap.MapFlags(
-						temp_context->getState()).c_str());
+        // Renew quantum
+        assert(mapped_contexts.front() == context);
+        context->allocate_cycle = cpu->getCycle();
+        return;
+      }
 
-				// Check if candidate is valid
-				if (temp_context != context &&
-						temp_context->getState(Context::StateRunning) &&
-						temp_context->sched_priority >= context->sched_priority)
-				{
-					// Debug
-					Emulator::context_debug << "\tFound\n";
+      // Find a running context mapped to the same node
+      bool found = false;
+      for (Context* temp_context : mapped_contexts) {
+        // Debug
+        Emulator::context_debug << misc::fmt(
+            "\tCandidate context %d (%s)\n", temp_context->getId(),
+            Context::StateMap.MapFlags(temp_context->getState()).c_str());
 
-					// Found
-					found = true;
-					break;
-				}
-			}
+        // Check if candidate is valid
+        if (temp_context != context &&
+            temp_context->getState(Context::StateRunning) &&
+            temp_context->sched_priority >= context->sched_priority) {
+          // Debug
+          Emulator::context_debug << "\tFound\n";
 
-			// If a context was found, there are other candidates
-			// for allocation in the node. We need to evict the
-			// current context. If there are no other running
-			// candidates, there is no need to evict. But we
-			// update the allocation time, so that the
-			// scheduler is not called constantly hereafter.
-			if (found)
-				EvictContextSignal();
-			else
-				context->allocate_cycle = cpu->getCycle();
-		}
+          // Found
+          found = true;
+          break;
+        }
+      }
 
-		// Context quantum has not expired, but another thread
-		// of higher priority may interrupt it.
-		else if (!context->evict_signal && cpu->getCycle()
-				< context->allocate_cycle
-				+ Cpu::getContextQuantum())
-		{
-			// Debug
-			Emulator::context_debug << misc::fmt("@%lld Context %d "
-					"interrupted\n",
-					cpu->getCycle(),
-					context->getId());
+      // If a context was found, there are other candidates
+      // for allocation in the node. We need to evict the
+      // current context. If there are no other running
+      // candidates, there is no need to evict. But we
+      // update the allocation time, so that the
+      // scheduler is not called constantly hereafter.
+      if (found)
+        EvictContextSignal();
+      else
+        context->allocate_cycle = cpu->getCycle();
+    }
 
-			// Find a running context mapped to the same node
-			bool found = false;
-			for (Context *temp_context : mapped_contexts)
-			{
-				// Debug
-				Emulator::context_debug << misc::fmt(
-						"\tContext %d "
-						"is a candidate\n",
-						temp_context->getId());
-				Emulator::context_debug << misc::fmt(
-						"\t\tPriority = %d, "
-						"state = %s\n",
-						temp_context->sched_priority,
-						Context::StateMap.MapFlags(
-						temp_context->getState()).c_str());
+    // Context quantum has not expired, but another thread
+    // of higher priority may interrupt it.
+    else if (!context->evict_signal &&
+             cpu->getCycle() <
+                 context->allocate_cycle + Cpu::getContextQuantum()) {
+      // Debug
+      Emulator::context_debug << misc::fmt(
+          "@%lld Context %d "
+          "interrupted\n",
+          cpu->getCycle(), context->getId());
 
-				// Check if candidate is valid
-				if (temp_context != context &&
-						temp_context->getState(Context::StateRunning) &&
-						temp_context->sched_priority > context->sched_priority)
-				{
-					// Debug
-					Emulator::context_debug << "\tFound\n";
+      // Find a running context mapped to the same node
+      bool found = false;
+      for (Context* temp_context : mapped_contexts) {
+        // Debug
+        Emulator::context_debug << misc::fmt(
+            "\tContext %d "
+            "is a candidate\n",
+            temp_context->getId());
+        Emulator::context_debug << misc::fmt(
+            "\t\tPriority = %d, "
+            "state = %s\n",
+            temp_context->sched_priority,
+            Context::StateMap.MapFlags(temp_context->getState()).c_str());
 
-					// Found
-					found = true;
-					break;
-				}
-			}
+        // Check if candidate is valid
+        if (temp_context != context &&
+            temp_context->getState(Context::StateRunning) &&
+            temp_context->sched_priority > context->sched_priority) {
+          // Debug
+          Emulator::context_debug << "\tFound\n";
 
-			// If a context was found, there are other candidates
-			// for allocation in the node. We need to evict the
-			// current context. If there are no other running
-			// candidates, there is no need to evict. But we
-			// update the allocation time, so that the
-			// scheduler is not called constantly hereafter. 
-			// Do not update the quantum if the current thread 
-			// is not evicted. This would lead to a livelock 
-			// in situations where the current thread is always
-			// interrupted before its quantum expires and there
-			// are only threads of equal priority to run.
-			if (found)
-			{
-				// Debug
-				Emulator::context_debug << misc::fmt(
-						"\tContext %d begin evicted\n",
-						context->getId());
+          // Found
+          found = true;
+          break;
+        }
+      }
 
-				// Signal eviction
-				EvictContextSignal();
-			}
-			else
-			{
-				// Debug
-				Emulator::context_debug << misc::fmt(
-						"\tContext %d continuing\n",
-						context->getId());
-			}
-		}
-	}
+      // If a context was found, there are other candidates
+      // for allocation in the node. We need to evict the
+      // current context. If there are no other running
+      // candidates, there is no need to evict. But we
+      // update the allocation time, so that the
+      // scheduler is not called constantly hereafter.
+      // Do not update the quantum if the current thread
+      // is not evicted. This would lead to a livelock
+      // in situations where the current thread is always
+      // interrupted before its quantum expires and there
+      // are only threads of equal priority to run.
+      if (found) {
+        // Debug
+        Emulator::context_debug
+            << misc::fmt("\tContext %d begin evicted\n", context->getId());
 
-	// Actions for mapped contexts, other than the allocated context, if any
-	for (auto it = mapped_contexts.begin(),
-			e = mapped_contexts.end();
-			it != e;
-			// No increment
-			)
-	{
-		// Get current context. Increment the iterator here, since
-		// removing the context from the mapped list will invalidate it
-		// Ignore the currently allocated context
-		Context *temp_context = *it;
-		++it;
+        // Signal eviction
+        EvictContextSignal();
+      } else {
+        // Debug
+        Emulator::context_debug
+            << misc::fmt("\tContext %d continuing\n", context->getId());
+      }
+    }
+  }
 
-		// Ignore currently allocated context
-		if (temp_context == context)
-			continue;
+  // Actions for mapped contexts, other than the allocated context, if any
+  for (auto it = mapped_contexts.begin(), e = mapped_contexts.end(); it != e;
+       // No increment
+       ) {
+    // Get current context. Increment the iterator here, since
+    // removing the context from the mapped list will invalidate it
+    // Ignore the currently allocated context
+    Context* temp_context = *it;
+    ++it;
 
-		// Unmap a context if it lost affinity with the node or if it
-		// finished execution.
-		if (!temp_context->thread_affinity->Test(id_in_cpu) ||
-				temp_context->getState(Context::StateFinished))
-			UnmapContext(temp_context);
-	}
+    // Ignore currently allocated context
+    if (temp_context == context) continue;
 
-	// If thread is available, try to allocate a context mapped to it.
-	if (!context)
-	{
-		// Search the mapped context with the oldest 'evict_cycle'
-		// that is state 'Running' and has affinity with the node.
-		Context *allocate_context = nullptr;
-		for (Context *temp_context : mapped_contexts)
-		{
-			// Debug
-			Emulator::context_debug << misc::fmt("@%lld Context %d "
-					"(priority %d)\n",
-					cpu->getCycle(),
-					temp_context->getId(),
-					temp_context->sched_priority);
-			
-			// No affinity
-			if (!temp_context->thread_affinity->Test(id_in_cpu))
-				continue;
+    // Unmap a context if it lost affinity with the node or if it
+    // finished execution.
+    if (!temp_context->thread_affinity->Test(id_in_cpu) ||
+        temp_context->getState(Context::StateFinished))
+      UnmapContext(temp_context);
+  }
 
-			// Not running
-			if (!temp_context->getState(Context::StateRunning))
-				continue;
+  // If thread is available, try to allocate a context mapped to it.
+  if (!context) {
+    // Search the mapped context with the oldest 'evict_cycle'
+    // that is state 'Running' and has affinity with the node.
+    Context* allocate_context = nullptr;
+    for (Context* temp_context : mapped_contexts) {
+      // Debug
+      Emulator::context_debug << misc::fmt(
+          "@%lld Context %d "
+          "(priority %d)\n",
+          cpu->getCycle(), temp_context->getId(), temp_context->sched_priority);
 
-			// Good candidate
-			if (!allocate_context || (allocate_context->evict_cycle
-					> temp_context->evict_cycle
-					&& temp_context->sched_priority
-					>= allocate_context->sched_priority))
-			{
-				// Select candidate
-				allocate_context = temp_context;
+      // No affinity
+      if (!temp_context->thread_affinity->Test(id_in_cpu)) continue;
 
-				// Debug
-				Emulator::context_debug << misc::fmt(
-						"@%lld Context %d "
-						"(priority %d) "
-						"is a candidate\n",
-						cpu->getCycle(),
-						allocate_context->getId(), 
-						allocate_context->sched_priority);
-			}
-			else
-			{
-				// Debug
-				Emulator::context_debug << misc::fmt(
-						"@%lld Context %d "
-						"(priority %d) "
-						"is not a candidate\n",
-						cpu->getCycle(),
-						temp_context->getId(),
-						temp_context->sched_priority);
-			}
-		}
+      // Not running
+      if (!temp_context->getState(Context::StateRunning)) continue;
 
-		// Allocate context if found
-		if (allocate_context)
-		{
-			// Allocate it
-			cpu->AllocateContext(allocate_context);
+      // Good candidate
+      if (!allocate_context ||
+          (allocate_context->evict_cycle > temp_context->evict_cycle &&
+           temp_context->sched_priority >= allocate_context->sched_priority)) {
+        // Select candidate
+        allocate_context = temp_context;
 
-			// Debug
-			Emulator::context_debug << misc::fmt(
-					"Allocating context %d\n",
-					allocate_context->getId());
-		}
-	}
+        // Debug
+        Emulator::context_debug << misc::fmt(
+            "@%lld Context %d "
+            "(priority %d) "
+            "is a candidate\n",
+            cpu->getCycle(), allocate_context->getId(),
+            allocate_context->sched_priority);
+      } else {
+        // Debug
+        Emulator::context_debug << misc::fmt(
+            "@%lld Context %d "
+            "(priority %d) "
+            "is not a candidate\n",
+            cpu->getCycle(), temp_context->getId(),
+            temp_context->sched_priority);
+      }
+    }
+
+    // Allocate context if found
+    if (allocate_context) {
+      // Allocate it
+      cpu->AllocateContext(allocate_context);
+
+      // Debug
+      Emulator::context_debug
+          << misc::fmt("Allocating context %d\n", allocate_context->getId());
+    }
+  }
 }
-
 }
-

@@ -20,129 +20,112 @@
 #ifndef NETWORK_ROUTINGTABLE_H
 #define NETWORK_ROUTINGTABLE_H
 
-#include <vector>
 #include <memory>
+#include <vector>
 
-namespace net
-{
+namespace net {
 
 class Network;
 class Node;
 class Buffer;
-  
-class RoutingTable
-{
-public:
 
-	class Entry
-	{
-	public:
+class RoutingTable {
+ public:
+  class Entry {
+   public:
+    // Cost in hops
+    int cost;
 
-		// Cost in hops
-		int cost;
+   private:
+    // Next node to destination
+    Node* next_node = nullptr;
 
-	private:
+    // Output buffer
+    Buffer* buffer = nullptr;
 
-		// Next node to destination
-		Node *next_node = nullptr;
+   public:
+    /// Constructor.
+    Entry(int cost, Node* next_node, Buffer* buffer)
+        : cost(cost), next_node(next_node), buffer(buffer){};
 
-		// Output buffer
-		Buffer *buffer = nullptr;
+    /// Get entry's next node.
+    Node* getNextNode() const { return next_node; }
 
-	public:
+    /// Set next node
+    void setNextNode(Node* next_node) { this->next_node = next_node; }
 
-		/// Constructor.
-		Entry(int cost, Node *next_node, Buffer *buffer) :
-			cost(cost),
-			next_node(next_node),
-			buffer(buffer)
-		{};
+    /// Get entry's next buffer.
+    Buffer* getBuffer() const { return buffer; }
 
-		/// Get entry's next node.
-		Node *getNextNode() const { return next_node; }
+    /// Set the buffer to next node
+    void setBuffer(Buffer* buffer) { this->buffer = buffer; }
+  };
 
-		/// Set next node
-		void setNextNode(Node *next_node) 
-		{ 
-			this->next_node = next_node; 
-		}
+ private:
+  // Associated network
+  Network* network;
 
-		/// Get entry's next buffer.
-		Buffer *getBuffer() const { return buffer; }
+  // Dimension
+  int dimension = 0;
 
-		/// Set the buffer to next node
-		void setBuffer(Buffer *buffer) { this->buffer = buffer; }
-	};
+  // Entries
+  std::vector<std::unique_ptr<Entry>> entries;
 
-private:
+ public:
+  /// Constructor
+  RoutingTable(Network* network);
 
-	// Associated network
-	Network *network;
+  /// Get Dimension
+  int getDimension() const { return dimension; }
 
-	// Dimension
-	int dimension = 0;
+  /// Initialize the routing table based on the nodes and links present
+  /// in the network. This does not set up the routes, it just initializes
+  /// the table structures.
+  void Initialize();
 
-	// Entries
-	std::vector<std::unique_ptr<Entry>> entries;
+  /// Perform a Floyd-Warshall to find the best routes
+  void FloydWarshall();
 
-public:
+  /// Look up the entry from a certain node to a certain node
+  Entry* Lookup(Node* source, Node* destination) const;
 
-	/// Constructor
-	RoutingTable(Network *network);
+  /// Generating the route file
+  void DumpRoutes(const std::string& path);
 
-	/// Get Dimension
-	int getDimension() const { return dimension; }
+  /// Dump Routing table information.
+  void Dump(std::ostream& os = std::cout) const;
 
-	/// Initialize the routing table based on the nodes and links present
-	/// in the network. This does not set up the routes, it just initializes
-	/// the table structures.
-	void Initialize();
+  /// Check if the routing table has cycle
+  bool hasCycle();
 
-	/// Perform a Floyd-Warshall to find the best routes
-	void FloydWarshall();
+  /// Update a route manually. This function is used for adding route-steps.
+  /// Route-step is an element in the list of connections that provide the
+  /// path between two nodes in manual routing. Each routes requires the
+  /// source and destination of the route, as well as the next node which
+  /// lies within the path.
+  ///
+  /// \param source
+  ///			Identifies the source node of the route-step
+  ///
+  /// \param destination
+  ///			Identifies the destination end-node of the route-step.
+  ///
+  /// \param next
+  ///			Identifies the next node within the path of the
+  /// route-step.
+  ///
+  /// \param virtual_channel
+  ///			Identifies the virtual_channel specific for the
+  /// route-step,
+  ///			if the next connection within the path is a link.
+  ///
+  void UpdateRoute(Node* source, Node* destination, Node* next,
+                   int virtual_channel);
 
-	/// Look up the entry from a certain node to a certain node
-	Entry *Lookup(Node *source, Node *destination) const;
-
-	/// Generating the route file
-	void DumpRoutes(const std::string &path);
-
-	/// Dump Routing table information.
-	void Dump(std::ostream &os = std::cout) const;
-
-	/// Check if the routing table has cycle
-	bool hasCycle();
-
-	/// Update a route manually. This function is used for adding route-steps.
-	/// Route-step is an element in the list of connections that provide the
-	/// path between two nodes in manual routing. Each routes requires the
-	/// source and destination of the route, as well as the next node which
-	/// lies within the path.
-	///
-	/// \param source
-	///			Identifies the source node of the route-step
-	///
-	/// \param destination
-	///			Identifies the destination end-node of the route-step.
-	///
-	/// \param next
-	///			Identifies the next node within the path of the route-step.
-	///
-	/// \param virtual_channel
-	///			Identifies the virtual_channel specific for the route-step,
-	///			if the next connection within the path is a link.
-	///
-	void UpdateRoute(Node *source,
-			Node *destination,
-			Node *next,
-			int virtual_channel);
-
-	/// Update the cost of the paths in the routing table based on 
-	/// all the routes that are created
-	void UpdateManualRoutingCost();
-
+  /// Update the cost of the paths in the routing table based on
+  /// all the routes that are created
+  void UpdateManualRoutingCost();
 };
-
 }
 
 #endif

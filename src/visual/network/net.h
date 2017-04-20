@@ -20,42 +20,39 @@
 #ifndef VISUAL_NETWORK_NET_H
 #define VISUAL_NETWORK_NET_H
 
+struct vi_net_t {
+  char* name;
+  int packet_size;
 
-struct vi_net_t
-{
-	char *name;
-	int   packet_size;
+  struct list_t* node_list; /* Keeping it for backward compatibility */
 
-	struct list_t *node_list; /* Keeping it for backward compatibility */
+  /* Keeping the dummy node structures. Nodes of this kind would not
+   * go in neither node_list nor node table. It is for visualization
+   * porpose only */
+  struct list_t* dummy_node_list;
 
-	/* Keeping the dummy node structures. Nodes of this kind would not
-	 * go in neither node_list nor node table. It is for visualization
-	 * porpose only */
-	struct list_t *dummy_node_list;
-
-	struct hash_table_t *node_table;
-	struct hash_table_t *link_table;
-	struct hash_table_t *message_table;
-	struct hash_table_t *packet_table;
-	struct hash_table_t *high_mods;
-	struct hash_table_t *low_mods;
-
+  struct hash_table_t* node_table;
+  struct hash_table_t* link_table;
+  struct hash_table_t* message_table;
+  struct hash_table_t* packet_table;
+  struct hash_table_t* high_mods;
+  struct hash_table_t* low_mods;
 };
 
 struct vi_trace_line_t;
 
-struct vi_net_t *vi_net_create(struct vi_trace_line_t *trace_line);
-void             vi_net_free  (struct vi_net_t *net);
+struct vi_net_t* vi_net_create(struct vi_trace_line_t* trace_line);
+void vi_net_free(struct vi_net_t* net);
 
 struct vi_mod_t;
 
-void             vi_net_attach_mod(struct vi_net_t *net, struct vi_mod_t *mod, int node_index);
-struct vi_mod_t *vi_net_get_mod   (struct vi_net_t *net, int node_index);
+void vi_net_attach_mod(struct vi_net_t* net, struct vi_mod_t* mod,
+                       int node_index);
+struct vi_mod_t* vi_net_get_mod(struct vi_net_t* net, int node_index);
 
-void             vi_net_graph_visual_calculation (struct vi_net_t *net);
+void vi_net_graph_visual_calculation(struct vi_net_t* net);
 
-void vi_net_read_checkpoint(struct vi_net_t *net, FILE *f);
-void vi_net_write_checkpoint(struct vi_net_t *net, FILE *f);
-
+void vi_net_read_checkpoint(struct vi_net_t* net, FILE* f);
+void vi_net_write_checkpoint(struct vi_net_t* net, FILE* f);
 
 #endif

@@ -22,64 +22,57 @@
 
 #include <iostream>
 
-
-namespace x86
-{
+namespace x86 {
 
 /// Class representing a 10-byte extended floating-point value.
-class Extended
-{
-	// Bytes
-	unsigned char x[10];
+class Extended {
+  // Bytes
+  unsigned char x[10];
 
-public:
+ public:
+  /// Convert a double into an extended
+  static void DoubleToExtended(double f, unsigned char* x);
 
-	/// Convert a double into an extended
-	static void DoubleToExtended(double f, unsigned char *x);
+  /// Convert an extended into a double
+  static double ExtendedToDouble(const unsigned char* x);
 
-	/// Convert an extended into a double
-	static double ExtendedToDouble(const unsigned char *x);
+  /// Convert a float into an extended
+  static void FloatToExtended(float f, unsigned char* x);
 
-	/// Convert a float into an extended
-	static void FloatToExtended(float f, unsigned char *x);
+  /// Convert an extended into a float
+  static float ExtendedToFloat(const unsigned char* x);
 
-	/// Convert an extended into a float
-	static float ExtendedToFloat(const unsigned char *x);
+  /// Empty constructor, initializing the value to 0
+  Extended() : x() {}
 
-	/// Empty constructor, initializing the value to 0
-	Extended() : x() { }
+  /// Initialize with a value of type \c double. This constructor can be
+  /// conveniently used as an implicit cast constructor.
+  Extended(double value) { DoubleToExtended(value, x); }
 
-	/// Initialize with a value of type \c double. This constructor can be
-	/// conveniently used as an implicit cast constructor.
-	Extended(double value) { DoubleToExtended(value, x); }
+  /// Initialize with a value of type \c float. This constructor can be
+  /// conveniently used as an implicit cast constructor.
+  Extended(float value) { FloatToExtended(value, x); }
 
-	/// Initialize with a value of type \c float. This constructor can be
-	/// conveniently used as an implicit cast constructor.
-	Extended(float value) { FloatToExtended(value, x); }
+  /// Dump value to output stream, or standard output if argument \os is
+  /// not specified.
+  void Dump(std::ostream& os = std::cout) const;
 
-	/// Dump value to output stream, or standard output if argument \os is
-	/// not specified.
-	void Dump(std::ostream &os = std::cout) const;
+  /// Dump value, same as Dump()
+  friend std::ostream& operator<<(std::ostream& os, const Extended& e) {
+    e.Dump(os);
+    return os;
+  }
 
-	/// Dump value, same as Dump()
-	friend std::ostream &operator<<(std::ostream &os, const Extended &e)
-	{
-		e.Dump(os);
-		return os;
-	}
+  /// Return the represented extended number as a 32-bit \c float.
+  float getFloat() const { return ExtendedToFloat(x); }
 
-	/// Return the represented extended number as a 32-bit \c float.
-	float getFloat() const { return ExtendedToFloat(x); }
+  /// Return the 64-bit \c double representation
+  double getDouble() const { return ExtendedToDouble(x); }
 
-	/// Return the 64-bit \c double representation
-	double getDouble() const { return ExtendedToDouble(x); }
-
-	/// Return the extended value as a sequence of 10 bytes
-	unsigned char *getValue() { return x; }
+  /// Return the extended value as a sequence of 10 bytes
+  unsigned char* getValue() { return x; }
 };
-
 
 }  // namespace x86
 
 #endif
-

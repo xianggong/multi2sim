@@ -22,42 +22,38 @@
 
 #include "opencl.h"
 
-
 /* Platform type. For name compatibility between OpenCL and Multi2Sim naming
  * conventions, a pseudo-type is created with a macro. */
-struct _cl_platform_id
-{
-	/* List of devices */
-	struct list_t *device_list;
-	
-	/* String properties */
-	char *full_profile;
-	char *version;
-	char *name;
-	char *vendor;
-	char *extensions;
+struct _cl_platform_id {
+  /* List of devices */
+  struct list_t* device_list;
+
+  /* String properties */
+  char* full_profile;
+  char* version;
+  char* name;
+  char* vendor;
+  char* extensions;
 };
 
-
-
 /* Global OpenCL platform */
-extern struct opencl_platform_t *opencl_platform;
+extern struct opencl_platform_t* opencl_platform;
 
 /* Global OpenCL devices */
-extern struct opencl_device_t *opencl_si_device;
-extern struct opencl_device_t *opencl_union_device;
-extern struct opencl_device_t *opencl_x86_device;
-
+extern struct opencl_device_t* opencl_si_device;
+extern struct opencl_device_t* opencl_union_device;
+extern struct opencl_device_t* opencl_x86_device;
 
 /* Create/free */
-struct opencl_platform_t *opencl_platform_create(void);
-void opencl_platform_free(struct opencl_platform_t *platform);
+struct opencl_platform_t* opencl_platform_create(void);
+void opencl_platform_free(struct opencl_platform_t* platform);
 
 /* Iterator through devices */
-typedef void (*opencl_platform_for_each_device_func_t)(struct opencl_device_t *device, void *user_data);
-void opencl_platform_for_each_device(struct opencl_platform_t *platform,
-	opencl_platform_for_each_device_func_t for_each_device_func, void *user_data);
-
+typedef void (*opencl_platform_for_each_device_func_t)(
+    struct opencl_device_t* device, void* user_data);
+void opencl_platform_for_each_device(
+    struct opencl_platform_t* platform,
+    opencl_platform_for_each_device_func_t for_each_device_func,
+    void* user_data);
 
 #endif
-

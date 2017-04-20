@@ -23,142 +23,120 @@
 #include <lib/cpp/String.h>
 
 #include "Connection.h"
-namespace net
-{
+namespace net {
 
 class Node;
 class Buffer;
 
-class Link : public Connection
-{
+class Link : public Connection {
+  // Link source node
+  Node* source_node;
 
-	// Link source node
-	Node *source_node;
+  // Link destination node
+  Node* destination_node;
 
-	// Link destination node
-	Node *destination_node;
+  // Number of virtual channels on link
+  int num_virtual_channels;
 
-	// Number of virtual channels on link
-	int num_virtual_channels;
+  // user assigned name
+  std::string name;
 
-	// user assigned name
-	std::string name;
+  // Bandwidth
+  int bandwidth;
 
-	// Bandwidth
-	int bandwidth;
+  //
+  // Scheduling and arbitration
+  //
 
+  // Link busy cycle for event scheduling
+  long long busy = -1;
 
+  // Last cycle a buffer was assigned to a link in virtual channel
+  // arbitration
+  long long scheduled_when = -1;
 
+  // Last buffer that has the ownership of physical link in virtual
+  // channel arbitration
+  Buffer* scheduled_buffer = nullptr;
 
-	//
-	// Scheduling and arbitration
-	//
+  // The index of the last scheduled buffer on the link
+  int last_scheduled_buffer_index = -1;
 
-	// Link busy cycle for event scheduling
-	long long busy = -1;
+  //
+  // Statistics
+  //
 
-	// Last cycle a buffer was assigned to a link in virtual channel
-	// arbitration
-	long long scheduled_when = -1;
+  // Number of bytes that was transfered through the links
+  long long transferred_bytes = 0;
 
-	// Last buffer that has the ownership of physical link in virtual
-	// channel arbitration
-	Buffer *scheduled_buffer = nullptr;
+  // Number of cycles that the link was busy
+  long long busy_cycles = 0;
 
-	// The index of the last scheduled buffer on the link
-	int last_scheduled_buffer_index = -1;
+  // Number of packets that traversed the link
+  long long transferred_packets = 0;
 
+ public:
+  /// Constructor
+  Link(Network* network, const std::string& name, const std::string& link_name,
+       Node* src_node, Node* dst_node, int bandwidth, int source_buffer_size,
+       int destination_buffer_size, int num_virtual_channel);
 
+  /// Get number of virtual channel
+  int getNumVirtualChannels() const { return num_virtual_channels; }
 
+  /// Set source node
+  void setSourceNode(Node* node) { this->source_node = node; }
 
-	//
-	// Statistics
-	//
+  /// Get source node
+  Node* getSourceNode() const { return source_node; }
 
-	// Number of bytes that was transfered through the links
-	long long transferred_bytes = 0;
+  /// Get the number of busy cycles
+  long long getBusyCycle() const { return busy_cycles; }
 
-	// Number of cycles that the link was busy
-	long long busy_cycles = 0;
+  /// Get the amount of transfered bytes
+  long long getTransferredBytes() const { return transferred_bytes; }
 
-	// Number of packets that traversed the link
-	long long transferred_packets = 0;
+  /// Get destination node
+  Node* getDestinationNode() const { return destination_node; }
 
-public:
+  /// Get bandwidth
+  int getBandwidth() const { return bandwidth; }
 
-	/// Constructor
-	Link(Network *network,
-			const std::string &name,
-			const std::string &link_name,
-			Node *src_node,
-			Node *dst_node,
-			int bandwidth,
-			int source_buffer_size,
-			int destination_buffer_size,
-			int num_virtual_channel);
+  /// Operator \c << invoking function Dump() on an output stream.
+  friend std::ostream& operator<<(std::ostream& os, const Link& link) {
+    link.Dump(os);
+    return os;
+  }
 
-	/// Get number of virtual channel
-	int getNumVirtualChannels() const { return num_virtual_channels; }
+  /// Dump the node information.
+  void Dump(std::ostream& os = std::cout) const;
 
-	/// Set source node
-	void setSourceNode(Node* node) { this->source_node = node; }
+  /// Transfer the packet from an output buffer
+  void TransferPacket(Packet* packet);
 
-	/// Get source node
-	Node *getSourceNode() const { return source_node; }
+  /// This function returns the buffer that is scheduled to transmit
+  /// a packet on the link on the current cycle. The arbitration
+  /// is in round-robin fashion.
+  ///
+  /// \return
+  ///		The buffer that is scheduled to transmit buffer in the current
+  ///		cycle.
+  ///
+  Buffer* VirtualChannelArbitration();
 
-	/// Get the number of busy cycles
-	long long getBusyCycle() const { return busy_cycles; }
-
-	/// Get the amount of transfered bytes
-	long long getTransferredBytes() const { return transferred_bytes; }
-
-	/// Get destination node
-	Node *getDestinationNode() const { return destination_node; }
-
-	/// Get bandwidth
-	int getBandwidth() const { return bandwidth; }
-
-	/// Operator \c << invoking function Dump() on an output stream.
-	friend std::ostream &operator<<(std::ostream &os,
-			const Link &link)
-	{
-		link.Dump(os);
-		return os;
-	}
-
-	/// Dump the node information.
-	void Dump(std::ostream &os = std::cout) const;
-
-	/// Transfer the packet from an output buffer 
-	void TransferPacket(Packet *packet);
-
-	/// This function returns the buffer that is scheduled to transmit
-	/// a packet on the link on the current cycle. The arbitration
-	/// is in round-robin fashion.
-	///
-	/// \return
-	///		The buffer that is scheduled to transmit buffer in the current
-	///		cycle.
-	///
-	Buffer *VirtualChannelArbitration();
-
-	/// Virtual channel is a pair of buffers. This function return
-	/// destination buffer that is paired with the source buffer.
-	///
-	/// \param source buffer
-	///		Source buffer in a virtual channel pair.
-	///
-	/// \return
-	///		The destination puffer of the virtual channel pair based on the
-	///		source buffer.
-	///
-	Buffer *getDestinationBufferfromSource(Buffer *buffer);
+  /// Virtual channel is a pair of buffers. This function return
+  /// destination buffer that is paired with the source buffer.
+  ///
+  /// \param source buffer
+  ///		Source buffer in a virtual channel pair.
+  ///
+  /// \return
+  ///		The destination puffer of the virtual channel pair based on the
+  ///		source buffer.
+  ///
+  Buffer* getDestinationBufferfromSource(Buffer* buffer);
 };
-
-
-
 
 }  // namespace net
 
 #endif
-

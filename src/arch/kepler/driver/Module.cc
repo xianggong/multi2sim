@@ -18,24 +18,19 @@
 
 #include "Module.h"
 
+namespace Kepler {
 
-namespace Kepler
-{
-
-Module::Module(int id, const std::string &cubin_path) : elf_file(cubin_path)
-{
-	this->id = id;
-
+Module::Module(int id, const std::string& cubin_path) : elf_file(cubin_path) {
+  this->id = id;
 }
 
-Function *Module::addFunction(Module *module, const std::string &name)
-{
-	// The function ID is its position in the list
-	int id = functions.size();
+Function* Module::addFunction(Module* module, const std::string& name) {
+  // The function ID is its position in the list
+  int id = functions.size();
 
-	// Create function and add it to the list of functions
-	functions.emplace_back(new Function(id, module, name));
-	return functions.back().get();
+  // Create function and add it to the list of functions
+  functions.emplace_back(new Function(id, module, name));
+  return functions.back().get();
 }
 
-} // namespace Kepler
+}  // namespace Kepler

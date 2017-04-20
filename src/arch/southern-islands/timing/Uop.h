@@ -21,11 +21,9 @@
 #define ARCH_SOUTHERN_ISLANDS_TIMING_UOP_H
 
 #include <arch/southern-islands/disassembler/Instruction.h>
-#include<arch/southern-islands/emulator/WorkItem.h>
+#include <arch/southern-islands/emulator/WorkItem.h>
 
-
-namespace SI
-{
+namespace SI {
 
 // Forward declarations
 class ComputeUnit;
@@ -33,249 +31,235 @@ class Wavefront;
 class WavefrontPoolEntry;
 class WorkGroup;
 
-
 /// Class representing an instruction flowing through the pipelines of the
 /// GPU compute units.
-class Uop
-{
-	//
-	// Static fields
-	//
+class Uop {
+  //
+  // Static fields
+  //
+
+  // Counter tracking the ID assigned to the last uop created
+  static long long id_counter;
+
+  //
+  // Class members
+  //
 
-	// Counter tracking the ID assigned to the last uop created
-	static long long id_counter;
+  // Unique identifier of the instruction, assigned when created
+  long long id;
 
+  // Unique identifier of the instruction in the wavefront that it
+  // belongs to. This field is initialized in the constructor.
+  long long id_in_wavefront;
 
+  // Unique identifier of the instruction in the compute unit that it
+  // belongs to. This field is initialized in the constructor.
+  long long id_in_compute_unit;
 
+  // Associated instruction
+  Instruction instruction;
+
+  // Associated wavefront, assigned in constructor
+  Wavefront* wavefront;
 
-	//
-	// Class members
-	//
+  // Compute unit that the uop belongs to, assigned in constructor
+  ComputeUnit* compute_unit;
 
-	// Unique identifier of the instruction, assigned when created
-	long long id;
+  // Associated wavefront pool entry, assigned in constructor
+  WavefrontPoolEntry* wavefront_pool_entry;
 
-	// Unique identifier of the instruction in the wavefront that it
-	// belongs to. This field is initialized in the constructor.
-	long long id_in_wavefront;
+  // Cycle Uop was created
+  long long cycle_created;
 
-	// Unique identifier of the instruction in the compute unit that it
-	// belongs to. This field is initialized in the constructor.
-	long long id_in_compute_unit;
+  // Associated work group
+  WorkGroup* work_group;
 
-	// Associated instruction
-	Instruction instruction;
+  // Unique identifier of the associated wavefront pool
+  int wavefront_pool_id;
 
-	// Associated wavefront, assigned in constructor
-	Wavefront *wavefront;
+ public:
+  /// Constructor
+  Uop(Wavefront* wavefront, WavefrontPoolEntry* wavefront_pool_entry,
+      long long cycle_created, WorkGroup* work_group, int wavefront_pool_id);
 
-	// Compute unit that the uop belongs to, assigned in constructor
-	ComputeUnit *compute_unit;
+  /// Flags updated during instruction execution
+  bool vector_memory_read;
+  bool vector_memory_write;
+  bool vector_memory_atomic;
+  bool scalar_memory_read;
+  bool lds_read;
+  bool lds_write;
+  bool memory_wait;
+  bool at_barrier;
+  bool finished;
+  bool vector_memory_global_coherency;
+  bool wavefront_last_instruction;
 
-	// Associated wavefront pool entry, assigned in constructor
-	WavefrontPoolEntry *wavefront_pool_entry;
+  /// Part of a GPU instruction specific for each work-item within wavefront
+  struct WorkItemInfo {
+    // For global memory accesses
+    unsigned int global_memory_access_address;
+    unsigned int global_memory_access_size;
 
-	// Cycle Uop was created
-	long long cycle_created;
+    // Flags
+    // Active after instruction emulation
+    bool active = true;
 
-	// Associated work group
-	WorkGroup *work_group;
+    // Mark a work item that has successfully made a cache access
+    bool accessed_cache = false;
 
-	// Unique identifier of the associated wavefront pool
-	int wavefront_pool_id;
+    // Number of lds_accesses
+    int lds_access_count;
 
-public:
+    // Information for each lds_access
+    WorkItem::MemoryAccess lds_access[WorkItem::MaxLdsAccessesPerInst];
+  };
 
-	/// Constructor
-	Uop(Wavefront *wavefront, WavefrontPoolEntry *wavefront_pool_entry,
-			long long cycle_created,
-			WorkGroup *work_group,
-			int wavefront_pool_id);
+  /// Vector containing work item specific information.  Indices of this
+  /// vector must be the same as the corresponding work item's id
+  /// in wavefront.
+  std::vector<WorkItemInfo> work_item_info_list;
 
-	/// Flags updated during instruction execution
-	bool vector_memory_read;
-	bool vector_memory_write;
-	bool vector_memory_atomic;
-	bool scalar_memory_read;
-	bool lds_read;
-	bool lds_write;
-	bool memory_wait;
-	bool at_barrier;
-	bool finished;
-	bool vector_memory_global_coherency;
-	bool wavefront_last_instruction;
+  /// Return the unique identifier assigned in sequential order to the
+  /// uop when it was created.
+  long long getId() const { return id; }
 
-	/// Part of a GPU instruction specific for each work-item within wavefront
-	struct WorkItemInfo
-	{
-		// For global memory accesses
-		unsigned int global_memory_access_address;
-		unsigned int global_memory_access_size;
+  /// Return a unique sequential identifier of the uop in the wavefront
+  /// that it belongs to.
+  long long getIdInWavefront() const { return id_in_wavefront; }
 
-		// Flags
-		// Active after instruction emulation
-		bool active = true;
+  /// Return a unique sequential identifier of the uop in the compute
+  /// unit that it belongs to.
+  long long getIdInComputeUnit() const { return id_in_compute_unit; }
 
-		// Mark a work item that has successfully made a cache access
-		bool accessed_cache = false;
+  /// Return the unique identifier to the associated wavefront pool
+  int getWavefrontPoolId() const { return wavefront_pool_id; }
 
-		// Number of lds_accesses
-		int lds_access_count;
+  /// Return the instruction associated with the uop
+  Instruction* getInstruction() { return &instruction; }
 
-		// Information for each lds_access
-		WorkItem::MemoryAccess lds_access[WorkItem::MaxLdsAccessesPerInst];
-	};
+  /// Return the associated wavefront
+  Wavefront* getWavefront() const { return wavefront; }
 
-	/// Vector containing work item specific information.  Indices of this
-	/// vector must be the same as the corresponding work item's id
-	/// in wavefront.
-	std::vector<WorkItemInfo> work_item_info_list;
+  /// Return the associated work group
+  WorkGroup* getWorkGroup() const { return work_group; }
 
-	/// Return the unique identifier assigned in sequential order to the
-	/// uop when it was created.
-	long long getId() const { return id; }
+  /// Return the cycle the uop was created
+  long long getCycleCreated() const { return cycle_created; }
 
-	/// Return a unique sequential identifier of the uop in the wavefront
-	/// that it belongs to.
-	long long getIdInWavefront() const { return id_in_wavefront; }
+  /// Return the associated compute unit
+  ComputeUnit* getComputeUnit() const { return compute_unit; }
 
-	/// Return a unique sequential identifier of the uop in the compute
-	/// unit that it belongs to.
-	long long getIdInComputeUnit() const { return id_in_compute_unit; }
+  /// Return the associated wavefront pool entry
+  WavefrontPoolEntry* getWavefrontPoolEntry() const {
+    return wavefront_pool_entry;
+  }
 
-	/// Return the unique identifier to the associated wavefront pool
-	int getWavefrontPoolId() const { return wavefront_pool_id; }
+  /// Set the instruction
+  void setInstruction(Instruction* instruction) {
+    this->instruction = *instruction;
+  }
 
-	/// Return the instruction associated with the uop
-	Instruction *getInstruction() { return &instruction; }
+  /// Cycle in which the uop is first ready after fetch
+  long long fetch_ready = 0;
 
-	/// Return the associated wavefront
-	Wavefront *getWavefront() const { return wavefront; }
+  /// Cycle in which the uop is first ready after being issued to its
+  /// corresponding execution unit
+  long long issue_ready = 0;
 
-	/// Return the associated work group
-	WorkGroup *getWorkGroup() const { return work_group; }
+  /// Cycle when the uop is first ready after writeback
+  long long write_ready = 0;
 
-	/// Return the cycle the uop was created
-	long long getCycleCreated() const { return cycle_created; }
+  /// Cycle when uop is first ready after decode completes
+  long long decode_ready = 0;
 
-	/// Return the associated compute unit
-	ComputeUnit *getComputeUnit() const { return compute_unit; }
+  /// Cycle when uop is first ready after register access completes
+  long long read_ready = 0;
 
-	/// Return the associated wavefront pool entry
-	WavefrontPoolEntry *getWavefrontPoolEntry() const
-	{
-		return wavefront_pool_entry;
-	}
+  /// Cycle when uop is first ready after execution completes
+  long long execute_ready = 0;
 
-	/// Set the instruction
-	void setInstruction(Instruction *instruction)
-	{
-		this->instruction = *instruction;
-	}
+  /// Witness memory access
+  int global_memory_witness = 0;
 
-	/// Cycle in which the uop is first ready after fetch
-	long long fetch_ready = 0;
+  /// Last scalar memory access address
+  unsigned int global_memory_access_address = 0;
 
-	/// Cycle in which the uop is first ready after being issued to its
-	/// corresponding execution unit
-	long long issue_ready = 0;
+  /// Last scalar memory access size
+  unsigned int global_memory_access_size = 0;
 
-	/// Cycle when the uop is first ready after writeback
-	long long write_ready = 0;
+  /// Lds access witness
+  int lds_witness = 0;
 
-	/// Cycle when uop is first ready after decode completes
-	long long decode_ready = 0;
+  // Cycle when UOP start
+  long long cycle_start = 0;
 
-	/// Cycle when uop is first ready after register access completes
-	long long read_ready = 0;
+  // Cycle when UOP finish
+  long long cycle_finish = 0;
 
-	/// Cycle when uop is first ready after execution completes
-	long long execute_ready = 0;
+  // Cycle of UOP execution
+  long long cycle_length = 0;
 
-	/// Witness memory access
-	int global_memory_witness = 0;
-	
-	/// Last scalar memory access address
-	unsigned int global_memory_access_address = 0;
+  // Cycle when UOP fetch stage begins
+  long long cycle_fetch_begin = 0;
 
-	/// Last scalar memory access size
-	unsigned int global_memory_access_size = 0;
+  // Cycle of stall in fetch stage
+  long long cycle_fetch_stall = 0;
 
-	/// Lds access witness
-	int lds_witness = 0;
+  // Cycle when UOP is active in fetch unit
+  long long cycle_fetch_active = 0;
 
-	// Cycle when UOP start
-	long long cycle_start = 0;
+  // Cycle when UOP issue stage begins
+  long long cycle_issue_begin = 0;
 
-	// Cycle when UOP finish
-	long long cycle_finish = 0;
+  // Cycle of stall in issue stage
+  long long cycle_issue_stall = 0;
 
-	// Cycle of UOP execution
-	long long cycle_length = 0;
+  // Cycle when UOP is active in issue unit
+  long long cycle_issue_active = 0;
 
-	// Cycle when UOP fetch stage begins
-	long long cycle_fetch_begin = 0;
+  // Cycle when UOP decode stage begins
+  long long cycle_decode_begin = 0;
 
-	// Cycle of stall in fetch stage
-	long long cycle_fetch_stall = 0;
+  // Cycle of stall in decode stage
+  long long cycle_decode_stall = 0;
 
-	// Cycle when UOP is active in fetch unit
-	long long cycle_fetch_active = 0;
+  // Cycle when UOP is active in decode unit
+  long long cycle_decode_active = 0;
 
-	// Cycle when UOP issue stage begins
-	long long cycle_issue_begin = 0;
+  // Cycle when UOP read stage begins
+  long long cycle_read_begin = 0;
 
-	// Cycle of stall in issue stage
-	long long cycle_issue_stall = 0;
+  // Cycle of stall in read stage
+  long long cycle_read_stall = 0;
 
-	// Cycle when UOP is active in issue unit
-	long long cycle_issue_active = 0;
+  // Cycle when UOP is active in read unit
+  long long cycle_read_active = 0;
 
-	// Cycle when UOP decode stage begins
-	long long cycle_decode_begin = 0;
+  // Cycle when UOP execute stage begins
+  long long cycle_execute_begin = 0;
 
-	// Cycle of stall in decode stage
-	long long cycle_decode_stall = 0;
+  // Cycle of stall in execution stage
+  long long cycle_execute_stall = 0;
 
-	// Cycle when UOP is active in decode unit
-	long long cycle_decode_active = 0;
+  // Cycle when UOP is active in execute unit
+  long long cycle_execute_active = 0;
 
-	// Cycle when UOP read stage begins
-	long long cycle_read_begin = 0;
+  // Cycle when UOP write stage begins
+  long long cycle_write_begin = 0;
 
-	// Cycle of stall in read stage
-	long long cycle_read_stall = 0;
+  // Cycle of stall in write stage
+  long long cycle_write_stall = 0;
 
-	// Cycle when UOP is active in read unit
-	long long cycle_read_active = 0;
+  // Cycle when UOP is active in write unit
+  long long cycle_write_active = 0;
 
-	// Cycle when UOP execute stage begins
-	long long cycle_execute_begin = 0;
+  // Cycle of stall to complete the uop
+  long long cycle_complete_stall = 0;
 
-	// Cycle of stall in execution stage
-	long long cycle_execute_stall = 0;
-
-	// Cycle when UOP is active in execute unit
-	long long cycle_execute_active = 0;
-
-	// Cycle when UOP write stage begins
-	long long cycle_write_begin = 0;
-
-	// Cycle of stall in write stage
-	long long cycle_write_stall = 0;
-
-	// Cycle when UOP is active in write unit
-	long long cycle_write_active = 0;
-
-	// Cycle of stall to complete the uop
-	long long cycle_complete_stall = 0;
-
-	// Get uop life cycle in csv format string
-	std::string getLifeCycleInCSV(const char *execunit);
-
+  // Get uop life cycle in csv format string
+  std::string getLifeCycleInCSV(const char* execunit);
 };
-
 }
 
 #endif
-

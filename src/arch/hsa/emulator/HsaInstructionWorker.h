@@ -17,7 +17,6 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-
 #ifndef ARCH_HSA_EMULATOR_HSAINSTRUCTIONWORKER_H
 #define ARCH_HSA_EMULATOR_HSAINSTRUCTIONWORKER_H
 
@@ -26,8 +25,7 @@
 #include "OperandValueRetriever.h"
 #include "OperandValueWriter.h"
 
-namespace HSA
-{
+namespace HSA {
 class WorkItem;
 class StackFrame;
 class BrigCodeEntry;
@@ -35,44 +33,40 @@ class OperandValueRetriever;
 class OperandValueWriter;
 
 /// An HsaInstructionWorker is a unit that emulates an instruction
-class HsaInstructionWorker
-{
-protected:
-	// The work item that this instruction worker is working on
-	WorkItem *work_item;
+class HsaInstructionWorker {
+ protected:
+  // The work item that this instruction worker is working on
+  WorkItem* work_item;
 
-	// The stack fram that this instruction worker is working on
-	StackFrame *stack_frame;
+  // The stack fram that this instruction worker is working on
+  StackFrame* stack_frame;
 
-	// Operand value retriever
-	std::unique_ptr<OperandValueRetriever> operand_value_retriever;
+  // Operand value retriever
+  std::unique_ptr<OperandValueRetriever> operand_value_retriever;
 
-	// Operand value writer
-	std::unique_ptr<OperandValueWriter> operand_value_writer;
+  // Operand value writer
+  std::unique_ptr<OperandValueWriter> operand_value_writer;
 
-public:
-	/// Constructor
-	HsaInstructionWorker(WorkItem *work_item, StackFrame *stack_frame);
+ public:
+  /// Constructor
+  HsaInstructionWorker(WorkItem* work_item, StackFrame* stack_frame);
 
-	/// Destructor
-	virtual ~HsaInstructionWorker() {};
+  /// Destructor
+  virtual ~HsaInstructionWorker(){};
 
-	/// Execute the instruction
-	virtual void Execute(BrigCodeEntry *instruction) = 0;
+  /// Execute the instruction
+  virtual void Execute(BrigCodeEntry* instruction) = 0;
 
-	/// Set the operand value retriever
-	void setOperandValueRetriever(OperandValueRetriever *retriever)
-	{
-		operand_value_retriever.reset(retriever);
-	}
+  /// Set the operand value retriever
+  void setOperandValueRetriever(OperandValueRetriever* retriever) {
+    operand_value_retriever.reset(retriever);
+  }
 
-	/// Set the operand value writer
-	void setOperandValueWriter(OperandValueWriter *writer)
-	{
-		operand_value_writer.reset(writer);
-	}
+  /// Set the operand value writer
+  void setOperandValueWriter(OperandValueWriter* writer) {
+    operand_value_writer.reset(writer);
+  }
 };
-
 }
 
 #endif  // ARCH_HSA_EMULATOR_HSAINSTRUCTIONWORKER_H

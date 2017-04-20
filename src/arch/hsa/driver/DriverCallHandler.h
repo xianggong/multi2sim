@@ -22,20 +22,17 @@
 
 #include <cstdint>
 
-namespace mem
-{
+namespace mem {
 class Memory;
 }
 
-namespace HSA
-{
+namespace HSA {
 
-class DriverCallHandler
-{
-public:
-	DriverCallHandler() {};
-	virtual ~DriverCallHandler() {};
-	virtual void Process(mem::Memory *memory, uint32_t args_ptr) = 0;
+class DriverCallHandler {
+ public:
+  DriverCallHandler(){};
+  virtual ~DriverCallHandler(){};
+  virtual void Process(mem::Memory* memory, uint32_t args_ptr) = 0;
 };
 
 }  // namespace HSA

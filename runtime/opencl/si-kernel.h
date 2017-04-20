@@ -22,23 +22,18 @@
 
 #include "opencl.h"
 
-
 /* Forward declarations */
 struct opencl_si_device_t;
 struct opencl_si_program_t;
 
-
-/* List of ABI calls */                                               
-enum si_call_t                                                           
-{                                                                                
-        SIInvalid = 0,                                                  
-	#define DEFCALL(name, code) SI##name = code,                    
-	#include "../../src/arch/southern-islands/driver/Driver.def"
-	#undef DEFCALL                                                           
-	SICallCount                                                    
-};  
-
-
+/* List of ABI calls */
+enum si_call_t {
+  SIInvalid = 0,
+#define DEFCALL(name, code) SI##name = code,
+#include "../../src/arch/southern-islands/driver/Driver.def"
+#undef DEFCALL
+  SICallCount
+};
 
 /*
  * Southern Islands Kernel Argument
@@ -46,29 +41,22 @@ enum si_call_t
 
 /* NOTE: when adding new fields, update string map 'opencl_si_arg_type_map'
  * in 'runtime/opencl/si-kernel.c'. */
-enum opencl_si_arg_type_t
-{
-	opencl_si_arg_type_invalid = 0,
-	opencl_si_arg_value,
-	opencl_si_arg_pointer,
-	opencl_si_arg_image,
-	opencl_si_arg_sampler
+enum opencl_si_arg_type_t {
+  opencl_si_arg_type_invalid = 0,
+  opencl_si_arg_value,
+  opencl_si_arg_pointer,
+  opencl_si_arg_image,
+  opencl_si_arg_sampler
 };
 
-
-struct opencl_si_arg_t
-{
-	enum opencl_si_arg_type_t type;
-	char *name;
+struct opencl_si_arg_t {
+  enum opencl_si_arg_type_t type;
+  char* name;
 };
 
-
-struct opencl_si_arg_t *opencl_si_arg_create(enum opencl_si_arg_type_t type,
-		char *name);
-void opencl_si_arg_free(struct opencl_si_arg_t *arg);
-
-
-
+struct opencl_si_arg_t* opencl_si_arg_create(enum opencl_si_arg_type_t type,
+                                             char* name);
+void opencl_si_arg_free(struct opencl_si_arg_t* arg);
 
 /*
  * Southern Islands Kernel
@@ -76,78 +64,76 @@ void opencl_si_arg_free(struct opencl_si_arg_t *arg);
 
 /* Subclass of 'opencl_kernel_t' containing Southern Islands specific
  * information of the OpenCL kernel. */
-struct opencl_si_kernel_t
-{
-	enum opencl_runtime_type_t type;  /* First field */
+struct opencl_si_kernel_t {
+  enum opencl_runtime_type_t type; /* First field */
 
-	/* Kernel object acting as parent object. */
-	struct opencl_kernel_t *parent;
+  /* Kernel object acting as parent object. */
+  struct opencl_kernel_t* parent;
 
-	/* Architecture-specific program and device associated */
-	struct opencl_si_program_t *program;
-	struct opencl_si_device_t *device;
+  /* Architecture-specific program and device associated */
+  struct opencl_si_program_t* program;
+  struct opencl_si_device_t* device;
 
-	/* List of arguments */
-	struct list_t *arg_list;
+  /* List of arguments */
+  struct list_t* arg_list;
 
-	/* ID in driver */
-	int id;
+  /* ID in driver */
+  int id;
 };
 
-struct opencl_si_ndrange_t
-{
-	int id;  /* ID in driver */
+struct opencl_si_ndrange_t {
+  int id; /* ID in driver */
 
-	enum opencl_runtime_type_t type;  /* First field */
+  enum opencl_runtime_type_t type; /* First field */
 
-	struct opencl_ndrange_t *parent;	
-	struct opencl_si_kernel_t *arch_kernel;
+  struct opencl_ndrange_t* parent;
+  struct opencl_si_kernel_t* arch_kernel;
 
-	unsigned int fused;
+  unsigned int fused;
 
-	int work_dim;
+  int work_dim;
 
-	unsigned int global_work_offset[3];
-	unsigned int global_work_size[3];
-	unsigned int local_work_size[3];
+  unsigned int global_work_offset[3];
+  unsigned int global_work_size[3];
+  unsigned int local_work_size[3];
 
-	unsigned int num_groups[3];
-	unsigned int total_num_groups;
+  unsigned int num_groups[3];
+  unsigned int total_num_groups;
 
-	void *table_ptr;
-	void *cb_ptr;
+  void* table_ptr;
+  void* cb_ptr;
 };
 
 /* Kernel callbacks */
-struct opencl_si_kernel_t *opencl_si_kernel_create(
-	struct opencl_kernel_t *parent, struct opencl_si_program_t *program,
-	char *func_name);
+struct opencl_si_kernel_t* opencl_si_kernel_create(
+    struct opencl_kernel_t* parent, struct opencl_si_program_t* program,
+    char* func_name);
 
-void opencl_si_kernel_debug(struct opencl_si_kernel_t *kernel);
+void opencl_si_kernel_debug(struct opencl_si_kernel_t* kernel);
 
-int opencl_si_kernel_set_arg(struct opencl_si_kernel_t *kernel, int arg_index,
-	unsigned int arg_size, void *arg_value);
+int opencl_si_kernel_set_arg(struct opencl_si_kernel_t* kernel, int arg_index,
+                             unsigned int arg_size, void* arg_value);
 
-void opencl_si_kernel_free(struct opencl_si_kernel_t *kernel);
+void opencl_si_kernel_free(struct opencl_si_kernel_t* kernel);
 
 /* ND-Range callbacks */
-struct opencl_si_ndrange_t *opencl_si_ndrange_create(
-	struct opencl_ndrange_t *ndrange, struct opencl_si_kernel_t *si_kernel,
-	unsigned int work_dim, unsigned int *global_work_offset,
-	unsigned int *global_work_size, unsigned int *local_work_size,
-	unsigned int fused);
+struct opencl_si_ndrange_t* opencl_si_ndrange_create(
+    struct opencl_ndrange_t* ndrange, struct opencl_si_kernel_t* si_kernel,
+    unsigned int work_dim, unsigned int* global_work_offset,
+    unsigned int* global_work_size, unsigned int* local_work_size,
+    unsigned int fused);
 
-void opencl_si_ndrange_init(struct opencl_si_ndrange_t *ndrange);
+void opencl_si_ndrange_init(struct opencl_si_ndrange_t* ndrange);
 
-void opencl_si_ndrange_run(struct opencl_si_ndrange_t *ndrange,
-	struct opencl_event_t *event);
+void opencl_si_ndrange_run(struct opencl_si_ndrange_t* ndrange,
+                           struct opencl_event_t* event);
 
-void opencl_si_ndrange_run_partial(struct opencl_si_ndrange_t *ndrange,
-	unsigned int work_group_start, unsigned int work_group_count);
+void opencl_si_ndrange_run_partial(struct opencl_si_ndrange_t* ndrange,
+                                   unsigned int work_group_start,
+                                   unsigned int work_group_count);
 
-void opencl_si_ndrange_finish(struct opencl_si_ndrange_t *ndrange);
+void opencl_si_ndrange_finish(struct opencl_si_ndrange_t* ndrange);
 
-void opencl_si_ndrange_free(struct opencl_si_ndrange_t *ndrange);
+void opencl_si_ndrange_free(struct opencl_si_ndrange_t* ndrange);
 
 #endif
-

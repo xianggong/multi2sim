@@ -19,7 +19,4 @@
 
 #include "MadInstructionWorker.h"
 
-namespace HSA
-{
-
-}  // namespace HSA
+namespace HSA {}  // namespace HSA

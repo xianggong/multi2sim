@@ -28,129 +28,114 @@
 #include "Function.h"
 #include "Module.h"
 
-
-namespace Kepler
-{
+namespace Kepler {
 
 // Forward Declarations
 class Program;
 
-
 /// Kepler driver
-class Driver : public comm::Driver
-{
-	// Debug file name, as set by user
-	static std::string debug_file;
+class Driver : public comm::Driver {
+  // Debug file name, as set by user
+  static std::string debug_file;
 
-	// Unique instance of singleton
-	static std::unique_ptr<Driver> instance;
+  // Unique instance of singleton
+  static std::unique_ptr<Driver> instance;
 
-	// Version numbers
-	static const int version_major;
-	static const int version_minor;
+  // Version numbers
+  static const int version_major;
+  static const int version_minor;
 
-	// Singletons have private constructors
-	Driver();
+  // Singletons have private constructors
+  Driver();
 
-	// Enumeration with all ABI call codes. Each entry of Driver.def will
-	// expand into an assignment. For example, entry
-	//
-	//	DEFCALL(Init, 1)
-	//
-	// expands to
-	//
-	//	CallCodeInit = 1
-	//
-	// A last element 'CallCodeCount' is equal to one unit higher than the
-	// latest ABI call found in the file.
-	enum
-	{
+  // Enumeration with all ABI call codes. Each entry of Driver.def will
+  // expand into an assignment. For example, entry
+  //
+  //	DEFCALL(Init, 1)
+  //
+  // expands to
+  //
+  //	CallCodeInit = 1
+  //
+  // A last element 'CallCodeCount' is equal to one unit higher than the
+  // latest ABI call found in the file.
+  enum {
 #define DEFCALL(name, code) CallCode##name = code,
 #include "Driver.def"
 #undef DEFCALL
-		CallCodeCount
-	};
+    CallCodeCount
+  };
 
-	// ABI call functions. Each entry in Driver.def will expand into a
-	// function prototype. For example, entry
-	//
-	//	DEFCALL(Init, 1)
-	//
-	// expands to
-	//
-	//	void CallInit(mem::Memory *memory, unsigned args_ptr);
-	//
-#define DEFCALL(name, code) \
-	int Call##name(comm::Context *context, \
-			mem::Memory *memory, \
-			unsigned args_ptr);
+// ABI call functions. Each entry in Driver.def will expand into a
+// function prototype. For example, entry
+//
+//	DEFCALL(Init, 1)
+//
+// expands to
+//
+//	void CallInit(mem::Memory *memory, unsigned args_ptr);
+//
+#define DEFCALL(name, code)                                   \
+  int Call##name(comm::Context* context, mem::Memory* memory, \
+                 unsigned args_ptr);
 #include "Driver.def"
 #undef DEFCALL
 
-	// System call names
-	static const char *call_name[CallCodeCount];
+  // System call names
+  static const char* call_name[CallCodeCount];
 
-	// Prototype of a member function executing an ABI call
-	typedef int (Driver::*CallFn)(comm::Context *context,
-			mem::Memory *memory,
-			unsigned args_ptr);
+  // Prototype of a member function executing an ABI call
+  typedef int (Driver::*CallFn)(comm::Context* context, mem::Memory* memory,
+                                unsigned args_ptr);
 
-	// Table of ABI call execution functions
-	static const CallFn call_fn[CallCodeCount];
+  // Table of ABI call execution functions
+  static const CallFn call_fn[CallCodeCount];
 
-	// List of CUDA modules created by the guest application
-	std::vector<std::unique_ptr<Module>> modules;
+  // List of CUDA modules created by the guest application
+  std::vector<std::unique_ptr<Module>> modules;
 
-public:
+ public:
+  /// Exception thrown by driver errors
+  class Error : public misc::Error {
+   public:
+    /// Constructor
+    Error(const std::string& message) : misc::Error(message) {
+      // Add module prefix
+      AppendPrefix("Kepler driver");
+    }
+  };
 
-	/// Exception thrown by driver errors
-	class Error : public misc::Error
-	{
-	public:
+  /// Obtain instance of the singleton
+  static Driver* getInstance();
 
-		/// Constructor
-		Error(const std::string &message) : misc::Error(message)
-		{
-			// Add module prefix
-			AppendPrefix("Kepler driver");
-		}
-	};
+  /// Invoke an ABI call. See documentation for comm::Driver::Call for
+  /// details on the meaning of the arguments.
+  int Call(comm::Context* context, mem::Memory* memory, int code,
+           unsigned args_ptr);
 
-	/// Obtain instance of the singleton
-	static Driver *getInstance();
+  /// Debugger
+  static misc::Debug debug;
 
-	/// Invoke an ABI call. See documentation for comm::Driver::Call for
-	/// details on the meaning of the arguments.
-	int Call(comm::Context *context,
-			mem::Memory *memory,
-			int code,
-			unsigned args_ptr);
+  /// Register command-line options
+  static void RegisterOptions();
 
-	/// Debugger
-	static misc::Debug debug;
+  /// Process command-line options
+  static void ProcessOptions();
 
-	/// Register command-line options
-	static void RegisterOptions();
+  /// Create a new module and return a pointer to it.
+  Module* addModule(const std::string& path);
 
-	/// Process command-line options
-	static void ProcessOptions();
+  /// Return the number of available modules
+  int getNumModules() { return modules.size(); }
 
-	/// Create a new module and return a pointer to it.
-	Module *addModule(const std::string &path);
-
-	/// Return the number of available modules
-	int getNumModules() { return modules.size(); }
-
-	/// Return the module with the given identifier, or `nullptr` if the
-	/// identifier does not correspond to a valid module.
-	Module *getModule(int index)
-	{
-		return misc::inRange((unsigned) index, 0, modules.size()) ?
-				modules[index].get() :
-				nullptr;
-	}
+  /// Return the module with the given identifier, or `nullptr` if the
+  /// identifier does not correspond to a valid module.
+  Module* getModule(int index) {
+    return misc::inRange((unsigned)index, 0, modules.size())
+               ? modules[index].get()
+               : nullptr;
+  }
 };
-
 
 }  // namespace SI
 

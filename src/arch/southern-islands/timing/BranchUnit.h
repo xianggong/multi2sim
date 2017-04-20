@@ -25,139 +25,119 @@
 #include "ExecutionUnit.h"
 #include "Uop.h"
 
-
-namespace SI
-{
+namespace SI {
 
 // Forward declarations
 class ComputeUnit;
 
-
 /// Class representing the branch unit of a compute unit
-class BranchUnit : public ExecutionUnit
-{
-	// Variable number of decoded Uops
-	std::deque<std::unique_ptr<Uop>> decode_buffer;
+class BranchUnit : public ExecutionUnit {
+  // Variable number of decoded Uops
+  std::deque<std::unique_ptr<Uop>> decode_buffer;
 
-	// Variable number of register read instructions
-	std::deque<std::unique_ptr<Uop>> read_buffer;
+  // Variable number of register read instructions
+  std::deque<std::unique_ptr<Uop>> read_buffer;
 
-	// Variable number of execution instructions
-	std::deque<std::unique_ptr<Uop>> exec_buffer;
+  // Variable number of execution instructions
+  std::deque<std::unique_ptr<Uop>> exec_buffer;
 
-	// Variable number of register instructions
-	std::deque<std::unique_ptr<Uop>> write_buffer;
+  // Variable number of register instructions
+  std::deque<std::unique_ptr<Uop>> write_buffer;
 
-public:
+ public:
+  //
+  // Static fields
+  //
 
-	//
-	// Static fields
-	//
+  /// Maximum number of instructions processed per cycle
+  static int width;
 
+  /// Size of the issue buffer in number of instructions
+  static int issue_buffer_size;
 
+  /// Latency of the decode stage in number of cycles
+  static int decode_latency;
 
+  /// Size of the decode buffer in number of instructions
+  static int decode_buffer_size;
 
-	/// Maximum number of instructions processed per cycle
-	static int width;
+  /// Latency of the read stage in number of cycles
+  static int read_latency;
 
-	/// Size of the issue buffer in number of instructions
-	static int issue_buffer_size;
+  /// Size of the read buffer in number of instructions
+  static int read_buffer_size;
 
-	/// Latency of the decode stage in number of cycles
-	static int decode_latency;
+  /// Latency of the execution stage in number of cycles
+  static int exec_latency;
 
-	/// Size of the decode buffer in number of instructions
-	static int decode_buffer_size;
+  /// Size of the execution buffer in number of instructions
+  static int exec_buffer_size;
 
-	/// Latency of the read stage in number of cycles
-	static int read_latency;
+  /// Latency of the write stage in number of cycles
+  static int write_latency;
 
-	/// Size of the read buffer in number of instructions
-	static int read_buffer_size;
+  /// Size of the write buffer in number of instructions
+  static int write_buffer_size;
 
-	/// Latency of the execution stage in number of cycles
-	static int exec_latency;
+  //
+  // Class members
+  //
 
-	/// Size of the execution buffer in number of instructions
-	static int exec_buffer_size;
+  /// Constructor
+  BranchUnit(ComputeUnit* compute_unit) : ExecutionUnit(compute_unit) {}
 
-	/// Latency of the write stage in number of cycles
-	static int write_latency;
+  /// Complete the instruction
+  void Complete();
 
-	/// Size of the write buffer in number of instructions
-	static int write_buffer_size;
+  /// Write stage of the execution pipeline.
+  void Write();
 
+  /// Execute stage of the execution pipeline.
+  void Execute();
 
+  /// Read stage of the execution pipeline.
+  void Read();
 
+  /// Decode stage of the execution pipeline.
+  void Decode();
 
-	//
-	// Class members
-	//
+  /// Run the actions occurring in one cycle
+  void Run();
 
-	/// Constructor
-	BranchUnit(ComputeUnit *compute_unit) :
-			ExecutionUnit(compute_unit)
-	{
-	}
+  //
+  // Statistics
+  //
 
-	/// Complete the instruction
-	void Complete();
+  // Number of branch instructions
+  long long num_instructions;
 
-	/// Write stage of the execution pipeline.
-	void Write();
+  /// Return whether there is room in the issue buffer of the branch
+  /// unit to absorb a new instruction.
+  bool canIssue() const override {
+    return getIssueBufferOccupancy() < issue_buffer_size;
+  }
 
-	/// Execute stage of the execution pipeline.
-	void Execute();
+  /// Return whether the given uop is a branch instruction.
+  bool isValidUop(Uop* uop) const override;
 
-	/// Read stage of the execution pipeline.
-	void Read();
+  /// Issue the given instruction into the branch unit.
+  void Issue(std::unique_ptr<Uop> uop) override;
 
-	/// Decode stage of the execution pipeline.
-	void Decode();
-	
-	/// Run the actions occurring in one cycle
-	void Run();
-	
+  /// Return the current size of the issue buffer
+  unsigned getIssueBufferSize() { return issue_buffer.size(); };
 
+  /// Return the current size of the decode buffer
+  unsigned getDecodeBufferSize() { return decode_buffer.size(); };
 
+  /// Return the current size of the read buffer
+  unsigned getReadBufferSize() { return read_buffer.size(); };
 
-	//
-	// Statistics
-	//
+  /// Return the current size of the exec buffer
+  unsigned getExecBufferSize() { return exec_buffer.size(); };
 
-	// Number of branch instructions
-	long long num_instructions;
-	
-	/// Return whether there is room in the issue buffer of the branch
-	/// unit to absorb a new instruction.
-	bool canIssue() const override
-	{
-		return getIssueBufferOccupancy() < issue_buffer_size;
-	}
-	
-	/// Return whether the given uop is a branch instruction.
-	bool isValidUop(Uop *uop) const override;
-
-	/// Issue the given instruction into the branch unit.
-	void Issue(std::unique_ptr<Uop> uop) override;
-
-	/// Return the current size of the issue buffer
-	unsigned getIssueBufferSize() { return issue_buffer.size(); };
-	
-	/// Return the current size of the decode buffer
-	unsigned getDecodeBufferSize() { return decode_buffer.size(); };
-	
-	/// Return the current size of the read buffer
-	unsigned getReadBufferSize() { return read_buffer.size(); };
-	
-	/// Return the current size of the exec buffer
-	unsigned getExecBufferSize() { return exec_buffer.size(); };
-	
-	/// Return the current size of the write buffer
-	unsigned getWriteBufferSize() { return write_buffer.size(); };
+  /// Return the current size of the write buffer
+  unsigned getWriteBufferSize() { return write_buffer.size(); };
 };
-
 }
 
 #endif
-

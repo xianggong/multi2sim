@@ -17,60 +17,51 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include <lib/cpp/String.h>
-#include <lib/cpp/Error.h>
 #include <arch/hsa/disassembler/AsmService.h>
 #include <arch/hsa/disassembler/Brig.h>
 #include <arch/hsa/disassembler/BrigCodeEntry.h>
+#include <lib/cpp/Error.h>
+#include <lib/cpp/String.h>
 
 #include "GridSizeInstructionWorker.h"
 #include "WorkItem.h"
 
-namespace HSA
-{
+namespace HSA {
 
-GridSizeInstructionWorker::GridSizeInstructionWorker(WorkItem *work_item,
-		StackFrame *stack_frame) :
-		HsaInstructionWorker(work_item, stack_frame)
-{
-}
+GridSizeInstructionWorker::GridSizeInstructionWorker(WorkItem* work_item,
+                                                     StackFrame* stack_frame)
+    : HsaInstructionWorker(work_item, stack_frame) {}
 
+GridSizeInstructionWorker::~GridSizeInstructionWorker() {}
 
-GridSizeInstructionWorker::~GridSizeInstructionWorker()
-{
-}
+void GridSizeInstructionWorker::Execute(BrigCodeEntry* instruction) {
+  unsigned int dim_number;
+  unsigned int size;
+  operand_value_retriever->Retrieve(instruction, 1, &dim_number);
 
+  switch (dim_number) {
+    case 0:
 
-void GridSizeInstructionWorker::Execute(BrigCodeEntry *instruction)
-{
-	unsigned int dim_number;
-	unsigned int size;
-	operand_value_retriever->Retrieve(instruction, 1, &dim_number);
+      size = work_item->getGrid()->getGridSizeX();
+      break;
 
-	switch(dim_number)
-	{
-	case 0:
+    case 1:
 
-		size = work_item->getGrid()->getGridSizeX();
-		break;
+      size = work_item->getGrid()->getGridSizeY();
+      break;
 
-	case 1:
+    case 2:
 
-		size = work_item->getGrid()->getGridSizeY();
-		break;
+      size = work_item->getGrid()->getGridSizeZ();
+      break;
 
-	case 2:
+    default:
 
-		size = work_item->getGrid()->getGridSizeZ();
-		break;
+      throw Error(misc::fmt("Invaid dim_number %d.\n", dim_number));
+  }
 
-	default:
-
-		throw Error(misc::fmt("Invaid dim_number %d.\n", dim_number));
-	}
-
-	operand_value_writer->Write(instruction, 0, &size);
-	work_item->MovePcForwardByOne();
+  operand_value_writer->Write(instruction, 0, &size);
+  work_item->MovePcForwardByOne();
 }
 
 }  // namespace HSA

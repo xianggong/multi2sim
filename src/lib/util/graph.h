@@ -20,83 +20,77 @@
 #ifndef GRAPH_H
 #define GRAPH_H
 
-struct graph_t
-{
-	int vertex_count;
-	int max_vertex_in_layer;
+struct graph_t {
+  int vertex_count;
+  int max_vertex_in_layer;
 
-	struct list_t *vertex_list;
-	struct list_t *edge_list;
+  struct list_t* vertex_list;
+  struct list_t* edge_list;
 };
 
-enum graph_vertex_type_t
-{
-	graph_vertex_invalid = 0,
-	graph_vertex_node,
-	graph_vertex_dummy
+enum graph_vertex_type_t {
+  graph_vertex_invalid = 0,
+  graph_vertex_node,
+  graph_vertex_dummy
 };
 
-struct graph_vertex_t
-{
-	/* Vertex Name */
-	char *name;
+struct graph_vertex_t {
+  /* Vertex Name */
+  char* name;
 
-	/* Vertex Index */
-	int index;
+  /* Vertex Index */
+  int index;
 
-	/* X an Y Coordinates - Result */
-	int x_coor;
-	int y_coor;
+  /* X an Y Coordinates - Result */
+  int x_coor;
+  int y_coor;
 
-	/* Connected Vertices and degree */
-	int indeg ;
-	struct list_t *incoming_vertex_list;
-	int outdeg ;
-	struct list_t *outgoint_vertex_list;
+  /* Connected Vertices and degree */
+  int indeg;
+  struct list_t* incoming_vertex_list;
+  int outdeg;
+  struct list_t* outgoint_vertex_list;
 
-	/* Mid-Calculation Values */
-	int key_val;
-	float cross_num;
-	int neighbours;
+  /* Mid-Calculation Values */
+  int key_val;
+  float cross_num;
+  int neighbours;
 
-	/* Vertex Kind */
-	enum graph_vertex_type_t kind;
+  /* Vertex Kind */
+  enum graph_vertex_type_t kind;
 
-	/* Data depending on the use */
-	void *data;
+  /* Data depending on the use */
+  void* data;
 };
 
-enum graph_edge_direction_t
-{
-	graph_edge_direction_invalid = 0,
-	graph_edge_uni_direction,
-	graph_edge_bi_direction
+enum graph_edge_direction_t {
+  graph_edge_direction_invalid = 0,
+  graph_edge_uni_direction,
+  graph_edge_bi_direction
 };
 
-struct graph_edge_t
-{
-	/* Direction */
-	enum graph_edge_direction_t direction;
+struct graph_edge_t {
+  /* Direction */
+  enum graph_edge_direction_t direction;
 
-	/* Edge Source and Destination Vertices */
-	struct graph_vertex_t *src_vertex;
-	struct graph_vertex_t *dst_vertex;
+  /* Edge Source and Destination Vertices */
+  struct graph_vertex_t* src_vertex;
+  struct graph_vertex_t* dst_vertex;
 
-	/* Edge additional Data */
-	void *data;
-	int reversed;
+  /* Edge additional Data */
+  void* data;
+  int reversed;
 };
 
+struct graph_t* graph_create(int init_vertex_count);
+void graph_free(struct graph_t* graph);
 
-struct graph_t        *graph_create          (int init_vertex_count);
-void                   graph_free            (struct graph_t *graph);
+struct graph_vertex_t* graph_vertex_create(void);
+void graph_vertex_free(struct graph_vertex_t* vertex);
 
-struct graph_vertex_t *graph_vertex_create   (void);
-void                   graph_vertex_free     (struct graph_vertex_t *vertex);
+struct graph_edge_t* graph_edge_create(void);
+void graph_edge_free(struct graph_edge_t* edge);
 
-struct graph_edge_t   *graph_edge_create     (void);
-void 		       graph_edge_free       (struct graph_edge_t *edge);
-
-void                   graph_layered_drawing (struct graph_t * graph);
+void graph_layered_drawing(struct graph_t* graph);
 
 #endif

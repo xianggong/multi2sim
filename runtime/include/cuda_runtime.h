@@ -62,8 +62,7 @@
 *                                                                              *
 *******************************************************************************/
 
-namespace
-{
+namespace {
 
 /**
  * \addtogroup CUDART_HIGHLEVEL
@@ -87,18 +86,16 @@ namespace
  * \notefnerr
  *
  * \sa ::cudaConfigureCall,
- * \ref ::cudaFuncGetAttributes(struct cudaFuncAttributes*, T*) "cudaFuncGetAttributes (C++ API)",
+ * \ref ::cudaFuncGetAttributes(struct cudaFuncAttributes*, T*)
+ * "cudaFuncGetAttributes (C++ API)",
  * \ref ::cudaLaunch(T*) "cudaLaunch (C++ API)",
  * ::cudaSetDoubleForDevice,
  * ::cudaSetDoubleForHost,
- * \ref ::cudaSetupArgument(const void*, size_t, size_t) "cudaSetupArgument (C API)"
+ * \ref ::cudaSetupArgument(const void*, size_t, size_t) "cudaSetupArgument (C
+ * API)"
  */
-template<class T>
-__inline__ __host__ cudaError_t cudaSetupArgument(
-  T      arg,
-  size_t offset
-)
-{
+template <class T>
+__inline__ __host__ cudaError_t cudaSetupArgument(T arg, size_t offset) {
   return ::cudaSetupArgument((const void*)&arg, sizeof(T), offset);
 }
 
@@ -132,11 +129,8 @@ __inline__ __host__ cudaError_t cudaSetupArgument(
  * ::cudaEventSynchronize, ::cudaEventDestroy, ::cudaEventElapsedTime,
  * ::cudaStreamWaitEvent
  */
-static __inline__ __host__ cudaError_t cudaEventCreate(
-  cudaEvent_t  *event,
-  unsigned int  flags
-)
-{
+static __inline__ __host__ cudaError_t cudaEventCreate(cudaEvent_t* event,
+                                                       unsigned int flags) {
   return ::cudaEventCreateWithFlags(event, flags);
 }
 
@@ -195,62 +189,38 @@ static __inline__ __host__ cudaError_t cudaEventCreate(
  * \ref ::cudaMallocHost(void**, size_t) "cudaMallocHost (C API)",
  * ::cudaFreeHost, ::cudaHostAlloc
  */
-__inline__ __host__ cudaError_t cudaMallocHost(
-  void         **ptr,
-  size_t         size,
-  unsigned int   flags
-)
-{
+__inline__ __host__ cudaError_t cudaMallocHost(void** ptr, size_t size,
+                                               unsigned int flags) {
   return ::cudaHostAlloc(ptr, size, flags);
 }
 
-template<class T>
-__inline__ __host__ cudaError_t cudaHostAlloc(
-  T            **ptr,
-  size_t         size,
-  unsigned int   flags
-)
-{
+template <class T>
+__inline__ __host__ cudaError_t cudaHostAlloc(T** ptr, size_t size,
+                                              unsigned int flags) {
   return ::cudaHostAlloc((void**)(void*)ptr, size, flags);
 }
 
-template<class T>
-__inline__ __host__ cudaError_t cudaHostGetDevicePointer(
-  T            **pDevice,
-  void          *pHost,
-  unsigned int   flags
-)
-{
+template <class T>
+__inline__ __host__ cudaError_t cudaHostGetDevicePointer(T** pDevice,
+                                                         void* pHost,
+                                                         unsigned int flags) {
   return ::cudaHostGetDevicePointer((void**)(void*)pDevice, pHost, flags);
 }
 
-template<class T>
-__inline__ __host__ cudaError_t cudaMalloc(
-  T      **devPtr,
-  size_t   size
-)
-{
+template <class T>
+__inline__ __host__ cudaError_t cudaMalloc(T** devPtr, size_t size) {
   return ::cudaMalloc((void**)(void*)devPtr, size);
 }
 
-template<class T>
-__inline__ __host__ cudaError_t cudaMallocHost(
-  T            **ptr,
-  size_t         size,
-  unsigned int   flags = 0
-)
-{
+template <class T>
+__inline__ __host__ cudaError_t cudaMallocHost(T** ptr, size_t size,
+                                               unsigned int flags = 0) {
   return cudaMallocHost((void**)(void*)ptr, size, flags);
 }
 
-template<class T>
-__inline__ __host__ cudaError_t cudaMallocPitch(
-  T      **devPtr,
-  size_t  *pitch,
-  size_t   width,
-  size_t   height
-)
-{
+template <class T>
+__inline__ __host__ cudaError_t cudaMallocPitch(T** devPtr, size_t* pitch,
+                                                size_t width, size_t height) {
   return ::cudaMallocPitch((void**)(void*)devPtr, pitch, width, height);
 }
 
@@ -289,15 +259,10 @@ __inline__ __host__ cudaError_t cudaMallocPitch(
  * ::cudaMemcpyFromArrayAsync, ::cudaMemcpy2DFromArrayAsync,
  * ::cudaMemcpyToSymbolAsync, ::cudaMemcpyFromSymbolAsync
  */
-template<class T>
+template <class T>
 __inline__ __host__ cudaError_t cudaMemcpyToSymbol(
-  const T                   &symbol,
-  const void                *src,
-        size_t               count,
-        size_t               offset = 0,
-        enum cudaMemcpyKind  kind   = cudaMemcpyHostToDevice
-)
-{
+    const T& symbol, const void* src, size_t count, size_t offset = 0,
+    enum cudaMemcpyKind kind = cudaMemcpyHostToDevice) {
   return ::cudaMemcpyToSymbol((const void*)&symbol, src, count, offset, kind);
 }
 
@@ -341,17 +306,13 @@ __inline__ __host__ cudaError_t cudaMemcpyToSymbol(
  * ::cudaMemcpyFromArrayAsync, ::cudaMemcpy2DFromArrayAsync,
  * ::cudaMemcpyFromSymbolAsync
  */
-template<class T>
+template <class T>
 __inline__ __host__ cudaError_t cudaMemcpyToSymbolAsync(
-  const T                   &symbol,
-  const void                *src,
-        size_t               count,
-        size_t               offset = 0,
-        enum cudaMemcpyKind  kind   = cudaMemcpyHostToDevice,
-        cudaStream_t         stream = 0
-)
-{
-  return ::cudaMemcpyToSymbolAsync((const void*)&symbol, src, count, offset, kind, stream);
+    const T& symbol, const void* src, size_t count, size_t offset = 0,
+    enum cudaMemcpyKind kind = cudaMemcpyHostToDevice,
+    cudaStream_t stream = 0) {
+  return ::cudaMemcpyToSymbolAsync((const void*)&symbol, src, count, offset,
+                                   kind, stream);
 }
 
 /**
@@ -387,15 +348,10 @@ __inline__ __host__ cudaError_t cudaMemcpyToSymbolAsync(
  * ::cudaMemcpyFromArrayAsync, ::cudaMemcpy2DFromArrayAsync,
  * ::cudaMemcpyToSymbolAsync, ::cudaMemcpyFromSymbolAsync
  */
-template<class T>
+template <class T>
 __inline__ __host__ cudaError_t cudaMemcpyFromSymbol(
-        void                *dst,
-  const T                   &symbol,
-        size_t               count,
-        size_t               offset = 0,
-        enum cudaMemcpyKind  kind   = cudaMemcpyDeviceToHost
-)
-{
+    void* dst, const T& symbol, size_t count, size_t offset = 0,
+    enum cudaMemcpyKind kind = cudaMemcpyDeviceToHost) {
   return ::cudaMemcpyFromSymbol(dst, (const void*)&symbol, count, offset, kind);
 }
 
@@ -439,24 +395,21 @@ __inline__ __host__ cudaError_t cudaMemcpyFromSymbol(
  * ::cudaMemcpyFromArrayAsync, ::cudaMemcpy2DFromArrayAsync,
  * ::cudaMemcpyToSymbolAsync
  */
-template<class T>
+template <class T>
 __inline__ __host__ cudaError_t cudaMemcpyFromSymbolAsync(
-        void                *dst,
-  const T                   &symbol,
-        size_t               count,
-        size_t               offset = 0,
-        enum cudaMemcpyKind  kind   = cudaMemcpyDeviceToHost,
-        cudaStream_t         stream = 0
-)
-{
-  return ::cudaMemcpyFromSymbolAsync(dst, (const void*)&symbol, count, offset, kind, stream);
+    void* dst, const T& symbol, size_t count, size_t offset = 0,
+    enum cudaMemcpyKind kind = cudaMemcpyDeviceToHost,
+    cudaStream_t stream = 0) {
+  return ::cudaMemcpyFromSymbolAsync(dst, (const void*)&symbol, count, offset,
+                                     kind, stream);
 }
 
 /**
  * \brief \hl Finds the address associated with a CUDA symbol
  *
  * Returns in \p *devPtr the address of symbol \p symbol on the device.
- * \p symbol can either be a variable that resides in global or constant memory space.
+ * \p symbol can either be a variable that resides in global or constant memory
+ * space.
  * If \p symbol cannot be found, or if \p symbol is not declared
  * in the global or constant memory space, \p *devPtr is unchanged and the error
  * ::cudaErrorInvalidSymbol is returned.
@@ -469,15 +422,13 @@ __inline__ __host__ cudaError_t cudaMemcpyFromSymbolAsync(
  * ::cudaErrorInvalidSymbol
  * \notefnerr
  *
- * \sa \ref ::cudaGetSymbolAddress(void**, const void*) "cudaGetSymbolAddress (C API)",
+ * \sa \ref ::cudaGetSymbolAddress(void**, const void*) "cudaGetSymbolAddress (C
+ * API)",
  * \ref ::cudaGetSymbolSize(size_t*, const T&) "cudaGetSymbolSize (C++ API)"
  */
-template<class T>
-__inline__ __host__ cudaError_t cudaGetSymbolAddress(
-        void **devPtr,
-  const T     &symbol
-)
-{
+template <class T>
+__inline__ __host__ cudaError_t cudaGetSymbolAddress(void** devPtr,
+                                                     const T& symbol) {
   return ::cudaGetSymbolAddress(devPtr, (const void*)&symbol);
 }
 
@@ -498,15 +449,13 @@ __inline__ __host__ cudaError_t cudaGetSymbolAddress(
  * ::cudaErrorInvalidSymbol
  * \notefnerr
  *
- * \sa \ref ::cudaGetSymbolAddress(void**, const T&) "cudaGetSymbolAddress (C++ API)",
+ * \sa \ref ::cudaGetSymbolAddress(void**, const T&) "cudaGetSymbolAddress (C++
+ * API)",
  * \ref ::cudaGetSymbolSize(size_t*, const void*) "cudaGetSymbolSize (C API)"
  */
-template<class T>
-__inline__ __host__ cudaError_t cudaGetSymbolSize(
-        size_t *size,
-  const T      &symbol
-)
-{
+template <class T>
+__inline__ __host__ cudaError_t cudaGetSymbolSize(size_t* size,
+                                                  const T& symbol) {
   return ::cudaGetSymbolSize(size, (const void*)&symbol);
 }
 
@@ -517,7 +466,8 @@ __inline__ __host__ cudaError_t cudaGetSymbolSize(
  * reference \p tex. \p desc describes how the memory is interpreted when
  * fetching values from the texture. The \p offset parameter is an optional
  * byte offset as with the low-level
- * \ref ::cudaBindTexture(size_t*, const struct textureReference*, const void*, const struct cudaChannelFormatDesc*, size_t) "cudaBindTexture()"
+ * \ref ::cudaBindTexture(size_t*, const struct textureReference*, const void*,
+ * const struct cudaChannelFormatDesc*, size_t) "cudaBindTexture()"
  * function. Any memory previously bound to \p tex is unbound.
  *
  * \param offset - Offset in bytes
@@ -535,24 +485,33 @@ __inline__ __host__ cudaError_t cudaGetSymbolSize(
  *
  * \sa \ref ::cudaCreateChannelDesc(void) "cudaCreateChannelDesc (C++ API)",
  * ::cudaGetChannelDesc, ::cudaGetTextureReference,
- * \ref ::cudaBindTexture(size_t*, const struct textureReference*, const void*, const struct cudaChannelFormatDesc*, size_t) "cudaBindTexture (C API)",
- * \ref ::cudaBindTexture(size_t*, const struct texture<T, dim, readMode>&, const void*, size_t) "cudaBindTexture (C++ API, inherited channel descriptor)",
- * \ref ::cudaBindTexture2D(size_t*, const struct texture<T, dim, readMode>&, const void*, const struct cudaChannelFormatDesc&, size_t, size_t, size_t) "cudaBindTexture2D (C++ API)",
- * \ref ::cudaBindTexture2D(size_t*, const struct texture<T, dim, readMode>&, const void*, size_t, size_t, size_t) "cudaBindTexture2D (C++ API, inherited channel descriptor)",
- * \ref ::cudaBindTextureToArray(const struct texture<T, dim, readMode>&, cudaArray_const_t, const struct cudaChannelFormatDesc&) "cudaBindTextureToArray (C++ API)",
- * \ref ::cudaBindTextureToArray(const struct texture<T, dim, readMode>&, cudaArray_const_t) "cudaBindTextureToArray (C++ API, inherited channel descriptor)",
- * \ref ::cudaUnbindTexture(const struct texture<T, dim, readMode>&) "cudaUnbindTexture (C++ API)",
- * \ref ::cudaGetTextureAlignmentOffset(size_t*, const struct texture<T, dim, readMode>&) "cudaGetTextureAlignmentOffset (C++ API)"
+ * \ref ::cudaBindTexture(size_t*, const struct textureReference*, const void*,
+ * const struct cudaChannelFormatDesc*, size_t) "cudaBindTexture (C API)",
+ * \ref ::cudaBindTexture(size_t*, const struct texture<T, dim, readMode>&,
+ * const void*, size_t) "cudaBindTexture (C++ API, inherited channel
+ * descriptor)",
+ * \ref ::cudaBindTexture2D(size_t*, const struct texture<T, dim, readMode>&,
+ * const void*, const struct cudaChannelFormatDesc&, size_t, size_t, size_t)
+ * "cudaBindTexture2D (C++ API)",
+ * \ref ::cudaBindTexture2D(size_t*, const struct texture<T, dim, readMode>&,
+ * const void*, size_t, size_t, size_t) "cudaBindTexture2D (C++ API, inherited
+ * channel descriptor)",
+ * \ref ::cudaBindTextureToArray(const struct texture<T, dim, readMode>&,
+ * cudaArray_const_t, const struct cudaChannelFormatDesc&)
+ * "cudaBindTextureToArray (C++ API)",
+ * \ref ::cudaBindTextureToArray(const struct texture<T, dim, readMode>&,
+ * cudaArray_const_t) "cudaBindTextureToArray (C++ API, inherited channel
+ * descriptor)",
+ * \ref ::cudaUnbindTexture(const struct texture<T, dim, readMode>&)
+ * "cudaUnbindTexture (C++ API)",
+ * \ref ::cudaGetTextureAlignmentOffset(size_t*, const struct texture<T, dim,
+ * readMode>&) "cudaGetTextureAlignmentOffset (C++ API)"
  */
-template<class T, int dim, enum cudaTextureReadMode readMode>
-__inline__ __host__ cudaError_t cudaBindTexture(
-        size_t                           *offset,
-  const struct texture<T, dim, readMode> &tex,
-  const void                             *devPtr,
-  const struct cudaChannelFormatDesc     &desc,
-        size_t                            size = UINT_MAX
-)
-{
+template <class T, int dim, enum cudaTextureReadMode readMode>
+__inline__ __host__ cudaError_t
+cudaBindTexture(size_t* offset, const struct texture<T, dim, readMode>& tex,
+                const void* devPtr, const struct cudaChannelFormatDesc& desc,
+                size_t size = UINT_MAX) {
   return ::cudaBindTexture(offset, &tex, devPtr, &desc, size);
 }
 
@@ -563,7 +522,8 @@ __inline__ __host__ cudaError_t cudaBindTexture(
  * reference \p tex. The channel descriptor is inherited from the texture
  * reference type. The \p offset parameter is an optional byte offset as with
  * the low-level
- * ::cudaBindTexture(size_t*, const struct textureReference*, const void*, const struct cudaChannelFormatDesc*, size_t)
+ * ::cudaBindTexture(size_t*, const struct textureReference*, const void*, const
+ * struct cudaChannelFormatDesc*, size_t)
  * function. Any memory previously bound to \p tex is unbound.
  *
  * \param offset - Offset in bytes
@@ -580,23 +540,32 @@ __inline__ __host__ cudaError_t cudaBindTexture(
  *
  * \sa \ref ::cudaCreateChannelDesc(void) "cudaCreateChannelDesc (C++ API)",
  * ::cudaGetChannelDesc, ::cudaGetTextureReference,
- * \ref ::cudaBindTexture(size_t*, const struct textureReference*, const void*, const struct cudaChannelFormatDesc*, size_t) "cudaBindTexture (C API)",
- * \ref ::cudaBindTexture(size_t*, const struct texture<T, dim, readMode>&, const void*, const struct cudaChannelFormatDesc&, size_t) "cudaBindTexture (C++ API)",
- * \ref ::cudaBindTexture2D(size_t*, const struct texture<T, dim, readMode>&, const void*, const struct cudaChannelFormatDesc&, size_t, size_t, size_t) "cudaBindTexture2D (C++ API)",
- * \ref ::cudaBindTexture2D(size_t*, const struct texture<T, dim, readMode>&, const void*, size_t, size_t, size_t) "cudaBindTexture2D (C++ API, inherited channel descriptor)",
- * \ref ::cudaBindTextureToArray(const struct texture<T, dim, readMode>&, cudaArray_const_t, const struct cudaChannelFormatDesc&) "cudaBindTextureToArray (C++ API)",
- * \ref ::cudaBindTextureToArray(const struct texture<T, dim, readMode>&, cudaArray_const_t) "cudaBindTextureToArray (C++ API, inherited channel descriptor)",
- * \ref ::cudaUnbindTexture(const struct texture<T, dim, readMode>&) "cudaUnbindTexture (C++ API)",
- * \ref ::cudaGetTextureAlignmentOffset(size_t*, const struct texture<T, dim, readMode>&) "cudaGetTextureAlignmentOffset (C++ API)"
+ * \ref ::cudaBindTexture(size_t*, const struct textureReference*, const void*,
+ * const struct cudaChannelFormatDesc*, size_t) "cudaBindTexture (C API)",
+ * \ref ::cudaBindTexture(size_t*, const struct texture<T, dim, readMode>&,
+ * const void*, const struct cudaChannelFormatDesc&, size_t) "cudaBindTexture
+ * (C++ API)",
+ * \ref ::cudaBindTexture2D(size_t*, const struct texture<T, dim, readMode>&,
+ * const void*, const struct cudaChannelFormatDesc&, size_t, size_t, size_t)
+ * "cudaBindTexture2D (C++ API)",
+ * \ref ::cudaBindTexture2D(size_t*, const struct texture<T, dim, readMode>&,
+ * const void*, size_t, size_t, size_t) "cudaBindTexture2D (C++ API, inherited
+ * channel descriptor)",
+ * \ref ::cudaBindTextureToArray(const struct texture<T, dim, readMode>&,
+ * cudaArray_const_t, const struct cudaChannelFormatDesc&)
+ * "cudaBindTextureToArray (C++ API)",
+ * \ref ::cudaBindTextureToArray(const struct texture<T, dim, readMode>&,
+ * cudaArray_const_t) "cudaBindTextureToArray (C++ API, inherited channel
+ * descriptor)",
+ * \ref ::cudaUnbindTexture(const struct texture<T, dim, readMode>&)
+ * "cudaUnbindTexture (C++ API)",
+ * \ref ::cudaGetTextureAlignmentOffset(size_t*, const struct texture<T, dim,
+ * readMode>&) "cudaGetTextureAlignmentOffset (C++ API)"
  */
-template<class T, int dim, enum cudaTextureReadMode readMode>
-__inline__ __host__ cudaError_t cudaBindTexture(
-        size_t                           *offset,
-  const struct texture<T, dim, readMode> &tex,
-  const void                             *devPtr,
-        size_t                            size = UINT_MAX
-)
-{
+template <class T, int dim, enum cudaTextureReadMode readMode>
+__inline__ __host__ cudaError_t
+cudaBindTexture(size_t* offset, const struct texture<T, dim, readMode>& tex,
+                const void* devPtr, size_t size = UINT_MAX) {
   return cudaBindTexture(offset, tex, devPtr, tex.channelDesc, size);
 }
 
@@ -611,7 +580,9 @@ __inline__ __host__ cudaError_t cudaBindTexture(
  *
  * Since the hardware enforces an alignment requirement on texture base
  * addresses,
- * \ref ::cudaBindTexture2D(size_t*, const struct texture<T, dim, readMode>&, const void*, const struct cudaChannelFormatDesc&, size_t, size_t, size_t) "cudaBindTexture2D()"
+ * \ref ::cudaBindTexture2D(size_t*, const struct texture<T, dim, readMode>&,
+ * const void*, const struct cudaChannelFormatDesc&, size_t, size_t, size_t)
+ * "cudaBindTexture2D()"
  * returns in \p *offset a byte offset that
  * must be applied to texture fetches in order to read from the desired memory.
  * This offset must be divided by the texel size and passed to kernels that
@@ -636,26 +607,34 @@ __inline__ __host__ cudaError_t cudaBindTexture(
  *
  * \sa \ref ::cudaCreateChannelDesc(void) "cudaCreateChannelDesc (C++ API)",
  * ::cudaGetChannelDesc, ::cudaGetTextureReference,
- * \ref ::cudaBindTexture(size_t*, const struct texture<T, dim, readMode>&, const void*, const struct cudaChannelFormatDesc&, size_t) "cudaBindTexture (C++ API)",
- * \ref ::cudaBindTexture(size_t*, const struct texture<T, dim, readMode>&, const void*, size_t) "cudaBindTexture (C++ API, inherited channel descriptor)",
- * \ref ::cudaBindTexture2D(size_t*, const struct textureReference*, const void*, const struct cudaChannelFormatDesc*, size_t, size_t, size_t) "cudaBindTexture2D (C API)",
- * \ref ::cudaBindTexture2D(size_t*, const struct texture<T, dim, readMode>&, const void*, size_t, size_t, size_t) "cudaBindTexture2D (C++ API, inherited channel descriptor)",
- * \ref ::cudaBindTextureToArray(const struct texture<T, dim, readMode>&, cudaArray_const_t, const struct cudaChannelFormatDesc&) "cudaBindTextureToArray (C++ API)",
- * \ref ::cudaBindTextureToArray(const struct texture<T, dim, readMode>&, cudaArray_const_t) "cudaBindTextureToArray (C++ API, inherited channel descriptor)",
- * \ref ::cudaUnbindTexture(const struct texture<T, dim, readMode>&) "cudaUnbindTexture (C++ API)",
- * \ref ::cudaGetTextureAlignmentOffset(size_t*, const struct texture<T, dim, readMode>&) "cudaGetTextureAlignmentOffset (C++ API)"
+ * \ref ::cudaBindTexture(size_t*, const struct texture<T, dim, readMode>&,
+ * const void*, const struct cudaChannelFormatDesc&, size_t) "cudaBindTexture
+ * (C++ API)",
+ * \ref ::cudaBindTexture(size_t*, const struct texture<T, dim, readMode>&,
+ * const void*, size_t) "cudaBindTexture (C++ API, inherited channel
+ * descriptor)",
+ * \ref ::cudaBindTexture2D(size_t*, const struct textureReference*, const
+ * void*, const struct cudaChannelFormatDesc*, size_t, size_t, size_t)
+ * "cudaBindTexture2D (C API)",
+ * \ref ::cudaBindTexture2D(size_t*, const struct texture<T, dim, readMode>&,
+ * const void*, size_t, size_t, size_t) "cudaBindTexture2D (C++ API, inherited
+ * channel descriptor)",
+ * \ref ::cudaBindTextureToArray(const struct texture<T, dim, readMode>&,
+ * cudaArray_const_t, const struct cudaChannelFormatDesc&)
+ * "cudaBindTextureToArray (C++ API)",
+ * \ref ::cudaBindTextureToArray(const struct texture<T, dim, readMode>&,
+ * cudaArray_const_t) "cudaBindTextureToArray (C++ API, inherited channel
+ * descriptor)",
+ * \ref ::cudaUnbindTexture(const struct texture<T, dim, readMode>&)
+ * "cudaUnbindTexture (C++ API)",
+ * \ref ::cudaGetTextureAlignmentOffset(size_t*, const struct texture<T, dim,
+ * readMode>&) "cudaGetTextureAlignmentOffset (C++ API)"
  */
-template<class T, int dim, enum cudaTextureReadMode readMode>
-__inline__ __host__ cudaError_t cudaBindTexture2D(
-        size_t                           *offset,
-  const struct texture<T, dim, readMode> &tex,
-  const void                             *devPtr,
-  const struct cudaChannelFormatDesc     &desc,
-  size_t                                  width,
-  size_t                                  height,
-  size_t                                  pitch
-)
-{
+template <class T, int dim, enum cudaTextureReadMode readMode>
+__inline__ __host__ cudaError_t
+cudaBindTexture2D(size_t* offset, const struct texture<T, dim, readMode>& tex,
+                  const void* devPtr, const struct cudaChannelFormatDesc& desc,
+                  size_t width, size_t height, size_t pitch) {
   return ::cudaBindTexture2D(offset, &tex, devPtr, &desc, width, height, pitch);
 }
 
@@ -670,7 +649,8 @@ __inline__ __host__ cudaError_t cudaBindTexture2D(
  *
  * Since the hardware enforces an alignment requirement on texture base
  * addresses,
- * \ref ::cudaBindTexture2D(size_t*, const struct texture<T, dim, readMode>&, const void*, size_t, size_t, size_t) "cudaBindTexture2D()"
+ * \ref ::cudaBindTexture2D(size_t*, const struct texture<T, dim, readMode>&,
+ * const void*, size_t, size_t, size_t) "cudaBindTexture2D()"
  * returns in \p *offset a byte offset that
  * must be applied to texture fetches in order to read from the desired memory.
  * This offset must be divided by the texel size and passed to kernels that
@@ -694,26 +674,35 @@ __inline__ __host__ cudaError_t cudaBindTexture2D(
  *
  * \sa \ref ::cudaCreateChannelDesc(void) "cudaCreateChannelDesc (C++ API)",
  * ::cudaGetChannelDesc, ::cudaGetTextureReference,
- * \ref ::cudaBindTexture(size_t*, const struct texture<T, dim, readMode>&, const void*, const struct cudaChannelFormatDesc&, size_t) "cudaBindTexture (C++ API)",
- * \ref ::cudaBindTexture(size_t*, const struct texture<T, dim, readMode>&, const void*, size_t) "cudaBindTexture (C++ API, inherited channel descriptor)",
- * \ref ::cudaBindTexture2D(size_t*, const struct textureReference*, const void*, const struct cudaChannelFormatDesc*, size_t, size_t, size_t) "cudaBindTexture2D (C API)",
- * \ref ::cudaBindTexture2D(size_t*, const struct texture<T, dim, readMode>&, const void*, const struct cudaChannelFormatDesc&, size_t, size_t, size_t) "cudaBindTexture2D (C++ API)",
- * \ref ::cudaBindTextureToArray(const struct texture<T, dim, readMode>&, cudaArray_const_t, const struct cudaChannelFormatDesc&) "cudaBindTextureToArray (C++ API)",
- * \ref ::cudaBindTextureToArray(const struct texture<T, dim, readMode>&, cudaArray_const_t) "cudaBindTextureToArray (C++ API, inherited channel descriptor)",
- * \ref ::cudaUnbindTexture(const struct texture<T, dim, readMode>&) "cudaUnbindTexture (C++ API)",
- * \ref ::cudaGetTextureAlignmentOffset(size_t*, const struct texture<T, dim, readMode>&) "cudaGetTextureAlignmentOffset (C++ API)"
+ * \ref ::cudaBindTexture(size_t*, const struct texture<T, dim, readMode>&,
+ * const void*, const struct cudaChannelFormatDesc&, size_t) "cudaBindTexture
+ * (C++ API)",
+ * \ref ::cudaBindTexture(size_t*, const struct texture<T, dim, readMode>&,
+ * const void*, size_t) "cudaBindTexture (C++ API, inherited channel
+ * descriptor)",
+ * \ref ::cudaBindTexture2D(size_t*, const struct textureReference*, const
+ * void*, const struct cudaChannelFormatDesc*, size_t, size_t, size_t)
+ * "cudaBindTexture2D (C API)",
+ * \ref ::cudaBindTexture2D(size_t*, const struct texture<T, dim, readMode>&,
+ * const void*, const struct cudaChannelFormatDesc&, size_t, size_t, size_t)
+ * "cudaBindTexture2D (C++ API)",
+ * \ref ::cudaBindTextureToArray(const struct texture<T, dim, readMode>&,
+ * cudaArray_const_t, const struct cudaChannelFormatDesc&)
+ * "cudaBindTextureToArray (C++ API)",
+ * \ref ::cudaBindTextureToArray(const struct texture<T, dim, readMode>&,
+ * cudaArray_const_t) "cudaBindTextureToArray (C++ API, inherited channel
+ * descriptor)",
+ * \ref ::cudaUnbindTexture(const struct texture<T, dim, readMode>&)
+ * "cudaUnbindTexture (C++ API)",
+ * \ref ::cudaGetTextureAlignmentOffset(size_t*, const struct texture<T, dim,
+ * readMode>&) "cudaGetTextureAlignmentOffset (C++ API)"
  */
-template<class T, int dim, enum cudaTextureReadMode readMode>
+template <class T, int dim, enum cudaTextureReadMode readMode>
 __inline__ __host__ cudaError_t cudaBindTexture2D(
-        size_t                           *offset,
-  const struct texture<T, dim, readMode> &tex,
-  const void                             *devPtr,
-  size_t                                  width,
-  size_t                                  height,
-  size_t                                  pitch
-)
-{
-  return ::cudaBindTexture2D(offset, &tex, devPtr, &tex.channelDesc, width, height, pitch);
+    size_t* offset, const struct texture<T, dim, readMode>& tex,
+    const void* devPtr, size_t width, size_t height, size_t pitch) {
+  return ::cudaBindTexture2D(offset, &tex, devPtr, &tex.channelDesc, width,
+                             height, pitch);
 }
 
 /**
@@ -736,22 +725,33 @@ __inline__ __host__ cudaError_t cudaBindTexture2D(
  *
  * \sa \ref ::cudaCreateChannelDesc(void) "cudaCreateChannelDesc (C++ API)",
  * ::cudaGetChannelDesc, ::cudaGetTextureReference,
- * \ref ::cudaBindTexture(size_t*, const struct texture<T, dim, readMode>&, const void*, const struct cudaChannelFormatDesc&, size_t) "cudaBindTexture (C++ API)",
- * \ref ::cudaBindTexture(size_t*, const struct texture<T, dim, readMode>&, const void*, size_t) "cudaBindTexture (C++ API, inherited channel descriptor)",
- * \ref ::cudaBindTexture2D(size_t*, const struct texture<T, dim, readMode>&, const void*, const struct cudaChannelFormatDesc&, size_t, size_t, size_t) "cudaBindTexture2D (C++ API)",
- * \ref ::cudaBindTexture2D(size_t*, const struct texture<T, dim, readMode>&, const void*, size_t, size_t, size_t) "cudaBindTexture2D (C++ API, inherited channel descriptor)",
- * \ref ::cudaBindTextureToArray(const struct textureReference*, cudaArray_const_t, const struct cudaChannelFormatDesc*) "cudaBindTextureToArray (C API)",
- * \ref ::cudaBindTextureToArray(const struct texture<T, dim, readMode>&, cudaArray_const_t) "cudaBindTextureToArray (C++ API, inherited channel descriptor)",
- * \ref ::cudaUnbindTexture(const struct texture<T, dim, readMode>&) "cudaUnbindTexture (C++ API)",
- * \ref ::cudaGetTextureAlignmentOffset(size_t*, const struct texture<T, dim, readMode >&) "cudaGetTextureAlignmentOffset (C++ API)"
+ * \ref ::cudaBindTexture(size_t*, const struct texture<T, dim, readMode>&,
+ * const void*, const struct cudaChannelFormatDesc&, size_t) "cudaBindTexture
+ * (C++ API)",
+ * \ref ::cudaBindTexture(size_t*, const struct texture<T, dim, readMode>&,
+ * const void*, size_t) "cudaBindTexture (C++ API, inherited channel
+ * descriptor)",
+ * \ref ::cudaBindTexture2D(size_t*, const struct texture<T, dim, readMode>&,
+ * const void*, const struct cudaChannelFormatDesc&, size_t, size_t, size_t)
+ * "cudaBindTexture2D (C++ API)",
+ * \ref ::cudaBindTexture2D(size_t*, const struct texture<T, dim, readMode>&,
+ * const void*, size_t, size_t, size_t) "cudaBindTexture2D (C++ API, inherited
+ * channel descriptor)",
+ * \ref ::cudaBindTextureToArray(const struct textureReference*,
+ * cudaArray_const_t, const struct cudaChannelFormatDesc*)
+ * "cudaBindTextureToArray (C API)",
+ * \ref ::cudaBindTextureToArray(const struct texture<T, dim, readMode>&,
+ * cudaArray_const_t) "cudaBindTextureToArray (C++ API, inherited channel
+ * descriptor)",
+ * \ref ::cudaUnbindTexture(const struct texture<T, dim, readMode>&)
+ * "cudaUnbindTexture (C++ API)",
+ * \ref ::cudaGetTextureAlignmentOffset(size_t*, const struct texture<T, dim,
+ * readMode >&) "cudaGetTextureAlignmentOffset (C++ API)"
  */
-template<class T, int dim, enum cudaTextureReadMode readMode>
+template <class T, int dim, enum cudaTextureReadMode readMode>
 __inline__ __host__ cudaError_t cudaBindTextureToArray(
-  const struct texture<T, dim, readMode> &tex,
-  cudaArray_const_t                       array,
-  const struct cudaChannelFormatDesc     &desc
-)
-{
+    const struct texture<T, dim, readMode>& tex, cudaArray_const_t array,
+    const struct cudaChannelFormatDesc& desc) {
   return ::cudaBindTextureToArray(&tex, array, &desc);
 }
 
@@ -774,23 +774,34 @@ __inline__ __host__ cudaError_t cudaBindTextureToArray(
  *
  * \sa \ref ::cudaCreateChannelDesc(void) "cudaCreateChannelDesc (C++ API)",
  * ::cudaGetChannelDesc, ::cudaGetTextureReference,
- * \ref ::cudaBindTexture(size_t*, const struct texture<T, dim, readMode>&, const void*, const struct cudaChannelFormatDesc&, size_t) "cudaBindTexture (C++ API)",
- * \ref ::cudaBindTexture(size_t*, const struct texture<T, dim, readMode>&, const void*, size_t) "cudaBindTexture (C++ API, inherited channel descriptor)",
- * \ref ::cudaBindTexture2D(size_t*, const struct texture<T, dim, readMode>&, const void*, const struct cudaChannelFormatDesc&, size_t, size_t, size_t) "cudaBindTexture2D (C++ API)",
- * \ref ::cudaBindTexture2D(size_t*, const struct texture<T, dim, readMode>&, const void*, size_t, size_t, size_t) "cudaBindTexture2D (C++ API, inherited channel descriptor)",
- * \ref ::cudaBindTextureToArray(const struct textureReference*, cudaArray_const_t, const struct cudaChannelFormatDesc*) "cudaBindTextureToArray (C API)",
- * \ref ::cudaBindTextureToArray(const struct texture<T, dim, readMode>&, cudaArray_const_t, const struct cudaChannelFormatDesc&) "cudaBindTextureToArray (C++ API)",
- * \ref ::cudaUnbindTexture(const struct texture<T, dim, readMode>&) "cudaUnbindTexture (C++ API)",
- * \ref ::cudaGetTextureAlignmentOffset(size_t*, const struct texture<T, dim, readMode >&) "cudaGetTextureAlignmentOffset (C++ API)"
+ * \ref ::cudaBindTexture(size_t*, const struct texture<T, dim, readMode>&,
+ * const void*, const struct cudaChannelFormatDesc&, size_t) "cudaBindTexture
+ * (C++ API)",
+ * \ref ::cudaBindTexture(size_t*, const struct texture<T, dim, readMode>&,
+ * const void*, size_t) "cudaBindTexture (C++ API, inherited channel
+ * descriptor)",
+ * \ref ::cudaBindTexture2D(size_t*, const struct texture<T, dim, readMode>&,
+ * const void*, const struct cudaChannelFormatDesc&, size_t, size_t, size_t)
+ * "cudaBindTexture2D (C++ API)",
+ * \ref ::cudaBindTexture2D(size_t*, const struct texture<T, dim, readMode>&,
+ * const void*, size_t, size_t, size_t) "cudaBindTexture2D (C++ API, inherited
+ * channel descriptor)",
+ * \ref ::cudaBindTextureToArray(const struct textureReference*,
+ * cudaArray_const_t, const struct cudaChannelFormatDesc*)
+ * "cudaBindTextureToArray (C API)",
+ * \ref ::cudaBindTextureToArray(const struct texture<T, dim, readMode>&,
+ * cudaArray_const_t, const struct cudaChannelFormatDesc&)
+ * "cudaBindTextureToArray (C++ API)",
+ * \ref ::cudaUnbindTexture(const struct texture<T, dim, readMode>&)
+ * "cudaUnbindTexture (C++ API)",
+ * \ref ::cudaGetTextureAlignmentOffset(size_t*, const struct texture<T, dim,
+ * readMode >&) "cudaGetTextureAlignmentOffset (C++ API)"
  */
-template<class T, int dim, enum cudaTextureReadMode readMode>
+template <class T, int dim, enum cudaTextureReadMode readMode>
 __inline__ __host__ cudaError_t cudaBindTextureToArray(
-  const struct texture<T, dim, readMode> &tex,
-  cudaArray_const_t                       array
-)
-{
+    const struct texture<T, dim, readMode>& tex, cudaArray_const_t array) {
   struct cudaChannelFormatDesc desc;
-  cudaError_t                  err = ::cudaGetChannelDesc(&desc, array);
+  cudaError_t err = ::cudaGetChannelDesc(&desc, array);
 
   return err == cudaSuccess ? cudaBindTextureToArray(tex, array, desc) : err;
 }
@@ -798,7 +809,8 @@ __inline__ __host__ cudaError_t cudaBindTextureToArray(
 /**
  * \brief \hl Binds a mipmapped array to a texture
  *
- * Binds the CUDA mipmapped array \p mipmappedArray to the texture reference \p tex.
+ * Binds the CUDA mipmapped array \p mipmappedArray to the texture reference \p
+ * tex.
  * \p desc describes how the memory is interpreted when fetching values from
  * the texture. Any CUDA mipmapped array previously bound to \p tex is unbound.
  *
@@ -815,30 +827,44 @@ __inline__ __host__ cudaError_t cudaBindTextureToArray(
  *
  * \sa \ref ::cudaCreateChannelDesc(void) "cudaCreateChannelDesc (C++ API)",
  * ::cudaGetChannelDesc, ::cudaGetTextureReference,
- * \ref ::cudaBindTexture(size_t*, const struct texture<T, dim, readMode>&, const void*, const struct cudaChannelFormatDesc&, size_t) "cudaBindTexture (C++ API)",
- * \ref ::cudaBindTexture(size_t*, const struct texture<T, dim, readMode>&, const void*, size_t) "cudaBindTexture (C++ API, inherited channel descriptor)",
- * \ref ::cudaBindTexture2D(size_t*, const struct texture<T, dim, readMode>&, const void*, const struct cudaChannelFormatDesc&, size_t, size_t, size_t) "cudaBindTexture2D (C++ API)",
- * \ref ::cudaBindTexture2D(size_t*, const struct texture<T, dim, readMode>&, const void*, size_t, size_t, size_t) "cudaBindTexture2D (C++ API, inherited channel descriptor)",
- * \ref ::cudaBindTextureToArray(const struct textureReference*, cudaArray_const_t, const struct cudaChannelFormatDesc*) "cudaBindTextureToArray (C API)",
- * \ref ::cudaBindTextureToArray(const struct texture<T, dim, readMode>&, cudaArray_const_t) "cudaBindTextureToArray (C++ API, inherited channel descriptor)",
- * \ref ::cudaUnbindTexture(const struct texture<T, dim, readMode>&) "cudaUnbindTexture (C++ API)",
- * \ref ::cudaGetTextureAlignmentOffset(size_t*, const struct texture<T, dim, readMode >&) "cudaGetTextureAlignmentOffset (C++ API)"
+ * \ref ::cudaBindTexture(size_t*, const struct texture<T, dim, readMode>&,
+ * const void*, const struct cudaChannelFormatDesc&, size_t) "cudaBindTexture
+ * (C++ API)",
+ * \ref ::cudaBindTexture(size_t*, const struct texture<T, dim, readMode>&,
+ * const void*, size_t) "cudaBindTexture (C++ API, inherited channel
+ * descriptor)",
+ * \ref ::cudaBindTexture2D(size_t*, const struct texture<T, dim, readMode>&,
+ * const void*, const struct cudaChannelFormatDesc&, size_t, size_t, size_t)
+ * "cudaBindTexture2D (C++ API)",
+ * \ref ::cudaBindTexture2D(size_t*, const struct texture<T, dim, readMode>&,
+ * const void*, size_t, size_t, size_t) "cudaBindTexture2D (C++ API, inherited
+ * channel descriptor)",
+ * \ref ::cudaBindTextureToArray(const struct textureReference*,
+ * cudaArray_const_t, const struct cudaChannelFormatDesc*)
+ * "cudaBindTextureToArray (C API)",
+ * \ref ::cudaBindTextureToArray(const struct texture<T, dim, readMode>&,
+ * cudaArray_const_t) "cudaBindTextureToArray (C++ API, inherited channel
+ * descriptor)",
+ * \ref ::cudaUnbindTexture(const struct texture<T, dim, readMode>&)
+ * "cudaUnbindTexture (C++ API)",
+ * \ref ::cudaGetTextureAlignmentOffset(size_t*, const struct texture<T, dim,
+ * readMode >&) "cudaGetTextureAlignmentOffset (C++ API)"
  */
-template<class T, int dim, enum cudaTextureReadMode readMode>
-__inline__ __host__ cudaError_t cudaBindTextureToMipmappedArray(
-  const struct texture<T, dim, readMode> &tex,
-  cudaMipmappedArray_const_t              mipmappedArray,
-  const struct cudaChannelFormatDesc     &desc
-)
-{
+template <class T, int dim, enum cudaTextureReadMode readMode>
+__inline__ __host__ cudaError_t
+cudaBindTextureToMipmappedArray(const struct texture<T, dim, readMode>& tex,
+                                cudaMipmappedArray_const_t mipmappedArray,
+                                const struct cudaChannelFormatDesc& desc) {
   return ::cudaBindTextureToMipmappedArray(&tex, mipmappedArray, &desc);
 }
 
 /**
  * \brief \hl Binds a mipmapped array to a texture
  *
- * Binds the CUDA mipmapped array \p mipmappedArray to the texture reference \p tex.
- * The channel descriptor is inherited from the CUDA array. Any CUDA mipmapped array
+ * Binds the CUDA mipmapped array \p mipmappedArray to the texture reference \p
+ * tex.
+ * The channel descriptor is inherited from the CUDA array. Any CUDA mipmapped
+ * array
  * previously bound to \p tex is unbound.
  *
  * \param tex            - Texture to bind
@@ -853,31 +879,46 @@ __inline__ __host__ cudaError_t cudaBindTextureToMipmappedArray(
  *
  * \sa \ref ::cudaCreateChannelDesc(void) "cudaCreateChannelDesc (C++ API)",
  * ::cudaGetChannelDesc, ::cudaGetTextureReference,
- * \ref ::cudaBindTexture(size_t*, const struct texture<T, dim, readMode>&, const void*, const struct cudaChannelFormatDesc&, size_t) "cudaBindTexture (C++ API)",
- * \ref ::cudaBindTexture(size_t*, const struct texture<T, dim, readMode>&, const void*, size_t) "cudaBindTexture (C++ API, inherited channel descriptor)",
- * \ref ::cudaBindTexture2D(size_t*, const struct texture<T, dim, readMode>&, const void*, const struct cudaChannelFormatDesc&, size_t, size_t, size_t) "cudaBindTexture2D (C++ API)",
- * \ref ::cudaBindTexture2D(size_t*, const struct texture<T, dim, readMode>&, const void*, size_t, size_t, size_t) "cudaBindTexture2D (C++ API, inherited channel descriptor)",
- * \ref ::cudaBindTextureToArray(const struct textureReference*, cudaArray_const_t, const struct cudaChannelFormatDesc*) "cudaBindTextureToArray (C API)",
- * \ref ::cudaBindTextureToArray(const struct texture<T, dim, readMode>&, cudaArray_const_t, const struct cudaChannelFormatDesc&) "cudaBindTextureToArray (C++ API)",
- * \ref ::cudaUnbindTexture(const struct texture<T, dim, readMode>&) "cudaUnbindTexture (C++ API)",
- * \ref ::cudaGetTextureAlignmentOffset(size_t*, const struct texture<T, dim, readMode >&) "cudaGetTextureAlignmentOffset (C++ API)"
+ * \ref ::cudaBindTexture(size_t*, const struct texture<T, dim, readMode>&,
+ * const void*, const struct cudaChannelFormatDesc&, size_t) "cudaBindTexture
+ * (C++ API)",
+ * \ref ::cudaBindTexture(size_t*, const struct texture<T, dim, readMode>&,
+ * const void*, size_t) "cudaBindTexture (C++ API, inherited channel
+ * descriptor)",
+ * \ref ::cudaBindTexture2D(size_t*, const struct texture<T, dim, readMode>&,
+ * const void*, const struct cudaChannelFormatDesc&, size_t, size_t, size_t)
+ * "cudaBindTexture2D (C++ API)",
+ * \ref ::cudaBindTexture2D(size_t*, const struct texture<T, dim, readMode>&,
+ * const void*, size_t, size_t, size_t) "cudaBindTexture2D (C++ API, inherited
+ * channel descriptor)",
+ * \ref ::cudaBindTextureToArray(const struct textureReference*,
+ * cudaArray_const_t, const struct cudaChannelFormatDesc*)
+ * "cudaBindTextureToArray (C API)",
+ * \ref ::cudaBindTextureToArray(const struct texture<T, dim, readMode>&,
+ * cudaArray_const_t, const struct cudaChannelFormatDesc&)
+ * "cudaBindTextureToArray (C++ API)",
+ * \ref ::cudaUnbindTexture(const struct texture<T, dim, readMode>&)
+ * "cudaUnbindTexture (C++ API)",
+ * \ref ::cudaGetTextureAlignmentOffset(size_t*, const struct texture<T, dim,
+ * readMode >&) "cudaGetTextureAlignmentOffset (C++ API)"
  */
-template<class T, int dim, enum cudaTextureReadMode readMode>
-__inline__ __host__ cudaError_t cudaBindTextureToMipmappedArray(
-  const struct texture<T, dim, readMode> &tex,
-  cudaMipmappedArray_const_t              mipmappedArray
-)
-{
+template <class T, int dim, enum cudaTextureReadMode readMode>
+__inline__ __host__ cudaError_t
+cudaBindTextureToMipmappedArray(const struct texture<T, dim, readMode>& tex,
+                                cudaMipmappedArray_const_t mipmappedArray) {
   struct cudaChannelFormatDesc desc;
-  cudaArray_t                  levelArray;
-  cudaError_t                  err = ::cudaGetMipmappedArrayLevel(&levelArray, mipmappedArray, 0);
-  
+  cudaArray_t levelArray;
+  cudaError_t err =
+      ::cudaGetMipmappedArrayLevel(&levelArray, mipmappedArray, 0);
+
   if (err != cudaSuccess) {
-      return err;
+    return err;
   }
   err = ::cudaGetChannelDesc(&desc, levelArray);
 
-  return err == cudaSuccess ? cudaBindTextureToMipmappedArray(tex, mipmappedArray, desc) : err;
+  return err == cudaSuccess
+             ? cudaBindTextureToMipmappedArray(tex, mipmappedArray, desc)
+             : err;
 }
 
 /**
@@ -892,20 +933,32 @@ __inline__ __host__ cudaError_t cudaBindTextureToMipmappedArray(
  *
  * \sa \ref ::cudaCreateChannelDesc(void) "cudaCreateChannelDesc (C++ API)",
  * ::cudaGetChannelDesc, ::cudaGetTextureReference,
- * \ref ::cudaBindTexture(size_t*, const struct texture<T, dim, readMode>&, const void*, const struct cudaChannelFormatDesc&, size_t) "cudaBindTexture (C++ API)",
- * \ref ::cudaBindTexture(size_t*, const struct texture<T, dim, readMode>&, const void*, size_t) "cudaBindTexture (C++ API, inherited channel descriptor)",
- * \ref ::cudaBindTexture2D(size_t*, const struct texture<T, dim, readMode>&, const void*, const struct cudaChannelFormatDesc&, size_t, size_t, size_t) "cudaBindTexture2D (C++ API)",
- * \ref ::cudaBindTexture2D(size_t*, const struct texture<T, dim, readMode>&, const void*, size_t, size_t, size_t) "cudaBindTexture2D (C++ API, inherited channel descriptor)",
- * \ref ::cudaBindTextureToArray(const struct texture<T, dim, readMode>&, cudaArray_const_t, const struct cudaChannelFormatDesc&) "cudaBindTextureToArray (C++ API)",
- * \ref ::cudaBindTextureToArray(const struct texture<T, dim, readMode>&, cudaArray_const_t) "cudaBindTextureToArray (C++ API, inherited channel descriptor)",
- * \ref ::cudaUnbindTexture(const struct textureReference*) "cudaUnbindTexture (C API)",
- * \ref ::cudaGetTextureAlignmentOffset(size_t*, const struct texture<T, dim, readMode >&) "cudaGetTextureAlignmentOffset (C++ API)"
+ * \ref ::cudaBindTexture(size_t*, const struct texture<T, dim, readMode>&,
+ * const void*, const struct cudaChannelFormatDesc&, size_t) "cudaBindTexture
+ * (C++ API)",
+ * \ref ::cudaBindTexture(size_t*, const struct texture<T, dim, readMode>&,
+ * const void*, size_t) "cudaBindTexture (C++ API, inherited channel
+ * descriptor)",
+ * \ref ::cudaBindTexture2D(size_t*, const struct texture<T, dim, readMode>&,
+ * const void*, const struct cudaChannelFormatDesc&, size_t, size_t, size_t)
+ * "cudaBindTexture2D (C++ API)",
+ * \ref ::cudaBindTexture2D(size_t*, const struct texture<T, dim, readMode>&,
+ * const void*, size_t, size_t, size_t) "cudaBindTexture2D (C++ API, inherited
+ * channel descriptor)",
+ * \ref ::cudaBindTextureToArray(const struct texture<T, dim, readMode>&,
+ * cudaArray_const_t, const struct cudaChannelFormatDesc&)
+ * "cudaBindTextureToArray (C++ API)",
+ * \ref ::cudaBindTextureToArray(const struct texture<T, dim, readMode>&,
+ * cudaArray_const_t) "cudaBindTextureToArray (C++ API, inherited channel
+ * descriptor)",
+ * \ref ::cudaUnbindTexture(const struct textureReference*) "cudaUnbindTexture
+ * (C API)",
+ * \ref ::cudaGetTextureAlignmentOffset(size_t*, const struct texture<T, dim,
+ * readMode >&) "cudaGetTextureAlignmentOffset (C++ API)"
  */
-template<class T, int dim, enum cudaTextureReadMode readMode>
-__inline__ __host__ cudaError_t cudaUnbindTexture(
-  const struct texture<T, dim, readMode> &tex
-)
-{
+template <class T, int dim, enum cudaTextureReadMode readMode>
+__inline__ __host__ cudaError_t
+cudaUnbindTexture(const struct texture<T, dim, readMode>& tex) {
   return ::cudaUnbindTexture(&tex);
 }
 
@@ -926,21 +979,32 @@ __inline__ __host__ cudaError_t cudaUnbindTexture(
  *
  * \sa \ref ::cudaCreateChannelDesc(void) "cudaCreateChannelDesc (C++ API)",
  * ::cudaGetChannelDesc, ::cudaGetTextureReference,
- * \ref ::cudaBindTexture(size_t*, const struct texture<T, dim, readMode>&, const void*, const struct cudaChannelFormatDesc&, size_t) "cudaBindTexture (C++ API)",
- * \ref ::cudaBindTexture(size_t*, const struct texture<T, dim, readMode>&, const void*, size_t) "cudaBindTexture (C++ API, inherited channel descriptor)",
- * \ref ::cudaBindTexture2D(size_t*, const struct texture<T, dim, readMode>&, const void*, const struct cudaChannelFormatDesc&, size_t, size_t, size_t) "cudaBindTexture2D (C++ API)",
- * \ref ::cudaBindTexture2D(size_t*, const struct texture<T, dim, readMode>&, const void*, size_t, size_t, size_t) "cudaBindTexture2D (C++ API, inherited channel descriptor)",
- * \ref ::cudaBindTextureToArray(const struct texture<T, dim, readMode>&, cudaArray_const_t, const struct cudaChannelFormatDesc&) "cudaBindTextureToArray (C++ API)",
- * \ref ::cudaBindTextureToArray(const struct texture<T, dim, readMode>&, cudaArray_const_t) "cudaBindTextureToArray (C++ API, inherited channel descriptor)",
- * \ref ::cudaUnbindTexture(const struct texture<T, dim, readMode>&) "cudaUnbindTexture (C++ API)",
- * \ref ::cudaGetTextureAlignmentOffset(size_t*, const struct textureReference*) "cudaGetTextureAlignmentOffset (C API)"
+ * \ref ::cudaBindTexture(size_t*, const struct texture<T, dim, readMode>&,
+ * const void*, const struct cudaChannelFormatDesc&, size_t) "cudaBindTexture
+ * (C++ API)",
+ * \ref ::cudaBindTexture(size_t*, const struct texture<T, dim, readMode>&,
+ * const void*, size_t) "cudaBindTexture (C++ API, inherited channel
+ * descriptor)",
+ * \ref ::cudaBindTexture2D(size_t*, const struct texture<T, dim, readMode>&,
+ * const void*, const struct cudaChannelFormatDesc&, size_t, size_t, size_t)
+ * "cudaBindTexture2D (C++ API)",
+ * \ref ::cudaBindTexture2D(size_t*, const struct texture<T, dim, readMode>&,
+ * const void*, size_t, size_t, size_t) "cudaBindTexture2D (C++ API, inherited
+ * channel descriptor)",
+ * \ref ::cudaBindTextureToArray(const struct texture<T, dim, readMode>&,
+ * cudaArray_const_t, const struct cudaChannelFormatDesc&)
+ * "cudaBindTextureToArray (C++ API)",
+ * \ref ::cudaBindTextureToArray(const struct texture<T, dim, readMode>&,
+ * cudaArray_const_t) "cudaBindTextureToArray (C++ API, inherited channel
+ * descriptor)",
+ * \ref ::cudaUnbindTexture(const struct texture<T, dim, readMode>&)
+ * "cudaUnbindTexture (C++ API)",
+ * \ref ::cudaGetTextureAlignmentOffset(size_t*, const struct textureReference*)
+ * "cudaGetTextureAlignmentOffset (C API)"
  */
-template<class T, int dim, enum cudaTextureReadMode readMode>
+template <class T, int dim, enum cudaTextureReadMode readMode>
 __inline__ __host__ cudaError_t cudaGetTextureAlignmentOffset(
-        size_t                           *offset,
-  const struct texture<T, dim, readMode> &tex
-)
-{
+    size_t* offset, const struct texture<T, dim, readMode>& tex) {
   return ::cudaGetTextureAlignmentOffset(offset, &tex);
 }
 
@@ -966,7 +1030,8 @@ __inline__ __host__ cudaError_t cudaGetTextureAlignmentOffset(
  *
  * The supported cache configurations are:
  * - ::cudaFuncCachePreferNone: no preference for shared memory or L1 (default)
- * - ::cudaFuncCachePreferShared: prefer larger shared memory and smaller L1 cache
+ * - ::cudaFuncCachePreferShared: prefer larger shared memory and smaller L1
+ * cache
  * - ::cudaFuncCachePreferL1: prefer larger L1 cache and smaller shared memory
  *
  * \param func        - device function pointer
@@ -979,8 +1044,10 @@ __inline__ __host__ cudaError_t cudaGetTextureAlignmentOffset(
  * \notefnerr
  *
  * \sa ::cudaConfigureCall,
- * \ref ::cudaFuncSetCacheConfig(const void*, enum cudaFuncCache) "cudaFuncSetCacheConfig (C API)",
- * \ref ::cudaFuncGetAttributes(struct cudaFuncAttributes*, T*) "cudaFuncGetAttributes (C++ API)",
+ * \ref ::cudaFuncSetCacheConfig(const void*, enum cudaFuncCache)
+ * "cudaFuncSetCacheConfig (C API)",
+ * \ref ::cudaFuncGetAttributes(struct cudaFuncAttributes*, T*)
+ * "cudaFuncGetAttributes (C++ API)",
  * \ref ::cudaLaunch(const void*) "cudaLaunch (C API)",
  * ::cudaSetDoubleForDevice,
  * ::cudaSetDoubleForHost,
@@ -988,21 +1055,15 @@ __inline__ __host__ cudaError_t cudaGetTextureAlignmentOffset(
  * ::cudaThreadGetCacheConfig,
  * ::cudaThreadSetCacheConfig
  */
-template<class T>
-__inline__ __host__ cudaError_t cudaFuncSetCacheConfig(
-  T                  *func,
-  enum cudaFuncCache  cacheConfig
-)
-{
+template <class T>
+__inline__ __host__ cudaError_t
+cudaFuncSetCacheConfig(T* func, enum cudaFuncCache cacheConfig) {
   return ::cudaFuncSetCacheConfig((const void*)func, cacheConfig);
 }
 
-template<class T>
-__inline__ __host__ cudaError_t cudaFuncSetSharedMemConfig(
-  T                        *func,
-  enum cudaSharedMemConfig  config
-)
-{
+template <class T>
+__inline__ __host__ cudaError_t
+cudaFuncSetSharedMemConfig(T* func, enum cudaSharedMemConfig config) {
   return ::cudaFuncSetSharedMemConfig((const void*)func, config);
 }
 
@@ -1010,7 +1071,8 @@ __inline__ __host__ cudaError_t cudaFuncSetSharedMemConfig(
  * \brief \hl Launches a device function
  *
  * Launches the function \p entry on the device. The parameter \p entry must
- * be a function that executes on the device. The parameter specified by \p entry
+ * be a function that executes on the device. The parameter specified by \p
+ * entry
  * must be declared as a \p __global__ function.
  * \ref ::cudaLaunch(T*) "cudaLaunch()" must be preceded by a call to
  * ::cudaConfigureCall() since it pops the data that was pushed by
@@ -1031,8 +1093,10 @@ __inline__ __host__ cudaError_t cudaFuncSetSharedMemConfig(
  * \notefnerr
  *
  * \sa ::cudaConfigureCall,
- * \ref ::cudaFuncSetCacheConfig(T*, enum cudaFuncCache) "cudaFuncSetCacheConfig (C++ API)",
- * \ref ::cudaFuncGetAttributes(struct cudaFuncAttributes*, T*) "cudaFuncGetAttributes (C++ API)",
+ * \ref ::cudaFuncSetCacheConfig(T*, enum cudaFuncCache) "cudaFuncSetCacheConfig
+ * (C++ API)",
+ * \ref ::cudaFuncGetAttributes(struct cudaFuncAttributes*, T*)
+ * "cudaFuncGetAttributes (C++ API)",
  * \ref ::cudaLaunch(const void*) "cudaLaunch (C API)",
  * ::cudaSetDoubleForDevice,
  * ::cudaSetDoubleForHost,
@@ -1040,11 +1104,8 @@ __inline__ __host__ cudaError_t cudaFuncSetSharedMemConfig(
  * ::cudaThreadGetCacheConfig,
  * ::cudaThreadSetCacheConfig
  */
-template<class T>
-__inline__ __host__ cudaError_t cudaLaunch(
-  T *func
-)
-{
+template <class T>
+__inline__ __host__ cudaError_t cudaLaunch(T* func) {
   return ::cudaLaunch((const void*)func);
 }
 
@@ -1053,7 +1114,8 @@ __inline__ __host__ cudaError_t cudaLaunch(
  *
  * This function obtains the attributes of a function specified via \p entry.
  * The parameter \p entry must be a pointer to a function that executes
- * on the device. The parameter specified by \p entry must be declared as a \p __global__
+ * on the device. The parameter specified by \p entry must be declared as a \p
+ * __global__
  * function. The fetched attributes are placed in \p attr. If the specified
  * function does not exist, then ::cudaErrorInvalidDeviceFunction is returned.
  *
@@ -1071,19 +1133,18 @@ __inline__ __host__ cudaError_t cudaLaunch(
  * \notefnerr
  *
  * \sa ::cudaConfigureCall,
- * \ref ::cudaFuncSetCacheConfig(T*, enum cudaFuncCache) "cudaFuncSetCacheConfig (C++ API)",
- * \ref ::cudaFuncGetAttributes(struct cudaFuncAttributes*, const void*) "cudaFuncGetAttributes (C API)",
+ * \ref ::cudaFuncSetCacheConfig(T*, enum cudaFuncCache) "cudaFuncSetCacheConfig
+ * (C++ API)",
+ * \ref ::cudaFuncGetAttributes(struct cudaFuncAttributes*, const void*)
+ * "cudaFuncGetAttributes (C API)",
  * \ref ::cudaLaunch(T*) "cudaLaunch (C++ API)",
  * ::cudaSetDoubleForDevice,
  * ::cudaSetDoubleForHost,
  * \ref ::cudaSetupArgument(T, size_t) "cudaSetupArgument (C++ API)"
  */
-template<class T>
-__inline__ __host__ cudaError_t cudaFuncGetAttributes(
-  struct cudaFuncAttributes *attr,
-  T                         *entry
-)
-{
+template <class T>
+__inline__ __host__ cudaError_t
+cudaFuncGetAttributes(struct cudaFuncAttributes* attr, T* entry) {
   return ::cudaFuncGetAttributes(attr, (const void*)entry);
 }
 
@@ -1104,16 +1165,17 @@ __inline__ __host__ cudaError_t cudaFuncGetAttributes(
  * ::cudaErrorInvalidSurface
  * \notefnerr
  *
- * \sa \ref ::cudaBindSurfaceToArray(const struct surfaceReference*, cudaArray_const_t, const struct cudaChannelFormatDesc*) "cudaBindSurfaceToArray (C API)",
- * \ref ::cudaBindSurfaceToArray(const struct surface<T, dim>&, cudaArray_const_t) "cudaBindSurfaceToArray (C++ API, inherited channel descriptor)"
+ * \sa \ref ::cudaBindSurfaceToArray(const struct surfaceReference*,
+ * cudaArray_const_t, const struct cudaChannelFormatDesc*)
+ * "cudaBindSurfaceToArray (C API)",
+ * \ref ::cudaBindSurfaceToArray(const struct surface<T, dim>&,
+ * cudaArray_const_t) "cudaBindSurfaceToArray (C++ API, inherited channel
+ * descriptor)"
  */
-template<class T, int dim>
+template <class T, int dim>
 __inline__ __host__ cudaError_t cudaBindSurfaceToArray(
-  const struct surface<T, dim>       &surf,
-  cudaArray_const_t                   array,
-  const struct cudaChannelFormatDesc &desc
-)
-{
+    const struct surface<T, dim>& surf, cudaArray_const_t array,
+    const struct cudaChannelFormatDesc& desc) {
   return ::cudaBindSurfaceToArray(&surf, array, &desc);
 }
 
@@ -1133,17 +1195,18 @@ __inline__ __host__ cudaError_t cudaBindSurfaceToArray(
  * ::cudaErrorInvalidSurface
  * \notefnerr
  *
- * \sa \ref ::cudaBindSurfaceToArray(const struct surfaceReference*, cudaArray_const_t, const struct cudaChannelFormatDesc*) "cudaBindSurfaceToArray (C API)",
- * \ref ::cudaBindSurfaceToArray(const struct surface<T, dim>&, cudaArray_const_t, const struct cudaChannelFormatDesc&) "cudaBindSurfaceToArray (C++ API)"
+ * \sa \ref ::cudaBindSurfaceToArray(const struct surfaceReference*,
+ * cudaArray_const_t, const struct cudaChannelFormatDesc*)
+ * "cudaBindSurfaceToArray (C API)",
+ * \ref ::cudaBindSurfaceToArray(const struct surface<T, dim>&,
+ * cudaArray_const_t, const struct cudaChannelFormatDesc&)
+ * "cudaBindSurfaceToArray (C++ API)"
  */
-template<class T, int dim>
+template <class T, int dim>
 __inline__ __host__ cudaError_t cudaBindSurfaceToArray(
-  const struct surface<T, dim> &surf,
-  cudaArray_const_t             array
-)
-{
+    const struct surface<T, dim>& surf, cudaArray_const_t array) {
   struct cudaChannelFormatDesc desc;
-  cudaError_t                  err = ::cudaGetChannelDesc(&desc, array);
+  cudaError_t err = ::cudaGetChannelDesc(&desc, array);
 
   return err == cudaSuccess ? cudaBindSurfaceToArray(surf, array, desc) : err;
 }
@@ -1152,11 +1215,10 @@ __inline__ __host__ cudaError_t cudaBindSurfaceToArray(
 
 /** @} */ /* END CUDART_HIGHLEVEL */
 
-} // namespace anonymous
+}  // namespace anonymous
 
 #endif /* __cplusplus */
 
 #endif /* !__CUDA_RUNTIME_H__ */
 
 #endif
-

@@ -29,84 +29,80 @@
 #include "Brig.h"
 #include "BrigSection.h"
 
-namespace HSA
-{
+namespace HSA {
 class BrigSection;
 class BrigCodeEntry;
 class BrigDataEntry;
 class BrigOperandEntry;
 
-/// This class represents the ELF file defined by HSA standard, or called 
-/// BRIG format. It encapsulates the ELFReader class and provide unique 
+/// This class represents the ELF file defined by HSA standard, or called
+/// BRIG format. It encapsulates the ELFReader class and provide unique
 /// interfaces to the other parts of the Multi2sim.
-class BrigFile
-{
-	// The path to the file
-	std::string path;
+class BrigFile {
+  // The path to the file
+  std::string path;
 
-	// The buffer of the file content
-	std::unique_ptr<char> buffer;
+  // The buffer of the file content
+  std::unique_ptr<char> buffer;
 
-	// An list of BRIG sections, maps section index to section
-	std::vector<std::unique_ptr<BrigSection>> sections;
+  // An list of BRIG sections, maps section index to section
+  std::vector<std::unique_ptr<BrigSection>> sections;
 
-	// Set the section vector
-	void PrepareSections();
+  // Set the section vector
+  void PrepareSections();
 
-public:
+ public:
+  /// Constructor
+  BrigFile(){};
 
-	/// Constructor
-	BrigFile() {};
+  /// Loads a BRIG file from the file system, create sections
+  void LoadFileByPath(const std::string& path);
 
-	/// Loads a BRIG file from the file system, create sections
-	void LoadFileByPath(const std::string &path);
+  /// Loads a BRIG file from a memory block
+  /// BrigFile(char *file, unsigned size);
 
-	/// Loads a BRIG file from a memory block
-	/// BrigFile(char *file, unsigned size);
+  /// Load the file from a chunk of memory
+  void LoadFileFromBuffer(const char* file);
 
-	/// Load the file from a chunk of memory
-	void LoadFileFromBuffer(const char *file);
+  /// Destructor
+  ~BrigFile();
 
-	/// Destructor
-	~BrigFile();
+  /// Returns the path to the BRIG file
+  const std::string& getPath() const { return path; }
 
-	/// Returns the path to the BRIG file
-	const std::string &getPath() const { return path; }
+  /// Return the buffer of the BRIG file
+  const char* getBuffer() const { return buffer.get(); }
 
-	/// Return the buffer of the BRIG file
-	const char *getBuffer() const { return buffer.get(); }
+  /// Returns the section according to the type value passed in
+  BrigSection* getBrigSection(BrigSectionIndex section_index) const;
 
-	/// Returns the section according to the type value passed in
-	BrigSection *getBrigSection(BrigSectionIndex section_index) const;
+  /// Checks if the loaded brig file is a brig file
+  ///
+  /// \return
+  ///	Returns \c true if the loaded file is valid
+  ///
+  static bool isBrigFile(const char* file);
 
-	/// Checks if the loaded brig file is a brig file
-	///
-	/// \return
-	///	Returns \c true if the loaded file is valid
-	///
-	static bool isBrigFile(const char *file);
+  /// Returns the number of sections in the BRIG file
+  unsigned int getNumSections() const;
 
+  /// Retrieve an entry in the code section
+  std::unique_ptr<BrigCodeEntry> getCodeEntryByOffset(
+      unsigned int offset) const;
 
-	/// Returns the number of sections in the BRIG file
-	unsigned int getNumSections() const;
+  /// Return the string that is stored in the hsa_data section by its
+  /// offset
+  virtual const std::string getStringByOffset(unsigned int offset) const;
 
-	/// Retrieve an entry in the code section
-	std::unique_ptr<BrigCodeEntry> getCodeEntryByOffset(
-			unsigned int offset) const;
+  /// Return the data entry at a certain offset
+  virtual std::unique_ptr<BrigDataEntry> getDataEntryByOffset(
+      unsigned int offset) const;
 
-	/// Return the string that is stored in the hsa_data section by its 
-	/// offset
-	virtual const std::string getStringByOffset(unsigned int offset) const;
-
-	/// Return the data entry at a certain offset
-	virtual std::unique_ptr<BrigDataEntry> getDataEntryByOffset(
-			unsigned int offset) const;
-
-	/// Return an operand from the operand section by offset
-	virtual std::unique_ptr<BrigOperandEntry> getOperandByOffset(
-			unsigned int offset) const;
+  /// Return an operand from the operand section by offset
+  virtual std::unique_ptr<BrigOperandEntry> getOperandByOffset(
+      unsigned int offset) const;
 };
 
-} // namespace HSA
+}  // namespace HSA
 
 #endif

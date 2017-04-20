@@ -20,32 +20,23 @@
 #include "BarrierInstructionWorker.h"
 #include "WorkItem.h"
 
-namespace HSA
-{
+namespace HSA {
 
-BarrierInstructionWorker::BarrierInstructionWorker(WorkItem *work_item,
-		StackFrame *stack_frame) :
-		HsaInstructionWorker(work_item, stack_frame)
-{
-}
+BarrierInstructionWorker::BarrierInstructionWorker(WorkItem* work_item,
+                                                   StackFrame* stack_frame)
+    : HsaInstructionWorker(work_item, stack_frame) {}
 
+BarrierInstructionWorker::~BarrierInstructionWorker() {}
 
-BarrierInstructionWorker::~BarrierInstructionWorker()
-{
-}
+void BarrierInstructionWorker::Execute(BrigCodeEntry* instruction) {
+  // Suspend the work item
+  work_item->setStatus(WorkItem::WorkItemStatusSuspend);
 
+  // Notify the work group
+  work_item->getWorkGroup()->HitBarrier(work_item->getAbsoluteFlattenedId());
 
-void BarrierInstructionWorker::Execute(BrigCodeEntry *instruction)
-{
-	// Suspend the work item
-	work_item->setStatus(WorkItem::WorkItemStatusSuspend);
-
-	// Notify the work group
-	work_item->getWorkGroup()->HitBarrier(
-			work_item->getAbsoluteFlattenedId());
-
-	// Move PC forward
-	work_item->MovePcForwardByOne();
+  // Move PC forward
+  work_item->MovePcForwardByOne();
 }
 
 }  // namespace HSA

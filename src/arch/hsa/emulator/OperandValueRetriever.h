@@ -20,23 +20,21 @@
 #ifndef ARCH_HSA_EMULATOR_OPERANDVALUEGETTER_H
 #define ARCH_HSA_EMULATOR_OPERANDVALUEGETTER_H
 
-namespace HSA
-{
+namespace HSA {
 class WorkItem;
 class StackFrame;
 class BrigCodeEntry;
 
-class OperandValueRetriever
-{
-	WorkItem *work_item;
-	StackFrame *stack_frame;
-public:
-	OperandValueRetriever(WorkItem *work_item, StackFrame *stack_frame);
-	virtual ~OperandValueRetriever();
-	virtual void Retrieve(BrigCodeEntry *instruction,
-			unsigned int index, void *buffer);
-};
+class OperandValueRetriever {
+  WorkItem* work_item;
+  StackFrame* stack_frame;
 
+ public:
+  OperandValueRetriever(WorkItem* work_item, StackFrame* stack_frame);
+  virtual ~OperandValueRetriever();
+  virtual void Retrieve(BrigCodeEntry* instruction, unsigned int index,
+                        void* buffer);
+};
 }
 
 #endif  // ARCH_HSA_EMULATOR_OPERANDVALUEGETTER_H

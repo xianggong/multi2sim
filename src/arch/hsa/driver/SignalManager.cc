@@ -17,64 +17,44 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include <lib/cpp/String.h>
 #include <lib/cpp/Error.h>
+#include <lib/cpp/String.h>
 
 #include "SignalManager.h"
 
-namespace HSA
-{
+namespace HSA {
 
-SignalManager::SignalManager()
-{
+SignalManager::SignalManager() {}
+
+SignalManager::~SignalManager() {}
+
+uint64_t SignalManager::CreateSignal(int64_t initial_value) {
+  // Create signal with initial value
+  auto signal = misc::new_unique<Signal>();
+  signal->setValue(initial_value);
+
+  // Put the signal in the list
+  signals.emplace(handler_to_allocate, std::move(signal));
+  handler_to_allocate++;
+
+  // Return the handler
+  return handler_to_allocate - 1;
 }
 
+void SignalManager::DestorySignal(uint64_t handler) { signals.erase(handler); }
 
-SignalManager::~SignalManager()
-{
+void SignalManager::ChangeValue(uint64_t handler, int64_t value) {
+  signals[handler]->setValue(value);
 }
 
-
-uint64_t SignalManager::CreateSignal(int64_t initial_value)
-{
-	// Create signal with initial value
-	auto signal = misc::new_unique<Signal>();
-	signal->setValue(initial_value);
-
-	// Put the signal in the list
-	signals.emplace(handler_to_allocate, std::move(signal));
-	handler_to_allocate++;
-
-	// Return the handler
-	return handler_to_allocate - 1;
+bool SignalManager::isValidSignalHandler(uint64_t handler) {
+  if (signals.find(handler) != signals.end()) {
+    return true;
+  }
+  return false;
 }
 
-
-void SignalManager::DestorySignal(uint64_t handler)
-{
-	signals.erase(handler);
+int64_t SignalManager::GetValue(uint64_t handler) {
+  return signals[handler]->getValue();
 }
-
-
-void SignalManager::ChangeValue(uint64_t handler, int64_t value)
-{
-	signals[handler]->setValue(value);
-}
-
-
-bool SignalManager::isValidSignalHandler(uint64_t handler)
-{
-	if (signals.find(handler) != signals.end())
-	{
-		return true;
-	}
-	return false;
-}
-
-
-int64_t SignalManager::GetValue(uint64_t handler)
-{
-	return signals[handler]->getValue();
-}
-
 }

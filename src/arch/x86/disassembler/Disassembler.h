@@ -28,107 +28,96 @@
 
 #include "Instruction.h"
 
+namespace x86 {
 
-namespace x86
-{
+class Disassembler : public comm::Disassembler {
+  // Disassemble a file
+  static std::string path;
 
+  // For fields 'op1', 'op2', 'modrm', 'imm'
+  static const int SKIP = 0x0100;
 
-class Disassembler : public comm::Disassembler
-{
-	// Disassemble a file
-	static std::string path;
+  // For field 'modrm'
+  static const int REG = 0x0200;
+  static const int MEM = 0x0400;
 
-	// For fields 'op1', 'op2', 'modrm', 'imm'
-	static const int SKIP = 0x0100;
+  // For fields 'op1', 'op2'
+  static const int INDEX = 0x1000;
 
-	// For field 'modrm'
-	static const int REG = 0x0200;
-	static const int MEM = 0x0400;
+  // For 'imm' field
+  static const int IB = 0x2000;
+  static const int IW = 0x4000;
+  static const int ID = 0x8000;
 
-	// For fields 'op1', 'op2'
-	static const int INDEX = 0x1000;
+  // Unique instance of x86 disassembler
+  static std::unique_ptr<Disassembler> instance;
 
-	// For 'imm' field
-	static const int IB = 0x2000;
-	static const int IW = 0x4000;
-	static const int ID = 0x8000;
+  // Instruction information
+  Instruction::Info inst_info[Instruction::OpcodeCount];
 
-	// Unique instance of x86 disassembler
-	static std::unique_ptr<Disassembler> instance;
+  // Decoding tables
+  Instruction::DecodeInfo* dec_table[0x100];
+  Instruction::DecodeInfo* dec_table_0f[0x100];
 
-	// Instruction information
-	Instruction::Info inst_info[Instruction::OpcodeCount];
+  // Look-up table returning true if a byte is an x86 prefix
+  bool is_prefix[0x100];
 
-	// Decoding tables
-	Instruction::DecodeInfo *dec_table[0x100];
-	Instruction::DecodeInfo *dec_table_0f[0x100];
+  // For decoding table initialization
+  void InsertInstInfo(Instruction::Info* info);
+  void InsertInstInfo(Instruction::DecodeInfo** table,
+                      Instruction::DecodeInfo* elem, int at);
 
-	// Look-up table returning true if a byte is an x86 prefix
-	bool is_prefix[0x100];
+  // Free decoding tables
+  void FreeInstDecodeInfo(Instruction::DecodeInfo* elem);
 
-	// For decoding table initialization
-	void InsertInstInfo(Instruction::Info *info);
-	void InsertInstInfo(Instruction::DecodeInfo **table,
-			Instruction::DecodeInfo *elem, int at);
+  // Private constructor for singleton
+  Disassembler();
 
-	// Free decoding tables
-	void FreeInstDecodeInfo(Instruction::DecodeInfo *elem);
+ public:
+  /// Exception for the x86 disassembler
+  class Error : public misc::Error {
+   public:
+    Error(const std::string& message) : misc::Error(message) {
+      AppendPrefix("x86 disassembler");
+    }
+  };
 
-	// Private constructor for singleton
-	Disassembler();
+  /// Register options in the command line
+  static void RegisterOptions();
 
-public:
+  /// Process command-line options
+  static void ProcessOptions();
 
-	/// Exception for the x86 disassembler
-	class Error : public misc::Error
-	{
-	public:
-		
-		Error(const std::string &message) : misc::Error(message)
-		{
-			AppendPrefix("x86 disassembler");
-		}
-	};
+  /// Destructor
+  ~Disassembler();
 
-	/// Register options in the command line
-	static void RegisterOptions();
+  /// Get instance of singleton
+  static Disassembler* getInstance();
 
-	/// Process command-line options
-	static void ProcessOptions();
+  /// Get instruction information for a given opcode
+  const Instruction::Info* getInstInfo(Instruction::Opcode opcode) const {
+    assert(opcode >= 0 && opcode < Instruction::OpcodeCount);
+    return &inst_info[opcode];
+  }
 
-	/// Destructor
-	~Disassembler();
+  /// Return the main decoding table, indexed for instruction decoding
+  /// using the first instruction byte.
+  Instruction::DecodeInfo* const* getDecTable() const { return dec_table; }
 
-	/// Get instance of singleton
-	static Disassembler *getInstance();
+  /// Return the secondary decoding table, indexed when the first byte
+  /// of the instruction is 0x0f.
+  Instruction::DecodeInfo* const* getDecTable0f() const { return dec_table_0f; }
 
-	/// Get instruction information for a given opcode
-	const Instruction::Info *getInstInfo(Instruction::Opcode opcode) const
-	{
-		assert(opcode >= 0 && opcode < Instruction::OpcodeCount);
-		return &inst_info[opcode];
-	}
+  /// Return \c true if \a byte is a valid x86 instruction prefix.
+  bool isPrefix(unsigned char byte) const { return is_prefix[byte]; }
 
-	/// Return the main decoding table, indexed for instruction decoding
-	/// using the first instruction byte.
-	Instruction::DecodeInfo * const *getDecTable() const { return dec_table; }
-
-	/// Return the secondary decoding table, indexed when the first byte
-	/// of the instruction is 0x0f.
-	Instruction::DecodeInfo * const *getDecTable0f() const { return dec_table_0f; }
-
-	/// Return \c true if \a byte is a valid x86 instruction prefix.
-	bool isPrefix(unsigned char byte) const { return is_prefix[byte]; }
-
-	/// Disassemble the x86 ELF executable contained in file \a path, and
-	/// dump its content into the output stream given in \c os (or the
-	/// standard output if no output stream is specified.
-	void DisassembleBinary(const std::string &path,
-			std::ostream &os = std::cout) const;
+  /// Disassemble the x86 ELF executable contained in file \a path, and
+  /// dump its content into the output stream given in \c os (or the
+  /// standard output if no output stream is specified.
+  void DisassembleBinary(const std::string& path,
+                         std::ostream& os = std::cout) const;
 };
-
 
 }  // namespace x86
 
 #endif
-

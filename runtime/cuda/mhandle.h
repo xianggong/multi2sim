@@ -22,18 +22,15 @@
 
 #include <stddef.h>
 
-
 #define MHANDLE_STRINGIFY(x) #x
 #define MHANDLE_TOSTRING(x) MHANDLE_STRINGIFY(x)
 #define MHANDLE_AT __FILE__ ":" MHANDLE_TOSTRING(__LINE__)
-
 
 #undef strdup
 #define malloc(sz) __ERROR_USE_XMALLOC_INSTEAD__
 #define calloc(nmemb, sz) __ERROR_USE_XCALLOC_INSTEAD__
 #define realloc(x, sz) __ERROR_USE_XREALLOC_INSTEAD__
 #define strdup(x) __ERROR_USE_XSTRDUP_INSTEAD__
-
 
 #ifdef MHANDLE
 
@@ -60,24 +57,19 @@
 
 #endif
 
+void* mhandle_malloc(size_t size, char* at);
+void* mhandle_calloc(size_t nmemb, size_t size, char* at);
+void* mhandle_realloc(void* ptr, size_t size, char* at);
+char* mhandle_strdup(const char* s, char* at);
+void mhandle_free(void* ptr, char* at);
 
+void* __xmalloc(size_t size, char* at);
+void* __xcalloc(size_t nmemb, size_t size, char* at);
+void* __xrealloc(void* ptr, size_t size, char* at);
+void* __xstrdup(const char* s, char* at);
 
-
-void *mhandle_malloc(size_t size, char *at);
-void *mhandle_calloc(size_t nmemb, size_t size, char *at);
-void *mhandle_realloc(void *ptr, size_t size, char *at);
-char *mhandle_strdup(const char *s, char *at);
-void mhandle_free(void *ptr, char *at);
-
-void *__xmalloc(size_t size, char *at);
-void *__xcalloc(size_t nmemb, size_t size, char *at);
-void *__xrealloc(void *ptr, size_t size, char *at);
-void *__xstrdup(const char *s, char *at);
-
-void __mhandle_check(char *at);
+void __mhandle_check(char* at);
 void __mhandle_done();
 unsigned long __mhandle_used_memory();
 
-
 #endif
-

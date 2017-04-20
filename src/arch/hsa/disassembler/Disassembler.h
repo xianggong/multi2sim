@@ -19,66 +19,60 @@
 
 #ifndef ARCH_HSA_DISASSEMBLER_DISASSEMBLER_H
 #define ARCH_HSA_DISASSEMBLER_DISASSEMBLER_H
- 
+
 #include <arch/common/Disassembler.h>
 #include <lib/cpp/CommandLine.h>
 
-namespace HSA
-{
+namespace HSA {
 
 /// HSA disassembler singleton
-class Disassembler : public comm::Disassembler
-{
-	// File to disassemble
-	static std::string path;
+class Disassembler : public comm::Disassembler {
+  // File to disassemble
+  static std::string path;
 
-protected:
-	
-	// Instance of the singleton
-	static std::unique_ptr<Disassembler> instance;
+ protected:
+  // Instance of the singleton
+  static std::unique_ptr<Disassembler> instance;
 
-	// Indent of current line
-	int indent = 0;
+  // Indent of current line
+  int indent = 0;
 
-	// Set if indentation is enabled
-	bool doIndent = true;
+  // Set if indentation is enabled
+  bool doIndent = true;
 
-	// Private constructor for singleton
-	Disassembler() : comm::Disassembler("HSA") { }
+  // Private constructor for singleton
+  Disassembler() : comm::Disassembler("HSA") {}
 
-public:
+ public:
+  /// Returns the pointer to the only instance of has disassembler
+  static Disassembler* getInstance();
 
-	/// Returns the pointer to the only instance of has disassembler
-	static Disassembler *getInstance();
+  /// Disassemble the Brig file into HSAIL format
+  void DisassembleBinary(const std::string& path) const;
 
-	/// Disassemble the Brig file into HSAIL format
-	void DisassembleBinary(const std::string &path) const;
+  /// Get the current indent level
+  int getIndent() const {
+    if (doIndent)
+      return indent;
+    else
+      return 0;
+  }
 
-	/// Get the current indent level
-	int getIndent() const
-	{
-		if (doIndent)
-			return indent;
-		else
-			return 0;
-	}
+  /// Increase current indent level by 1
+  void IndentMore() { ++indent; }
 
-	/// Increase current indent level by 1
-	void IndentMore() { ++indent; }
+  /// Decrease current indent level by 1
+  void IndentLess() { --indent; }
 
-	/// Decrease current indent level by 1
-	void IndentLess() { --indent; }
+  /// Disable indentation
+  void DisableIndentation() { doIndent = false; }
 
-	/// Disable indentation
-	void DisableIndentation() { doIndent = false; }
+  /// Register command-line options
+  static void RegisterOptions();
 
-	/// Register command-line options
-	static void RegisterOptions();
-
-	/// Process command-line options
-	static void ProcessOptions();
+  /// Process command-line options
+  static void ProcessOptions();
 };
-
 
 }  // namespace HSA
 

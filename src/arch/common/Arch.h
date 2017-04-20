@@ -26,9 +26,7 @@
 
 #include <lib/cpp/String.h>
 
-
-namespace comm
-{
+namespace comm {
 
 // Forward declarations
 class Disassembler;
@@ -37,229 +35,200 @@ class Timing;
 
 /// Class representing one of the supported architectures on Multi2Sim (x86,
 /// ARM, Southern Islands, etc.)
-class Arch
-{
+class Arch {
+ public:
+  /// Type of simulation for each architecture
+  enum SimKind { SimInvalid = 0, SimFunctional, SimDetailed };
 
-public:
+  /// String map for SimKind
+  static const misc::StringMap SimKindMap;
 
-	/// Type of simulation for each architecture
-	enum SimKind
-	{
-		SimInvalid = 0,
-		SimFunctional,
-		SimDetailed
-	};
+ private:
+  // Name of architecture (x86, ARM, etc.)
+  std::string name;
 
-	/// String map for SimKind
-	static const misc::StringMap SimKindMap;
+  // Disassembler
+  Disassembler* disassembler = nullptr;
 
-private:
+  // Emulator
+  Emulator* emulator = nullptr;
 
-	// Name of architecture (x86, ARM, etc.)
-	std::string name;
+  // Timing simulator
+  Timing* timing = nullptr;
 
-	// Disassembler
-	Disassembler *disassembler = nullptr;
+  // Simulation kind
+  SimKind sim_kind = SimFunctional;
 
-	// Emulator
-	Emulator *emulator = nullptr;
+  // True if last iteration had an active simulation
+  bool active = false;
 
-	// Timing simulator
-	Timing *timing = nullptr;
+ public:
+  /// Constructor of a new architecture. New architectures should be
+  /// created only through ArchPool::Register(), not directly by the
+  /// invocation of this constructor.
+  ///
+  /// \param name
+  ///	Name of the architecture
+  ///
+  Arch(const std::string& name) : name(name) {}
 
-	// Simulation kind
-	SimKind sim_kind = SimFunctional;
+  /// Return the name of the architecture
+  const std::string& getName() const { return name; }
 
-	// True if last iteration had an active simulation
-	bool active = false;
+  /// Return the associated disassembler
+  Disassembler* getAsm() const { return disassembler; }
 
-public:
+  /// Return the associated emulator
+  Emulator* getEmulator() const { return emulator; }
 
-	/// Constructor of a new architecture. New architectures should be
-	/// created only through ArchPool::Register(), not directly by the
-	/// invocation of this constructor.
-	///
-	/// \param name
-	///	Name of the architecture
-	///
-	Arch(const std::string &name) : name(name) { }
+  /// Return the associated timing simulator
+  Timing* getTiming() const { return timing; }
 
-	/// Return the name of the architecture
-	const std::string &getName() const { return name; }
+  /// Associate a disassembler. This function should only be invoked
+  /// internally by ArchPool::RegisterDisassembler()
+  void setDisassembler(Disassembler* disassembler) {
+    assert(!this->disassembler);
+    this->disassembler = disassembler;
+  }
 
-	/// Return the associated disassembler
-	Disassembler *getAsm() const { return disassembler; }
+  /// Associate an emulator. This function should only be invoked
+  /// internally by ArchPool::RegisterEmulator()
+  void setEmulator(Emulator* emulator) {
+    assert(!this->emulator);
+    this->emulator = emulator;
+  }
 
-	/// Return the associated emulator
-	Emulator *getEmulator() const { return emulator; }
+  /// Associate a timing simulator. This function should only be invoked
+  /// internally by ArchPool::RegisterTiming(). After this, the simulation
+  /// kind is set to \a SimDetailed, as returned by a call to
+  /// getSimKind().
+  void setTiming(Timing* timing) {
+    assert(!this->timing);
+    this->timing = timing;
+    sim_kind = SimDetailed;
+  }
 
-	/// Return the associated timing simulator
-	Timing *getTiming() const { return timing; }
+  /// Return the type of simulation for the architecture
+  SimKind getSimKind() const { return sim_kind; }
 
-	/// Associate a disassembler. This function should only be invoked
-	/// internally by ArchPool::RegisterDisassembler()
-	void setDisassembler(Disassembler *disassembler)
-	{
-		assert(!this->disassembler);
-		this->disassembler = disassembler;
-	}
+  /// Return whether the architecture performed an active simulation in
+  /// the last simulation iteration.
+  bool isActive() const { return active; }
 
-	/// Associate an emulator. This function should only be invoked
-	/// internally by ArchPool::RegisterEmulator()
-	void setEmulator(Emulator *emulator)
-	{
-		assert(!this->emulator);
-		this->emulator = emulator;
-	}
-
-	/// Associate a timing simulator. This function should only be invoked
-	/// internally by ArchPool::RegisterTiming(). After this, the simulation
-	/// kind is set to \a SimDetailed, as returned by a call to
-	/// getSimKind().
-	void setTiming(Timing *timing)
-	{
-		assert(!this->timing);
-		this->timing = timing;
-		sim_kind = SimDetailed;
-	}
-
-	/// Return the type of simulation for the architecture
-	SimKind getSimKind() const { return sim_kind; }
-
-	/// Return whether the architecture performed an active simulation in
-	/// the last simulation iteration.
-	bool isActive() const { return active; }
-
-	/// Set the flag that indicates that the last simulation iteration was
-	/// active. This is done only internally in the architecture pool (call
-	/// ArchPool::Run()).
-	void setActive(bool active) { this->active = active; }
+  /// Set the flag that indicates that the last simulation iteration was
+  /// active. This is done only internally in the architecture pool (call
+  /// ArchPool::Run()).
+  void setActive(bool active) { this->active = active; }
 };
-
 
 /// Class containing a pool of all registered architectures. This class is a
 /// singleton, and the only instance of it can be obtained through function
 /// getInstance().
-class ArchPool
-{
-	// Unique instance of the class
-	static std::unique_ptr<ArchPool> instance;
+class ArchPool {
+  // Unique instance of the class
+  static std::unique_ptr<ArchPool> instance;
 
-	// List of architectures
-	std::list<std::unique_ptr<Arch>> arch_list;
+  // List of architectures
+  std::list<std::unique_ptr<Arch>> arch_list;
 
-	// Map of architectures, indexed by name
-	std::map<std::string, Arch *> arch_map;
+  // Map of architectures, indexed by name
+  std::map<std::string, Arch*> arch_map;
 
-	// List of architectures with timing simulation
-	std::list<Arch *> timing_arch_list;
+  // List of architectures with timing simulation
+  std::list<Arch*> timing_arch_list;
 
-	// Register a new architecture with the given name, and return the new
-	// architecture object created. If an architecture with that name
-	// already existed, the existing object is returned.
-	Arch *Register(const std::string &name);
+  // Register a new architecture with the given name, and return the new
+  // architecture object created. If an architecture with that name
+  // already existed, the existing object is returned.
+  Arch* Register(const std::string& name);
 
-public:
+ public:
+  /// Return a unique instance of the singleton
+  static ArchPool* getInstance();
 
-	/// Return a unique instance of the singleton
-	static ArchPool *getInstance();
+  /// Destroy the singleton if allocated.
+  static void Destroy() { instance = nullptr; }
 
-	/// Destroy the singleton if allocated.
-	static void Destroy() { instance = nullptr; }
+  /// Register a disassembler for the architecture with the given name.
+  /// For a given architecture, this function should be invoked at most
+  /// once.
+  void RegisterDisassembler(const std::string& name,
+                            Disassembler* disassembler) {
+    Arch* arch = Register(name);
+    arch->setDisassembler(disassembler);
+  }
 
-	/// Register a disassembler for the architecture with the given name.
-	/// For a given architecture, this function should be invoked at most
-	/// once.
-	void RegisterDisassembler(const std::string &name,
-			Disassembler *disassembler)
-	{
-		Arch *arch = Register(name);
-		arch->setDisassembler(disassembler);
-	}
+  /// Register an emulator for the architecture with the given name. For
+  /// a given architecture, this function should be invoked at most once.
+  void RegisterEmulator(const std::string& name, Emulator* emulator) {
+    Arch* arch = Register(name);
+    arch->setEmulator(emulator);
+  }
 
-	/// Register an emulator for the architecture with the given name. For
-	/// a given architecture, this function should be invoked at most once.
-	void RegisterEmulator(const std::string &name, Emulator *emulator)
-	{
-		Arch *arch = Register(name);
-		arch->setEmulator(emulator);
-	}
+  /// Register a timing simulator for the architecture with the given
+  /// name. For a given architecture, this function should be invoked at
+  /// most once.
+  void RegisterTiming(const std::string& name, Timing* timing) {
+    Arch* arch = Register(name);
+    arch->setTiming(timing);
+    timing_arch_list.push_back(arch);
+  }
 
-	/// Register a timing simulator for the architecture with the given
-	/// name. For a given architecture, this function should be invoked at
-	/// most once.
-	void RegisterTiming(const std::string &name, Timing *timing)
-	{
-		Arch *arch = Register(name);
-		arch->setTiming(timing);
-		timing_arch_list.push_back(arch);
-	}
+  /// Return an architecture given its name, or null if no architecture
+  /// is found with that name. The string comparison is done without
+  /// case sensitivity.
+  Arch* getByName(const std::string& name);
 
-	/// Return an architecture given its name, or null if no architecture
-	/// is found with that name. The string comparison is done without
-	/// case sensitivity.
-	Arch *getByName(const std::string &name);
+  /// Get a list of all possible names for architectures. This function is
+  /// useful to print an error message with the valid values for
+  /// architectures when processing user input.
+  std::string getArchNames();
 
-	/// Get a list of all possible names for architectures. This function is
-	/// useful to print an error message with the valid values for
-	/// architectures when processing user input.
-	std::string getArchNames();
+  /// Run one iteration of the main loop for each architecture, using
+  /// emulation or timing simulation, depending on the user configuration.
+  ///
+  /// \param num_emu_active
+  ///	The function returns in this argument the number of
+  ///	architectures that performed an active emulation.
+  ///
+  /// \param num_timing_active
+  ///	The function returns in this argument passed by reference the
+  ///	number of architectures that performed an active timing
+  ///	simulation.
+  ///
+  /// \return
+  ///	The two arguments in this function are return values used to
+  ///	decide whether the main simulation loop should stop.
+  void Run(int& num_emu_active, int& num_timing_active);
 
-	/// Run one iteration of the main loop for each architecture, using
-	/// emulation or timing simulation, depending on the user configuration.
-	///
-	/// \param num_emu_active
-	///	The function returns in this argument the number of
-	///	architectures that performed an active emulation.
-	///
-	/// \param num_timing_active
-	///	The function returns in this argument passed by reference the
-	///	number of architectures that performed an active timing
-	///	simulation.
-	///
-	/// \return
-	///	The two arguments in this function are return values used to
-	///	decide whether the main simulation loop should stop.
-	void Run(int &num_emu_active, int &num_timing_active);
+  /// Dump a summary for all architectures in the pool.
+  void DumpSummary(std::ostream& os = std::cerr) const;
 
-	/// Dump a summary for all architectures in the pool.
-	void DumpSummary(std::ostream &os = std::cerr) const;
+  /// Dump a report for all architectures in the pool.
+  void DumpReports();
 
-	/// Dump a report for all architectures in the pool.
-	void DumpReports();
+  /// Return an iterator to the first architecture in the architecture
+  /// list.
+  std::list<std::unique_ptr<Arch>>::iterator begin() {
+    return arch_list.begin();
+  }
 
-	/// Return an iterator to the first architecture in the architecture
-	/// list.
-	std::list<std::unique_ptr<Arch>>::iterator begin()
-	{
-		return arch_list.begin();
-	}
+  /// Return a past-the-end iterator to the architecture list.
+  std::list<std::unique_ptr<Arch>>::iterator end() { return arch_list.end(); }
 
-	/// Return a past-the-end iterator to the architecture list.
-	std::list<std::unique_ptr<Arch>>::iterator end()
-	{
-		return arch_list.end();
-	}
+  /// Return an iterator to the first architecture with timing simulation.
+  std::list<Arch*>::iterator getTimingBegin() {
+    return timing_arch_list.begin();
+  }
 
-	/// Return an iterator to the first architecture with timing simulation.
-	std::list<Arch *>::iterator getTimingBegin()
-	{
-		return timing_arch_list.begin();
-	}
+  /// Return a past-the-end iterator to the list of architectures with
+  /// timing simulation.
+  std::list<Arch*>::iterator getTimingEnd() { return timing_arch_list.end(); }
 
-	/// Return a past-the-end iterator to the list of architectures with
-	/// timing simulation.
-	std::list<Arch *>::iterator getTimingEnd()
-	{
-		return timing_arch_list.end();
-	}
-
-	/// Return the number of architectures with timing simulation
-	int getNumTiming() const { return timing_arch_list.size(); }
+  /// Return the number of architectures with timing simulation
+  int getNumTiming() const { return timing_arch_list.size(); }
 };
-
 
 }  // namespace comm
 
 #endif
-

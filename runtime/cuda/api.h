@@ -20,7 +20,6 @@
 #ifndef RUNTIME_CUDA_API_H
 #define RUNTIME_CUDA_API_H
 
-
 #include <stdio.h>
 
 #include "../include/cuda.h"
@@ -29,37 +28,35 @@
 #define CUDA_SYS_CODE 328
 
 /* Debug */
-void cuda_debug(char *fmt, ...) __attribute__ ((format (printf, 1, 2)));
+void cuda_debug(char* fmt, ...) __attribute__((format(printf, 1, 2)));
 
 /* List of CUDA driver calls */
-enum cuda_call_t
-{
-	cuda_call_invalid,
+enum cuda_call_t {
+  cuda_call_invalid,
 #define DEFCALL(name, id) cuda_call_##name,
 #include "../../src/arch/kepler/driver/Driver.def"
 #undef DEFCALL
-	cuda_call_count
+  cuda_call_count
 };
 
 /* CUDA devices */
-struct cuda_device_t *active_device;
+struct cuda_device_t* active_device;
 
 /* Lists of CUDA objects */
-struct list_t *context_list;
-struct list_t *device_list;
-struct list_t *memory_object_list;
-struct list_t *event_list;
-struct list_t *module_list;
-struct list_t *function_list;
+struct list_t* context_list;
+struct list_t* device_list;
+struct list_t* memory_object_list;
+struct list_t* event_list;
+struct list_t* module_list;
+struct list_t* function_list;
 
 /* Memory object tables */
-struct list_t *pinned_memory_object_list;
-struct list_t *device_memory_object_list;
-struct list_t *device_memory_object_tail_list;
-struct list_t *pinned_memory_object_tail_list;
+struct list_t* pinned_memory_object_list;
+struct list_t* device_memory_object_list;
+struct list_t* device_memory_object_tail_list;
+struct list_t* pinned_memory_object_tail_list;
 
 /* User thread related */
 pthread_mutex_t cuda_mutex;
 
 #endif
-

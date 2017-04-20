@@ -20,58 +20,52 @@
 #ifndef ARCH_HSA_EMULATOR_WAVEFRONT_H
 #define ARCH_HSA_EMULATOR_WAVEFRONT_H
 
-#include "WorkItem.h"
 #include "WorkGroup.h"
+#include "WorkItem.h"
 
-
-namespace HSA
-{
+namespace HSA {
 
 class WorkGroup;
 class WorkItem;
 
-class Wavefront
-{
-	// The wavefront_id
-	unsigned int wavefront_id;
+class Wavefront {
+  // The wavefront_id
+  unsigned int wavefront_id;
 
-	// The work group it belongs to
-	WorkGroup *work_group;
+  // The work group it belongs to
+  WorkGroup* work_group;
 
-	// List of work items
-	// FIXME: vector
-	std::list<std::unique_ptr<WorkItem>> work_items;
+  // List of work items
+  // FIXME: vector
+  std::list<std::unique_ptr<WorkItem>> work_items;
 
-public:
+ public:
+  /// Constructor
+  Wavefront(unsigned int wavefront_id, WorkGroup* work_group);
 
-	/// Constructor
-	Wavefront(unsigned int wavefront_id, WorkGroup *work_group);
+  /// Destructor
+  ~Wavefront();
 
-	/// Destructor
-	~Wavefront();
+  /// Execute instructions
+  bool Execute();
 
-	/// Execute instructions
-	bool Execute();
+  /// Activate all work items
+  void ActivateAllWorkItems();
 
-	/// Activate all work items
-	void ActivateAllWorkItems();
+  /// Operator \c << invoking the function Dump on an output stream
+  friend std::ostream& operator<<(std::ostream& os,
+                                  const Wavefront& wavefront) {
+    wavefront.Dump(os);
+    return os;
+  }
 
-	/// Operator \c << invoking the function Dump on an output stream
-	friend std::ostream &operator<<(std::ostream &os,
-			const Wavefront &wavefront)
-	{
-		wavefront.Dump(os);
-		return os;
-	}
+  /// Dump wavefront formation
+  void Dump(std::ostream& os) const;
 
-	/// Dump wavefront formation
-	void Dump(std::ostream &os) const;
-
-	/// Add work item into list
-	void addWorkItem(std::unique_ptr<WorkItem> work_item);
+  /// Add work item into list
+  void addWorkItem(std::unique_ptr<WorkItem> work_item);
 };
 
 }  // namespace HSA
 
-#endif 
-
+#endif

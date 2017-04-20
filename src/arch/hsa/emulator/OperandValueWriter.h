@@ -20,23 +20,21 @@
 #ifndef ARCH_HSA_EMULATOR_OPERANDVALUEWRITER_H
 #define ARCH_HSA_EMULATOR_OPERANDVALUEWRITER_H
 
-namespace HSA
-{
+namespace HSA {
 class WorkItem;
 class StackFrame;
 class BrigCodeEntry;
 
-class OperandValueWriter
-{
-	WorkItem *work_item;
-	StackFrame *stack_frame;
-public:
-	OperandValueWriter(WorkItem *work_item, StackFrame *stack_frame);
-	virtual ~OperandValueWriter();
-	virtual void Write(BrigCodeEntry *instruction, unsigned int index,
-			void *buffer);
-};
+class OperandValueWriter {
+  WorkItem* work_item;
+  StackFrame* stack_frame;
 
+ public:
+  OperandValueWriter(WorkItem* work_item, StackFrame* stack_frame);
+  virtual ~OperandValueWriter();
+  virtual void Write(BrigCodeEntry* instruction, unsigned int index,
+                     void* buffer);
+};
 }
 
 #endif  // ARCH_HSA_EMULATOR_OPERANDVALUEWRITER_H

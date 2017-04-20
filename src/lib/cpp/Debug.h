@@ -23,10 +23,7 @@
 #include <cassert>
 #include <string>
 
-
-namespace misc
-{
-
+namespace misc {
 
 /// Class used to dump debug information, activated when using one of the
 /// <tt>--xxx-debug</tt> command-line options. The following steps should be
@@ -49,93 +46,86 @@ namespace misc
 ///   This can be useful to avoid formating debug information in
 ///   performance-critical code sections, if the debug category is disabled.
 ///
-class Debug
-{
-	// Path to dump debug info
-	std::string path;
+class Debug {
+  // Path to dump debug info
+  std::string path;
 
-	// Prefix used before every debug message
-	std::string prefix;
+  // Prefix used before every debug message
+  std::string prefix;
 
-	// Output stream
-	std::ostream *os;
+  // Output stream
+  std::ostream* os;
 
-	// Flag indicating whether debug category is active
-	bool active;
+  // Flag indicating whether debug category is active
+  bool active;
 
-	// Close debugger
-	void Close();
+  // Close debugger
+  void Close();
 
-public:
-	
-	/// Constructor
-	Debug();
+ public:
+  /// Constructor
+  Debug();
 
-	/// Destructor
-	~Debug();
+  /// Destructor
+  ~Debug();
 
-	/// Set the path to dump debug information. Special names
-	/// \c stdout and \c stderr can be used to refer to the
-	/// standard output and standard error output, respectively.
-	void setPath(const std::string &path);
+  /// Set the path to dump debug information. Special names
+  /// \c stdout and \c stderr can be used to refer to the
+  /// standard output and standard error output, respectively.
+  void setPath(const std::string& path);
 
-	/// Return the current path where the debug information is being dumped,
-	/// as set with a previous call to setPath(). Strings \c stdout
-	/// and \c stderr are returned if the path was set to the
-	/// standard output or standard error output, respectively.
-	const std::string &getPath() { return path; }
+  /// Return the current path where the debug information is being dumped,
+  /// as set with a previous call to setPath(). Strings \c stdout
+  /// and \c stderr are returned if the path was set to the
+  /// standard output or standard error output, respectively.
+  const std::string& getPath() { return path; }
 
-	/// Turn off debug
-	void Off() { active = false; }
+  /// Turn off debug
+  void Off() { active = false; }
 
-	/// Turn on debug
-	void On() { active = true; }
+  /// Turn on debug
+  void On() { active = true; }
 
-	/// Dump a value into the output stream currently pointed to by the
-	/// debug object. If the debugger has not been initialized with a call
-	/// to setPath(), this call is ignored. The argument can be of any
-	/// type accepted by an \c std::ostream object.
-	template<typename T> Debug& operator<<(T val)
-	{
-		if (os && active)
-			*os << prefix << val;
-		Flush();
-		return *this;
-	}
+  /// Dump a value into the output stream currently pointed to by the
+  /// debug object. If the debugger has not been initialized with a call
+  /// to setPath(), this call is ignored. The argument can be of any
+  /// type accepted by an \c std::ostream object.
+  template <typename T>
+  Debug& operator<<(T val) {
+    if (os && active) *os << prefix << val;
+    Flush();
+    return *this;
+  }
 
-	/// A debugger can be cast into a \c bool (e.g. within an \c if
-	/// condition)
-	/// to check whether it has an active output stream or not. This is
-	/// useful when many possibly costly operations are performed just
-	/// to dump debug information. By checking whether the debugger is
-	/// active or not in beforehand, multiple dump \c << calls can be
-	/// saved.
-	operator bool() { return os; }
+  /// A debugger can be cast into a \c bool (e.g. within an \c if
+  /// condition)
+  /// to check whether it has an active output stream or not. This is
+  /// useful when many possibly costly operations are performed just
+  /// to dump debug information. By checking whether the debugger is
+  /// active or not in beforehand, multiple dump \c << calls can be
+  /// saved.
+  operator bool() { return os; }
 
-	/// A variable of type Debug can also be cast into an \c std::ostream
-	/// object, returning a reference to its internal output stream. This
-	/// operation is useful when passing the debug variable as an argument
-	/// to \c Dump() functions that use an \c std::ostream reference. The
-	/// user must make sure that this only happens when a proper output
-	/// stream has been internally initialized after a call to setPath().
-	operator std::ostream &()
-	{
-		assert(os);
-		return *os;
-	}
+  /// A variable of type Debug can also be cast into an \c std::ostream
+  /// object, returning a reference to its internal output stream. This
+  /// operation is useful when passing the debug variable as an argument
+  /// to \c Dump() functions that use an \c std::ostream reference. The
+  /// user must make sure that this only happens when a proper output
+  /// stream has been internally initialized after a call to setPath().
+  operator std::ostream&() {
+    assert(os);
+    return *os;
+  }
 
-	/// Flush the internal stream
-	void Flush();
+  /// Flush the internal stream
+  void Flush();
 
-	/// Set a prefix to be displayed before every debug message.
-	void setPrefix(const std::string &prefix)
-	{
-		this->prefix = prefix.empty() ? "" : prefix + ' ';
-	}
+  /// Set a prefix to be displayed before every debug message.
+  void setPrefix(const std::string& prefix) {
+    this->prefix = prefix.empty() ? "" : prefix + ' ';
+  }
 };
 
-
-
-} // namespace misc
+}  // namespace misc
 
 #endif

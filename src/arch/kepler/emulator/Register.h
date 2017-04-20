@@ -20,136 +20,111 @@
 #ifndef ARCH_KEPLER_EMU_REGISTER_H
 #define ARCH_KEPLER_EMU_REGISTER_H
 
-#include<cstring>
+#include <cstring>
 
-
-namespace Kepler
-{
+namespace Kepler {
 
 /// GPR value
-union RegValue
-{
-	unsigned u32;
-	int s32;
-	float f;
+union RegValue {
+  unsigned u32;
+  int s32;
+  float f;
 };
 
-struct CC
-{
-	unsigned zf;
-	unsigned sf;
-	unsigned cf;
-	unsigned of;
+struct CC {
+  unsigned zf;
+  unsigned sf;
+  unsigned cf;
+  unsigned of;
 };
 
-enum RegValueType
-{
-	RegValueTypeU32 = 0,
-	RegValueTypeS32 =1,
-	RegValueTypeF
-};
-
+enum RegValueType { RegValueTypeU32 = 0, RegValueTypeS32 = 1, RegValueTypeF };
 
 // This class includes all kinds of registers used in Thread
-class Register
-{
+class Register {
+ private:
+  RegValue gpr[256]; /* General purpose registers */
+  RegValue sr[82];   /* Special registers */
+  unsigned pr[8];    /* Predicate registers */
+  CC cc;
 
-private:
+ public:
+  /// Get value of a GPR
+  /// \param vreg GPR identifier
+  unsigned ReadGPR(int gpr_id) const { return gpr[gpr_id].u32; }
 
-	RegValue gpr[256];  /* General purpose registers */
-	RegValue sr[82];  /* Special registers */
-	unsigned pr[8];  /* Predicate registers */
-	CC cc;
+  /// Get float type value of a GPR
+  /// \param vreg GPR identifier
+  float ReadFloatGPR(int gpr_id) const { return gpr[gpr_id].f; }
 
-public:
+  /// Set value of a GPR
+  /// \param gpr GPR idenfifier
+  /// \param value Value given as an \a unsigned typed value
+  void WriteGPR(int gpr_id, unsigned value) { gpr[gpr_id].u32 = value; }
 
-	/// Get value of a GPR
-	/// \param vreg GPR identifier
-	unsigned ReadGPR(int gpr_id) const { return gpr[gpr_id].u32; }
+  /// Set float value of a GPR
+  /// \param gpr GPR idenfifier
+  /// \param value Value given as an \a float typed value
+  void WriteFloatGPR(int gpr_id, float value) { gpr[gpr_id].f = value; }
 
-	/// Get float type value of a GPR
-	/// \param vreg GPR identifier
-	float ReadFloatGPR(int gpr_id) const { return gpr[gpr_id].f; }
+  /// Get value of a SR
+  /// \param vreg SR identifier
+  unsigned ReadSpecialRegister(int special_register_id) {
+    return sr[special_register_id].u32;
+  }
 
-	/// Set value of a GPR
-	/// \param gpr GPR idenfifier
-	/// \param value Value given as an \a unsigned typed value
-	void WriteGPR(int gpr_id, unsigned value)
-	{
-		gpr[gpr_id].u32 = value;
-	}
+  /// Set value of a SR
+  /// \param gpr SR identifier
+  /// \param value Value given as an \a unsigned typed value
+  void WriteSpecialRegister(int special_register_id, unsigned value) {
+    sr[special_register_id].u32 = value;
+  }
 
-	/// Set float value of a GPR
-	/// \param gpr GPR idenfifier
-	/// \param value Value given as an \a float typed value
-	void WriteFloatGPR(int gpr_id, float value)
-	{
-		gpr[gpr_id].f = value;
-	}
+  /// Get value of a predicate register
+  /// \param pr Predicate register identifier
+  int ReadPredicate(int predicate_id) { return pr[predicate_id]; };
 
-	/// Get value of a SR
-	/// \param vreg SR identifier
-	unsigned ReadSpecialRegister(int special_register_id)
-	{
-		return sr[special_register_id].u32;
-	}
+  /// Write value of a predicate register
+  /// \param pr predicate register identifier
+  void WritePredicate(int predicate_id, unsigned value) {
+    pr[predicate_id] = value;
+  };
 
-	/// Set value of a SR
-	/// \param gpr SR identifier
-	/// \param value Value given as an \a unsigned typed value
-	void WriteSpecialRegister(int special_register_id, unsigned value)
-	{
-		sr[special_register_id].u32 = value;
-	}
+  /// Read value of Condition Code register
+  unsigned ReadCC_ZF() { return cc.zf; };
 
-	/// Get value of a predicate register
-	/// \param pr Predicate register identifier
-	int ReadPredicate(int predicate_id) { return pr[predicate_id]; };
+  /// Read value of Condition Code register
+  unsigned ReadCC_SF() { return cc.sf; };
 
-	/// Write value of a predicate register
-	/// \param pr predicate register identifier
-	void WritePredicate(int predicate_id, unsigned value)
-	{
-		pr[predicate_id] = value;
-	};
+  /// Read value of Condition Code register
+  unsigned ReadCC_CF() { return cc.cf; };
 
-	/// Read value of Condition Code register
-	unsigned ReadCC_ZF() { return cc.zf; };
+  /// Read value of Condition Code register
+  unsigned ReadCC_OF() { return cc.of; };
 
-	/// Read value of Condition Code register
-	unsigned ReadCC_SF() { return cc.sf; };
+  /// Write value of Condition register
+  void WriteCC_ZF(unsigned value) { cc.zf = value; };
 
-	/// Read value of Condition Code register
-	unsigned ReadCC_CF() { return cc.cf; };
+  /// Write value of Condition register
+  void WriteCC_SF(unsigned value) { cc.sf = value; };
 
-	/// Read value of Condition Code register
-	unsigned ReadCC_OF() { return cc.of; };
+  /// Write value of Condition register
+  void WriteCC_CF(unsigned value) { cc.cf = value; };
 
-	/// Write value of Condition register
-	void WriteCC_ZF(unsigned value) { cc.zf = value; };
+  /// Write value of Condition register
+  void WriteCC_OF(unsigned value) { cc.of = value; };
 
-	/// Write value of Condition register
-	void WriteCC_SF(unsigned value) { cc.sf = value; };
+  /// Read value of register
+  void Read_register(unsigned* dst, int gpr_id) {
+    memcpy(dst, &gpr[gpr_id], 4);
+  }
 
-	/// Write value of Condition register
-	void WriteCC_CF(unsigned value) { cc.cf = value; };
-
-	/// Write value of Condition register
-	void WriteCC_OF(unsigned value) { cc.of = value; };
-
-	/// Read value of register
-	void Read_register(unsigned *dst, int gpr_id)
-	{
-		memcpy(dst, &gpr[gpr_id], 4);
-	}
-
-	/// Write to register
-	void Write_register(unsigned *src, int gpr_id)
-	{
-		memcpy(&gpr[gpr_id], src, 4);
-	}
+  /// Write to register
+  void Write_register(unsigned* src, int gpr_id) {
+    memcpy(&gpr[gpr_id], src, 4);
+  }
 };
 
-}        // namespace
+}  // namespace
 
 #endif

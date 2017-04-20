@@ -22,59 +22,52 @@
 
 #include <string>
 
-
-namespace comm
-{
+namespace comm {
 
 // Forward declaration
 class Emulator;
 
-
 /// Class capturing basic functionality for a CPU context (i.e., a simulated
 /// software thread of execution). This functionality is common for the
 /// context classes in all CPU architectures.
-class Context
-{
-	// Counter used to assign context IDs
-	static int id_counter;
+class Context {
+  // Counter used to assign context IDs
+  static int id_counter;
 
-	// Unique context identifier, initialized in constructor
-	int id;
+  // Unique context identifier, initialized in constructor
+  int id;
 
-	// Context name, initialized in constructor
-	std::string name;
+  // Context name, initialized in constructor
+  std::string name;
 
-	// Associated emulator, initialized in constructor
-	Emulator *emulator;
+  // Associated emulator, initialized in constructor
+  Emulator* emulator;
 
-public:
+ public:
+  /// Constructor
+  Context(Emulator* emulator);
 
-	/// Constructor
-	Context(Emulator *emulator);
+  /// Return a unique integer identifier for this context. Identifiers
+  /// are assigned to contexts starting at 1000, and in common for all
+  /// architectures.
+  int getId() const { return id; }
 
-	/// Return a unique integer identifier for this context. Identifiers
-	/// are assigned to contexts starting at 1000, and in common for all
-	/// architectures.
-	int getId() const { return id; }
+  /// Return the name of the context, formed of the name of the
+  /// architecture, the word 'context', and its identifier.
+  const std::string& getName() const { return name; }
 
-	/// Return the name of the context, formed of the name of the
-	/// architecture, the word 'context', and its identifier.
-	const std::string &getName() const { return name; }
+  /// Suspend the context. The context must be in a non-suspended state,
+  /// or a panic exception will occur.
+  virtual void Suspend();
 
-	/// Suspend the context. The context must be in a non-suspended state,
-	/// or a panic exception will occur.
-	virtual void Suspend();
+  /// Wake up the context. The context must be in a suspended state, or
+  /// a panic exception will occur.
+  virtual void Wakeup();
 
-	/// Wake up the context. The context must be in a suspended state, or
-	/// a panic exception will occur.
-	virtual void Wakeup();
-
-	/// Return whether the context is suspended.
-	virtual bool isSuspended();
+  /// Return whether the context is suspended.
+  virtual bool isSuspended();
 };
-
 
 }  // namespace comm
 
 #endif
-

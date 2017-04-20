@@ -20,15 +20,11 @@
 #include "Packet.h"
 #include "Message.h"
 
-namespace net
-{
+namespace net {
 
-Packet::Packet(Message *message, int size) :
-		message(message),
-		size(size)
-{
-	// Assigning the packet's id
-	id = message->getNumPackets();
+Packet::Packet(Message* message, int size) : message(message), size(size) {
+  // Assigning the packet's id
+  id = message->getNumPackets();
 }
 
 }  // namespace net

@@ -25,67 +25,57 @@
 
 #include "Uop.h"
 
-
-namespace SI
-{
+namespace SI {
 
 // Forward declarations
 class ComputeUnit;
 
-
 /// Abstract base class representing an execution unit where the front-end can
 /// issue instructions. Derived classes are SimdUnit, ScalarUnit, ...
-class ExecutionUnit
-{
-	// Compute unit that it belongs to, assigned in constructor
-	ComputeUnit *compute_unit;
+class ExecutionUnit {
+  // Compute unit that it belongs to, assigned in constructor
+  ComputeUnit* compute_unit;
 
-	// Number of instructions issued to this execution unit
-	long long num_instructions = 0;
+  // Number of instructions issued to this execution unit
+  long long num_instructions = 0;
 
-protected:
+ protected:
+  // Issue buffer absorbing instructions from the front end
+  std::deque<std::unique_ptr<Uop>> issue_buffer;
 
-	// Issue buffer absorbing instructions from the front end
-	std::deque<std::unique_ptr<Uop>> issue_buffer;
+ public:
+  /// Constructor
+  ExecutionUnit(ComputeUnit* compute_unit) : compute_unit(compute_unit) {}
 
-public:
+  /// Run the actions occurring in one cycle. This is a pure virtual
+  /// function that every execution unit must implement.
+  virtual void Run() = 0;
 
-	/// Constructor
-	ExecutionUnit(ComputeUnit *compute_unit) : compute_unit(compute_unit)
-	{
-	}
+  /// Return whether the given uop is accepted by the execution unit,
+  /// based on the type of instruction that it contains. This is a pure
+  /// virtual function that every execution unit must implement.
+  virtual bool isValidUop(Uop* uop) const = 0;
 
-	/// Run the actions occurring in one cycle. This is a pure virtual
-	/// function that every execution unit must implement.
-	virtual void Run() = 0;
+  /// Return whether the execution unit can absorb one more instruction.
+  /// This is a pure virtual function that every execution unit must
+  /// implement.
+  virtual bool canIssue() const = 0;
 
-	/// Return whether the given uop is accepted by the execution unit,
-	/// based on the type of instruction that it contains. This is a pure
-	/// virtual function that every execution unit must implement.
-	virtual bool isValidUop(Uop *uop) const = 0;
+  /// Issue the given uop into the execution unit. Child classes can
+  /// override this function to extend its behavior, but should invoke the
+  /// parent class function, too.
+  virtual void Issue(std::unique_ptr<Uop> uop);
 
-	/// Return whether the execution unit can absorb one more instruction.
-	/// This is a pure virtual function that every execution unit must
-	/// implement.
-	virtual bool canIssue() const = 0;
+  /// Return the number of instructions currently present in the issue
+  /// buffer.
+  int getIssueBufferOccupancy() const { return issue_buffer.size(); }
 
-	/// Issue the given uop into the execution unit. Child classes can
-	/// override this function to extend its behavior, but should invoke the
-	/// parent class function, too.
-	virtual void Issue(std::unique_ptr<Uop> uop);
+  /// Return the number of instructions issued into the execution unit.
+  long long getNumInstructions() const { return num_instructions; }
 
-	/// Return the number of instructions currently present in the issue
-	/// buffer.
-	int getIssueBufferOccupancy() const { return issue_buffer.size(); }
-
-	/// Return the number of instructions issued into the execution unit.
-	long long getNumInstructions() const { return num_instructions; }
-
-	/// Return the compute unit that this execution unit belongs to.
-	ComputeUnit *getComputeUnit() const { return compute_unit; }
+  /// Return the compute unit that this execution unit belongs to.
+  ComputeUnit* getComputeUnit() const { return compute_unit; }
 };
-
 }
 
 #endif
-

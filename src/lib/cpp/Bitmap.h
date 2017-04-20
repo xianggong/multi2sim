@@ -23,85 +23,81 @@
 #include <iostream>
 #include <memory>
 
-namespace misc
-{
+namespace misc {
 
-class Bitmap
-{
-	static const size_t bits_per_block = sizeof(size_t) * 8;
+class Bitmap {
+  static const size_t bits_per_block = sizeof(size_t) * 8;
 
-	size_t size;
-	size_t size_in_blocks;
-	size_t mask;
-	std::unique_ptr<size_t[]> data;
+  size_t size;
+  size_t size_in_blocks;
+  size_t mask;
+  std::unique_ptr<size_t[]> data;
 
-	void getBlockBit(size_t at, size_t &block, size_t &bit) const;
-	
-public:
+  void getBlockBit(size_t at, size_t& block, size_t& bit) const;
 
-	explicit Bitmap(size_t size);
-	Bitmap(const Bitmap &b);
+ public:
+  explicit Bitmap(size_t size);
+  Bitmap(const Bitmap& b);
 
-	void Dump(std::ostream &os = std::cout) const;
-	friend std::ostream &operator<<(std::ostream &os, const Bitmap &b) {
-			b.Dump(os); return os; }
-	
-	/// Return the size of the bitmap in bits, as initialized in the
-	/// constructor
-	size_t getSize() const { return size; }
+  void Dump(std::ostream& os = std::cout) const;
+  friend std::ostream& operator<<(std::ostream& os, const Bitmap& b) {
+    b.Dump(os);
+    return os;
+  }
 
-	/// Return the size of the bitmap in bytes. This value will always be
-	/// a multiple of the machine word size.
-	size_t getSizeInBytes() const { return size_in_blocks *
-			sizeof(size_t); }
+  /// Return the size of the bitmap in bits, as initialized in the
+  /// constructor
+  size_t getSize() const { return size; }
 
-	/// Return a constant pointer to the internal data storing the bitmap.
-	/// The size of the buffer pointed to by the returned value can be
-	/// obtained with getSizeInBytes().
-	const char *getBuffer() const { return (const char *) data.get(); }
+  /// Return the size of the bitmap in bytes. This value will always be
+  /// a multiple of the machine word size.
+  size_t getSizeInBytes() const { return size_in_blocks * sizeof(size_t); }
 
-	/// Return a pointer to the internal data storing the bitmap. The size
-	/// of the buffer pointed to by the returned value can be obtained with
-	/// getSizeInBytes().
-	char *getBuffer() { return (char *) data.get(); }
+  /// Return a constant pointer to the internal data storing the bitmap.
+  /// The size of the buffer pointed to by the returned value can be
+  /// obtained with getSizeInBytes().
+  const char* getBuffer() const { return (const char*)data.get(); }
 
-	Bitmap &operator=(const Bitmap& b);
+  /// Return a pointer to the internal data storing the bitmap. The size
+  /// of the buffer pointed to by the returned value can be obtained with
+  /// getSizeInBytes().
+  char* getBuffer() { return (char*)data.get(); }
 
-	Bitmap &Set(size_t at, bool val = true);
-	Bitmap &Set();
-	Bitmap &Reset(size_t at) { return Set(at, 0); }
-	Bitmap &Reset();
-	Bitmap &Flip(size_t at) { return Set(at, !Test(at)); }
-	Bitmap &Flip();
+  Bitmap& operator=(const Bitmap& b);
 
-	bool Test(size_t at) const;
-	bool Any() const;
-	bool None() const { return !Any(); }
+  Bitmap& Set(size_t at, bool val = true);
+  Bitmap& Set();
+  Bitmap& Reset(size_t at) { return Set(at, 0); }
+  Bitmap& Reset();
+  Bitmap& Flip(size_t at) { return Set(at, !Test(at)); }
+  Bitmap& Flip();
 
-	Bitmap operator~() const;
+  bool Test(size_t at) const;
+  bool Any() const;
+  bool None() const { return !Any(); }
 
-	size_t CountZeros() const;
-	size_t CountOnes() const;
+  Bitmap operator~() const;
 
-	bool operator[](size_t at) const { return Test(at); }
-	bool operator==(const Bitmap &b) const;
-	Bitmap &operator<<=(size_t n);
-	Bitmap &operator>>=(size_t n);
-	Bitmap &operator&=(const Bitmap &b);
-	Bitmap &operator|=(const Bitmap &b);
-	Bitmap &operator^=(const Bitmap &b);
-	Bitmap &operator-=(const Bitmap &b);
+  size_t CountZeros() const;
+  size_t CountOnes() const;
 
-	Bitmap operator<<(size_t n) const;
-	Bitmap operator>>(size_t n) const;
-	Bitmap operator&(const Bitmap &b) const;
-	Bitmap operator|(const Bitmap &b) const;
-	Bitmap operator^(const Bitmap &b) const;
-	Bitmap operator-(const Bitmap &b) const;
+  bool operator[](size_t at) const { return Test(at); }
+  bool operator==(const Bitmap& b) const;
+  Bitmap& operator<<=(size_t n);
+  Bitmap& operator>>=(size_t n);
+  Bitmap& operator&=(const Bitmap& b);
+  Bitmap& operator|=(const Bitmap& b);
+  Bitmap& operator^=(const Bitmap& b);
+  Bitmap& operator-=(const Bitmap& b);
+
+  Bitmap operator<<(size_t n) const;
+  Bitmap operator>>(size_t n) const;
+  Bitmap operator&(const Bitmap& b) const;
+  Bitmap operator|(const Bitmap& b) const;
+  Bitmap operator^(const Bitmap& b) const;
+  Bitmap operator-(const Bitmap& b) const;
 };
-
 
 }  // namespace misc
 
 #endif
-

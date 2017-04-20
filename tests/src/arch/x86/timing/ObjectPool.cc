@@ -19,34 +19,27 @@
 
 #include "ObjectPool.h"
 
-
-namespace x86
-{
+namespace x86 {
 
 // Singleton instance of object pool
 std::unique_ptr<ObjectPool> ObjectPool::instance;
 
+void ObjectPool::Destroy() {
+  // Reset ObjectPool singleton
+  instance = nullptr;
 
-void ObjectPool::Destroy()
-{
-	// Reset ObjectPool singleton
-	instance = nullptr;
-
-	// Reset the rest of the singletons
-	Timing::Destroy();
-	Emulator::Destroy();
-	comm::ArchPool::Destroy();
+  // Reset the rest of the singletons
+  Timing::Destroy();
+  Emulator::Destroy();
+  comm::ArchPool::Destroy();
 }
 
+ObjectPool::ObjectPool() {
+  // Timing simulator, getting default values for all instances.
+  timing = Timing::getInstance();
 
-ObjectPool::ObjectPool()
-{
-	// Timing simulator, getting default values for all instances.
-	timing = Timing::getInstance();
-
-	// Create a context
-	Emulator *emulator = Emulator::getInstance();
-	context = emulator->newContext();
+  // Create a context
+  Emulator* emulator = Emulator::getInstance();
+  context = emulator->newContext();
 }
-
 }

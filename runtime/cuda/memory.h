@@ -20,22 +20,18 @@
 #ifndef RUNTIME_CUDA_MEMORY_H
 #define RUNTIME_CUDA_MEMORY_H
 
-
 #include "api.h"
 
-struct cuda_memory_object_t
-{
-	unsigned int id;
+struct cuda_memory_object_t {
+  unsigned int id;
 
-	unsigned int size;
+  unsigned int size;
 
-	unsigned int host_ptr;
-	unsigned int device_ptr;
+  unsigned int host_ptr;
+  unsigned int device_ptr;
 };
 
-struct cuda_memory_object_t *cuda_memory_object_create(void);
-void cuda_memory_object_free(struct cuda_memory_object_t *mem);
-
+struct cuda_memory_object_t* cuda_memory_object_create(void);
+void cuda_memory_object_free(struct cuda_memory_object_t* mem);
 
 #endif
-

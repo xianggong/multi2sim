@@ -20,26 +20,21 @@
 #ifndef ARCH_HSA_EMULATOR_SIGNAL_H
 #define ARCH_HSA_EMULATOR_SIGNAL_H
 
-namespace HSA
-{
+namespace HSA {
 
-class Signal
-{
+class Signal {
+  // Signal value
+  unsigned long long value;
 
-	// Signal value
-	unsigned long long value;
+ public:
+  // Constructor
+  Signal(unsigned long long init_value);
 
-public:
+  // Get value
+  unsigned long long getValue() const { return value; }
 
-	// Constructor
-	Signal(unsigned long long init_value);
-
-	// Get value
-	unsigned long long getValue() const { return value; }
-
-	// Set value
-	void setValue(unsigned long long value) { this->value = value; }
-
+  // Set value
+  void setValue(unsigned long long value) { this->value = value; }
 };
 
 }  // namespace net

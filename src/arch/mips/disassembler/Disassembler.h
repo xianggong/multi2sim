@@ -1,4 +1,4 @@
-/* 
+/*
  *  Multi2Sim
  *  Copyright (C) 2012  Rafael Ubal (ubal@ece.neu.edu)
  *
@@ -27,88 +27,75 @@
 
 #include "Instruction.h"
 
+namespace MIPS {
 
-namespace MIPS
-{
+class Disassembler : public comm::Disassembler {
+  // File to disassemble
+  static std::string path;
 
+  // Unique instance of the singleton
+  static std::unique_ptr<Disassembler> instance;
 
-class Disassembler : public comm::Disassembler
-{
-	// File to disassemble
-	static std::string path;
+  // Private constructor for singleton
+  Disassembler();
 
-	// Unique instance of the singleton
-	static std::unique_ptr<Disassembler> instance;
+ public:
+  /// Exception for MIPS disassembler
+  class Error : public misc::Error {
+   public:
+    Error(const std::string& message) : misc::Error(message) {
+      AppendPrefix("MIPS Disassembler");
+    }
+  };
 
-	// Private constructor for singleton
-	Disassembler();
+  // Decoding tables
+  Instruction::Info* dec_table;
+  Instruction::Info* dec_table_special;
+  Instruction::Info* dec_table_special_movci;
+  Instruction::Info* dec_table_special_srl;
+  Instruction::Info* dec_table_special_srlv;
 
-public:
+  Instruction::Info* dec_table_regimm;
 
-	/// Exception for MIPS disassembler
-	class Error : public misc::Error
-	{
-	public:
-		
-		Error(const std::string &message) : misc::Error(message)
-		{
-			AppendPrefix("MIPS Disassembler");
-		}
-	};
+  Instruction::Info* dec_table_cop0;
+  Instruction::Info* dec_table_cop0_c0;
+  Instruction::Info* dec_table_cop0_notc0;
+  Instruction::Info* dec_table_cop0_notc0_mfmc0;
 
-	// Decoding tables
-	Instruction::Info *dec_table;
-	Instruction::Info *dec_table_special;
-	Instruction::Info *dec_table_special_movci;
-	Instruction::Info *dec_table_special_srl;
-	Instruction::Info *dec_table_special_srlv;
+  Instruction::Info* dec_table_cop1;
+  Instruction::Info* dec_table_cop1_bc1;
+  Instruction::Info* dec_table_cop1_s;
+  Instruction::Info* dec_table_cop1_s_movcf;
+  Instruction::Info* dec_table_cop1_d;
+  Instruction::Info* dec_table_cop1_d_movcf;
+  Instruction::Info* dec_table_cop1_w;
+  Instruction::Info* dec_table_cop1_l;
+  Instruction::Info* dec_table_cop1_ps;
 
-	Instruction::Info *dec_table_regimm;
+  Instruction::Info* dec_table_cop2;
+  Instruction::Info* dec_table_cop2_bc2;
 
-	Instruction::Info *dec_table_cop0;
-	Instruction::Info *dec_table_cop0_c0;
-	Instruction::Info *dec_table_cop0_notc0;
-	Instruction::Info *dec_table_cop0_notc0_mfmc0;
+  Instruction::Info* dec_table_special2;
 
-	Instruction::Info *dec_table_cop1;
-	Instruction::Info *dec_table_cop1_bc1;
-	Instruction::Info *dec_table_cop1_s;
-	Instruction::Info *dec_table_cop1_s_movcf;
-	Instruction::Info *dec_table_cop1_d;
-	Instruction::Info *dec_table_cop1_d_movcf;
-	Instruction::Info *dec_table_cop1_w;
-	Instruction::Info *dec_table_cop1_l;
-	Instruction::Info *dec_table_cop1_ps;
+  Instruction::Info* dec_table_special3;
+  Instruction::Info* dec_table_special3_bshfl;
 
-	Instruction::Info *dec_table_cop2;
-	Instruction::Info *dec_table_cop2_bc2;
+  /// Return an instance of the singleton
+  static Disassembler* getInstance();
 
-	Instruction::Info *dec_table_special2;
+  /// Destructor
+  ~Disassembler();
 
-	Instruction::Info *dec_table_special3;
-	Instruction::Info *dec_table_special3_bshfl;
-	
-	
-	/// Return an instance of the singleton
-	static Disassembler *getInstance();
+  /// Disassemble binary file given a path
+  void DisassembleBinary(const std::string& path);
 
-	/// Destructor
-	~Disassembler();
-	
-	/// Disassemble binary file given a path
-	void DisassembleBinary(const std::string &path);
+  /// Register command-line options
+  static void RegisterOptions();
 
-	/// Register command-line options
-	static void RegisterOptions();
-
-	/// Process command-line options
-	static void ProcessOptions();
+  /// Process command-line options
+  static void ProcessOptions();
 };
-
-
 
 }  // namespace MIPS
 
-
 #endif  // MIPS_ASM_ASM_H
-

@@ -17,32 +17,27 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include <lib/cpp/String.h>
-#include <lib/cpp/Error.h>
 #include <arch/hsa/disassembler/AsmService.h>
 #include <arch/hsa/disassembler/Brig.h>
 #include <arch/hsa/disassembler/BrigCodeEntry.h>
+#include <lib/cpp/Error.h>
+#include <lib/cpp/String.h>
 
 #include "MemFenceInstructionWorker.h"
 #include "WorkItem.h"
 
-namespace HSA
-{
+namespace HSA {
 
-MemFenceInstructionWorker::MemFenceInstructionWorker(WorkItem *work_item,
-		StackFrame *stack_frame) :
-		HsaInstructionWorker(work_item, stack_frame)
-{
+MemFenceInstructionWorker::MemFenceInstructionWorker(WorkItem* work_item,
+                                                     StackFrame* stack_frame)
+    : HsaInstructionWorker(work_item, stack_frame) {}
+
+MemFenceInstructionWorker::~MemFenceInstructionWorker() {
+  // TODO Auto-generated destructor stub
 }
 
-MemFenceInstructionWorker::~MemFenceInstructionWorker()
-{
-	// TODO Auto-generated destructor stub
-}
-
-void MemFenceInstructionWorker::Execute(BrigCodeEntry *instruction)
-{
-	work_item->MovePcForwardByOne();
+void MemFenceInstructionWorker::Execute(BrigCodeEntry* instruction) {
+  work_item->MovePcForwardByOne();
 }
 
 }  // namespace HSA

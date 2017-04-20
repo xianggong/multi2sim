@@ -26,266 +26,243 @@
 #include <lib/cpp/Error.h>
 #include <lib/cpp/IniFile.h>
 
-
-namespace x86
-{
+namespace x86 {
 
 // Forward declaration
 class Uop;
 
 // Branch Predictor class
-class BranchPredictor
-{
-public:
+class BranchPredictor {
+ public:
+  /// Global prediction enumeration
+  enum Prediction { PredictionNotTaken = 0, PredictionTaken };
 
-	/// Global prediction enumeration
-	enum Prediction
-	{
-		PredictionNotTaken = 0,
-		PredictionTaken
-	};
+  /// Enumeration of branch predictor Kind
+  enum Kind {
+    KindInvalid = 0,
+    KindPerfect,
+    KindTaken,
+    KindNottaken,
+    KindBimod,
+    KindTwoLevel,
+    KindCombined
+  };
 
-	/// Enumeration of branch predictor Kind
-	enum Kind
-	{
-		KindInvalid = 0,
-		KindPerfect,
-		KindTaken,
-		KindNottaken,
-		KindBimod,
-		KindTwoLevel,
-		KindCombined
-	};
+  /// string map of branch predictor kind
+  static misc::StringMap KindMap;
 
-	/// string map of branch predictor kind
-	static misc::StringMap KindMap;
+ private:
+  //
+  // Static fields
+  //
 
-private:
+  // Branch predictor kind
+  static Kind kind;
 
-	//
-	// Static fields
-	//
+  // Number of sets in the BTB
+  static int btb_num_sets;
 
-	// Branch predictor kind
-	static Kind kind;
+  // Associativity of the BTB
+  static int btb_num_ways;
 
-	// Number of sets in the BTB
-	static int btb_num_sets;
+  // Size of the return address stack
+  static int ras_size;
 
-	// Associativity of the BTB
-	static int btb_num_ways;
+  // Size of the bimodal predictor
+  static int bimod_size;
 
-	// Size of the return address stack
-	static int ras_size;
+  // Size of the choice predictor
+  static int choice_size;
 
-	// Size of the bimodal predictor
-	static int bimod_size;
+  // Size of the level 1 table of the two-level predictor
+  static int two_level_l1_size;
 
-	// Size of the choice predictor
-	static int choice_size;
+  // Size of the level 2 table of the two-level predictor
+  static int two_level_l2_size;
 
-	// Size of the level 1 table of the two-level predictor
-	static int two_level_l1_size;
+  // Prediction history size
+  static int two_level_history_size;
 
-	// Size of the level 2 table of the two-level predictor
-	static int two_level_l2_size;
+  // Height of the level 2 table of the two-level predictor
+  static int two_level_l2_height;
 
-	// Prediction history size
-	static int two_level_history_size;
+  //
+  // Class members
+  //
 
-	// Height of the level 2 table of the two-level predictor
-	static int two_level_l2_height;
+  // The defined name
+  std::string name;
 
+  // Return address stack
+  std::unique_ptr<int[]> ras;
 
+  // Top of the return address stack
+  int ras_index = 0;
 
+  // Branch Target Buffer entry
+  struct BtbEntry {
+    unsigned int source;  // eip
+    unsigned int target;  // neip
+    int counter;          // LRU counter
+  };
 
-	//
-	// Class members
-	//
+  // BTB - array of btb_sets * btb_assoc entries of type BtbEntry.
+  std::unique_ptr<BtbEntry[]> btb;
 
-	// The defined name
-	std::string name;
+  // bimod - array of bimodal counters indexed by PC
+  //   0,1 - Branch not taken.
+  //   2,3 - Branch taken.
+  std::unique_ptr<char[]> bimod;
 
-	// Return address stack
-	std::unique_ptr<int[]> ras;
+  // Two-level adaptive branch predictor. It contains a
+  // BHT (branch history table) and PHT (pattern history table).
+  std::unique_ptr<unsigned int[]>
+      two_level_bht;  // array of level1_size branch history registers
+  std::unique_ptr<char[]>
+      two_level_pht;  // array of level2_size*2^hist_size 2-bit counters
 
-	// Top of the return address stack
-	int ras_index = 0;
+  // choice - array of bimodal counters indexed by PC
+  //   0,1 - Use bimodal predictor.
+  //   2,3 - Use two-level adaptive predictor
+  std::unique_ptr<char[]> choice;
 
-	// Branch Target Buffer entry
-	struct BtbEntry
-	{
-		unsigned int source;  // eip
-		unsigned int target;  // neip
-		int counter;  // LRU counter
-	};
+  // Stats
+  long long accesses = 0;
+  long long hits = 0;
 
-	// BTB - array of btb_sets * btb_assoc entries of type BtbEntry.
-	std::unique_ptr<BtbEntry[]> btb;
+ public:
+  //
+  // Class Error
+  //
 
-	// bimod - array of bimodal counters indexed by PC
-	//   0,1 - Branch not taken.
-	//   2,3 - Branch taken.
-	std::unique_ptr<char[]> bimod;
+  /// Exception for X86 branch predictor
+  class Error : public misc::Error {
+   public:
+    Error(const std::string& message) : misc::Error(message) {
+      AppendPrefix("X86 branch predictor");
+    }
+  };
 
-	// Two-level adaptive branch predictor. It contains a
-	// BHT (branch history table) and PHT (pattern history table).
-	std::unique_ptr<unsigned int[]> two_level_bht;  // array of level1_size branch history registers
-	std::unique_ptr<char[]> two_level_pht;  // array of level2_size*2^hist_size 2-bit counters
+  //
+  // Static functions
+  //
 
-	// choice - array of bimodal counters indexed by PC
-	//   0,1 - Use bimodal predictor.
-	//   2,3 - Use two-level adaptive predictor
-	std::unique_ptr<char[]> choice;
+  static Kind getKind() { return kind; }
 
-	// Stats 
-	long long accesses = 0;
-	long long hits = 0;
+  static int getBtbNumSets() { return btb_num_sets; }
 
-public:
+  static int getBtbNumWays() { return btb_num_ways; }
 
-	//
-	// Class Error
-	//
+  static int getRasSize() { return ras_size; }
 
-	/// Exception for X86 branch predictor
-	class Error : public misc::Error
-	{
-	public:
+  static int getBimodSize() { return bimod_size; }
 
-		Error(const std::string &message) : misc::Error(message)
-		{
-			AppendPrefix("X86 branch predictor");
-		}
-	};
+  static int getChoiceSize() { return choice_size; }
 
+  static int getTwoLevelL1Size() { return two_level_l1_size; }
 
+  static int getTwoLevelL2Size() { return two_level_l2_size; }
 
-	//
-	// Static functions
-	//
+  static int getTwoLevelHistorySize() { return two_level_history_size; }
 
-	static Kind getKind() { return kind; }
+  static int getTwoLevelL2Height() { return two_level_l2_height; }
 
-	static int getBtbNumSets() { return btb_num_sets; }
+  //
+  // Class members
+  //
 
-	static int getBtbNumWays() { return btb_num_ways; }
+  /// Constructor
+  BranchPredictor(const std::string& name = "");
 
-	static int getRasSize() { return ras_size; }
+  /// Read branch predictor configuration from configuration file
+  static void ParseConfiguration(misc::IniFile* ini_file);
 
-	static int getBimodSize() { return bimod_size; }
+  /// Dump configuration
+  void DumpConfiguration(std::ostream& os = std::cout);
 
-	static int getChoiceSize() { return choice_size; }
+  char getBimodStatus(int index) const { return bimod[index]; }
 
-	static int getTwoLevelL1Size() { return two_level_l1_size; }
+  int getTwoLevelBhtStatus(int index) const { return two_level_bht[index]; }
 
-	static int getTwoLevelL2Size() { return two_level_l2_size; }
+  char getTwoLevelPhtStatus(int row, int col) const {
+    return two_level_pht[row * two_level_l2_size + col];
+  }
 
-	static int getTwoLevelHistorySize() { return two_level_history_size; }
+  int getChoiceStatus(int index) const { return choice[index]; }
 
-	static int getTwoLevelL2Height() { return two_level_l2_height; }
+  /// Return prediction for an address (0=not taken, 1=taken)
+  ///
+  /// \param uop
+  /// 	Micro-instruction with information used to read the branch
+  ///	predictor.
+  ///
+  /// \return
+  /// 	Global prediction result
+  ///
+  Prediction Lookup(Uop* uop);
 
+  /// Return multiple predictions for an address. This can only be done
+  /// for two-level adaptive predictors, since they use global history.
+  /// The prediction of the primary branch is stored in the least
+  /// significant bit (bit 0), whereas the prediction of the last branch
+  /// is stored in bit 'count - 1'.
+  ///
+  /// \param eip
+  /// 	The instruction address
+  ///
+  /// \param count
+  /// 	Maximum number of branches in a trace
+  ///
+  /// \return
+  /// 	Global prediction result
+  ///
+  int LookupMultiple(unsigned int eip, int count);
 
+  /// Update the parameter inside branch predictor
+  ///
+  /// \param uop
+  /// 	Micro-instruction with branch prediction information.
+  ///
+  void Update(Uop* uop);
 
+  /// Lookup BTB. If it contains the uop address, return target. The BTB
+  /// also contains information about the type of branch, i.e., jump,
+  /// call, ret, or conditional. If instruction is call or ret, access RAS
+  /// instead of BTB.
+  ///
+  /// \param uop
+  /// 	Micro-instruction capturing all the information related with the
+  ///	branch prediction.
+  ///
+  /// \return
+  /// 	Target address
+  ///
+  unsigned int LookupBtb(Uop* uop);
 
-	//
-	// Class members
-	//
+  /// Update the BTB
+  ///
+  /// \param uop
+  /// 	Micro-instruction including all the information related with
+  ///	its branch prediction.
+  ///
+  void UpdateBtb(Uop* uop);
 
-	/// Constructor
-	BranchPredictor(const std::string &name = "");
-
-	/// Read branch predictor configuration from configuration file
-	static void ParseConfiguration(misc::IniFile *ini_file);
-
-	/// Dump configuration
-	void DumpConfiguration(std::ostream &os = std::cout);
-
-	char getBimodStatus(int index) const { return bimod[index]; }
-
-	int getTwoLevelBhtStatus(int index) const { return two_level_bht[index]; }
-
-	char getTwoLevelPhtStatus(int row, int col) const
-	{
-		return two_level_pht[row * two_level_l2_size + col];
-	}
-
-	int getChoiceStatus(int index) const { return choice[index]; }
-
-	/// Return prediction for an address (0=not taken, 1=taken)
-	///
-	/// \param uop
-	/// 	Micro-instruction with information used to read the branch
-	///	predictor.
-	///
-	/// \return
-	/// 	Global prediction result
-	///
-	Prediction Lookup(Uop *uop);
-
-	/// Return multiple predictions for an address. This can only be done
-	/// for two-level adaptive predictors, since they use global history.
-	/// The prediction of the primary branch is stored in the least
-	/// significant bit (bit 0), whereas the prediction of the last branch
-	/// is stored in bit 'count - 1'.
-	///
-	/// \param eip
-	/// 	The instruction address
-	///
-	/// \param count
-	/// 	Maximum number of branches in a trace
-	///
-	/// \return
-	/// 	Global prediction result
-	///
-	int LookupMultiple(unsigned int eip, int count);
-
-	/// Update the parameter inside branch predictor
-	///
-	/// \param uop
-	/// 	Micro-instruction with branch prediction information.
-	///
-	void Update(Uop *uop);
-
-	/// Lookup BTB. If it contains the uop address, return target. The BTB
-	/// also contains information about the type of branch, i.e., jump,
-	/// call, ret, or conditional. If instruction is call or ret, access RAS
-	/// instead of BTB.
-	///
-	/// \param uop
-	/// 	Micro-instruction capturing all the information related with the
-	///	branch prediction.
-	///
-	/// \return
-	/// 	Target address
-	///
-	unsigned int LookupBtb(Uop *uop);
-
-	/// Update the BTB
-	///
-	/// \param uop
-	/// 	Micro-instruction including all the information related with
-	///	its branch prediction.
-	///
-	void UpdateBtb(Uop *uop);
-
-	/// Find address of next branch after eip within current block.
-	/// This is useful for accessing the trace cache. At that point, the
-	/// uop is not ready to call \c LookupBtb(), since functional simulation
-	/// has not happened yet.
-	///
-	/// \param eip
-	/// 	The instruction address
-	///
-	/// \param block_size
-	/// 	The block size of instruction cache
-	///
-	/// \return
-	/// 	Next branch address
-	///
-	unsigned int getNextBranch(unsigned int eip, unsigned int block_size);
+  /// Find address of next branch after eip within current block.
+  /// This is useful for accessing the trace cache. At that point, the
+  /// uop is not ready to call \c LookupBtb(), since functional simulation
+  /// has not happened yet.
+  ///
+  /// \param eip
+  /// 	The instruction address
+  ///
+  /// \param block_size
+  /// 	The block size of instruction cache
+  ///
+  /// \return
+  /// 	Next branch address
+  ///
+  unsigned int getNextBranch(unsigned int eip, unsigned int block_size);
 };
-
 }
 
-#endif // ARCH_X86_TIMING_BRANCH_PREDICTOR_H
+#endif  // ARCH_X86_TIMING_BRANCH_PREDICTOR_H

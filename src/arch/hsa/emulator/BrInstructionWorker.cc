@@ -22,39 +22,29 @@
 #include "BrInstructionWorker.h"
 #include "WorkItem.h"
 
-namespace HSA
-{
+namespace HSA {
 
-BrInstructionWorker::BrInstructionWorker(WorkItem *work_item,
-		StackFrame *stack_frame) :
-		HsaInstructionWorker(work_item, stack_frame)
-{
+BrInstructionWorker::BrInstructionWorker(WorkItem* work_item,
+                                         StackFrame* stack_frame)
+    : HsaInstructionWorker(work_item, stack_frame) {}
 
-}
+BrInstructionWorker::~BrInstructionWorker() {}
 
+void BrInstructionWorker::Execute(BrigCodeEntry* instruction) {
+  // Retrieve 1st operand
+  auto operand0 = instruction->getOperand(0);
+  if (operand0->getKind() == BRIG_KIND_OPERAND_CODE_REF) {
+    auto label = operand0->getRef();
 
-BrInstructionWorker::~BrInstructionWorker()
-{
-}
+    // Redirect pc to a certain label
+    stack_frame->setPc(std::move(label));
+    return;
+  } else {
+    throw misc::Panic("Unsupported operand type for CBR.");
+  }
 
-
-void BrInstructionWorker::Execute(BrigCodeEntry *instruction)
-{
-	// Retrieve 1st operand
-	auto operand0 = instruction->getOperand(0);
-	if (operand0->getKind() == BRIG_KIND_OPERAND_CODE_REF)
-	{
-		auto label = operand0->getRef();
-
-		// Redirect pc to a certain label
-		stack_frame->setPc(std::move(label));
-		return;
-	}else{
-		throw misc::Panic("Unsupported operand type for CBR.");
-	}
-
-	// Move PC forward
-	work_item->MovePcForwardByOne();
+  // Move PC forward
+  work_item->MovePcForwardByOne();
 }
 
 }  // namespace HSA

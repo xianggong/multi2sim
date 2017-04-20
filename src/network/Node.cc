@@ -19,53 +19,32 @@
 
 #include <cstring>
 
-#include "Node.h"
 #include "Buffer.h"
+#include "Node.h"
 
-namespace net
-{
+namespace net {
 
-Node::Node(Network *network,
-		int index,
-		int input_buffer_size,
-		int output_buffer_size,
-		const std::string &name,
-		void *user_data) :
-		network(network),
-		name(name),
-		index(index),
-		input_buffer_size(input_buffer_size),
-		output_buffer_size(output_buffer_size),
-		user_data(user_data)
-{
+Node::Node(Network* network, int index, int input_buffer_size,
+           int output_buffer_size, const std::string& name, void* user_data)
+    : network(network),
+      name(name),
+      index(index),
+      input_buffer_size(input_buffer_size),
+      output_buffer_size(output_buffer_size),
+      user_data(user_data) {}
+
+Buffer* Node::addInputBuffer(int size, Connection* connection) {
+  std::string name = misc::fmt("in_buf_%d", (unsigned int)input_buffers.size());
+  input_buffers.emplace_back(misc::new_unique<Buffer>(
+      name, size, input_buffers.size(), this, connection));
+  return input_buffers.back().get();
 }
 
-
-Buffer *Node::addInputBuffer(int size, Connection *connection)
-{
-	std::string name = misc::fmt("in_buf_%d",
-				(unsigned int) input_buffers.size());
-	input_buffers.emplace_back(misc::new_unique<Buffer>(
-			name,
-			size,
-			input_buffers.size(),
-			this,
-			connection));
-	return input_buffers.back().get();
+Buffer* Node::addOutputBuffer(int size, Connection* connection) {
+  std::string name =
+      misc::fmt("out_buf_%d", (unsigned int)output_buffers.size());
+  output_buffers.emplace_back(misc::new_unique<Buffer>(
+      name, size, output_buffers.size(), this, connection));
+  return output_buffers.back().get();
 }
-
-
-Buffer *Node::addOutputBuffer(int size, Connection *connection)
-{
-	std::string name = misc::fmt("out_buf_%d",
-			(unsigned int) output_buffers.size());
-	output_buffers.emplace_back(misc::new_unique<Buffer>(
-			name,
-			size,
-			output_buffers.size(),
-			this,
-			connection));
-	return output_buffers.back().get();
-}
-
 }

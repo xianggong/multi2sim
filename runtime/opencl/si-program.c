@@ -27,49 +27,41 @@
 #include "si-kernel.h"
 #include "si-program.h"
 
-
 struct opencl_si_program_t *opencl_si_program_create(
-		struct opencl_program_t *parent,
-		struct opencl_si_device_t *device,
-		void *binary,
-		unsigned int length)
-{
-	struct opencl_si_program_t *program;
+    struct opencl_program_t *parent, struct opencl_si_device_t *device,
+    void *binary, unsigned int length) {
+  struct opencl_si_program_t *program;
 
-	/* Initialize */
-	program = xcalloc(1, sizeof(struct opencl_si_program_t));
-	program->type = opencl_runtime_type_si;
-	program->elf_file = elf_file_create_from_buffer(binary, length,
-		"Southern Islands Binary");
+  /* Initialize */
+  program = xcalloc(1, sizeof(struct opencl_si_program_t));
+  program->type = opencl_runtime_type_si;
+  program->elf_file =
+      elf_file_create_from_buffer(binary, length, "Southern Islands Binary");
 
-	/* Create program object in driver */
-	program->id = ioctl(device->parent->fd,
-		SIProgramCreate);
+  /* Create program object in driver */
+  program->id = ioctl(device->parent->fd, SIProgramCreate);
 
-	/* Set program binary in driver */
-	unsigned args[3] = {program->id, (unsigned) binary, length};
-	ioctl(device->parent->fd, SIProgramSetBinary,
-		args);
+  /* Set program binary in driver */
+  unsigned args[3] = {program->id, (unsigned)binary, length};
+  ioctl(device->parent->fd, SIProgramSetBinary, args);
 
-	/* Return */
-	return program;
+  /* Return */
+  return program;
 }
 
-void opencl_si_program_free(struct opencl_si_program_t *program)
-{
-	assert(program->type == opencl_runtime_type_si);
+void opencl_si_program_free(struct opencl_si_program_t *program) {
+  assert(program->type == opencl_runtime_type_si);
 
-	elf_file_free(program->elf_file);
-	free(program);
+  elf_file_free(program->elf_file);
+  free(program);
 }
 
 /* Return true is a binary file is a valid SI program binary. */
-int opencl_si_program_valid_binary(void *device, void *binary, 
-	unsigned int length)
-{
-	Elf32_Ehdr *h = (Elf32_Ehdr *) binary;
+int opencl_si_program_valid_binary(void *device, void *binary,
+                                   unsigned int length) {
+  Elf32_Ehdr *h = (Elf32_Ehdr *)binary;
 
-	return (h->e_machine == 0x3fd ||  /* Tahiti */
-		h->e_machine == 0x3fe ||  /* Pitcairn */
-		h->e_machine == 0x3ff);   /* Capeverde */
+  return (h->e_machine == 0x3fd || /* Tahiti */
+          h->e_machine == 0x3fe || /* Pitcairn */
+          h->e_machine == 0x3ff);  /* Capeverde */
 }

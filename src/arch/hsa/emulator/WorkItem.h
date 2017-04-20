@@ -24,17 +24,16 @@
 
 #include <arch/hsa/disassembler/BrigCodeEntry.h>
 #include <arch/hsa/disassembler/BrigDataEntry.h>
-#include <arch/hsa/disassembler/BrigOperandEntry.h>
 #include <arch/hsa/disassembler/BrigImmed.h>
+#include <arch/hsa/disassembler/BrigOperandEntry.h>
 
 #include "Emulator.h"
 #include "Function.h"
+#include "HsaInstructionWorker.h"
 #include "StackFrame.h"
 #include "WorkGroup.h"
-#include "HsaInstructionWorker.h"
 
-namespace HSA
-{
+namespace HSA {
 
 class Emulator;
 class ProgramLoader;
@@ -45,190 +44,157 @@ class HsaExecutable;
 enum InstOpcode
 {
 #define DEFINST(name, opcode, opstr) \
-	INST_##name,
+        INST_##name,
 #include <arch/hsa/disassembler/Instruction.def>
 #undef DEFINST
-	// Max
-	InstOpcodeCount
+        // Max
+        InstOpcodeCount
 };
 */
 
 /// HSA work item
-class WorkItem
-{
-public: 
-	
-	/// Status of the work item
-	enum WorkItemStatus
-	{
-		WorkItemStatusActive = 0,
-		WorkItemStatusSuspend
-	};
+class WorkItem {
+ public:
+  /// Status of the work item
+  enum WorkItemStatus { WorkItemStatusActive = 0, WorkItemStatusSuspend };
 
-private:
+ private:
+  // Emulator that is belongs to
+  Emulator* emulator = nullptr;
 
- 	// Emulator that is belongs to 
- 	Emulator *emulator = nullptr;
+  // Executable
+  HsaExecutable* executable = nullptr;
 
- 	// Executable
- 	HsaExecutable *executable = nullptr;
+  // Work group that current work item belongs to
+  WorkGroup* work_group = nullptr;
 
- 	// Work group that current work item belongs to
- 	WorkGroup *work_group = nullptr;
+  // The private segment memory manager
+  std::unique_ptr<SegmentManager> private_segment;
 
- 	// The private segment memory manager
- 	std::unique_ptr<SegmentManager> private_segment;
+  // The status of the work item;
+  WorkItemStatus status = WorkItemStatusActive;
 
-	// The status of the work item;
-	WorkItemStatus status = WorkItemStatusActive;
+  // work item absolute ids, equivalent to global_id in OpenCL
+  unsigned int abs_id_x;
+  unsigned int abs_id_y;
+  unsigned int abs_id_z;
 
- 	// work item absolute ids, equivalent to global_id in OpenCL
- 	unsigned int abs_id_x;
- 	unsigned int abs_id_y;
- 	unsigned int abs_id_z;
+  //
+  // Functions related with the insts of HSA assembly, implemented in
+  // WorkItemIsa.cc
+  //
 
+  // Stack of current work item.
+  std::vector<std::unique_ptr<StackFrame>> stack;
 
+  // Process directives befor an instruction
+  void ExecuteDirective();
 
+  // Get HSA instruction worker according to the instruction
+  std::unique_ptr<HsaInstructionWorker> getInstructionWorker(
+      BrigCodeEntry* instruction);
 
- 	//
- 	// Functions related with the insts of HSA assembly, implemented in
- 	// WorkItemIsa.cc
-	//
+  //
+  // Memory related fields and function
+  //
 
- 	// Stack of current work item.
- 	std::vector<std::unique_ptr<StackFrame>> stack;
+  // Declare variable in global segment
+  void DeclareVariableGlobal(const std::string& name, BrigType type,
+                             unsigned long long dim);
 
- 	// Process directives befor an instruction
- 	void ExecuteDirective();
+  // Declare variable in group segment
+  void DeclareVariableGroup(const std::string& name, BrigType type,
+                            unsigned long long dim);
 
-	// Get HSA instruction worker according to the instruction
-	std::unique_ptr<HsaInstructionWorker> getInstructionWorker(
-			BrigCodeEntry *instruction);
+  // Declare variable in private segment
+  void DeclareVariablePrivate(const std::string& name, BrigType type,
+                              unsigned long long dim);
 
+  // Declare variable in argument segment
+  void DeclareVariableArgument(const std::string& name, BrigType type,
+                               unsigned long long dim);
 
+  // Allocate memory for variable
+  void DeclareVariable();
 
+ public:
+  /// Create a work item. HSA should let grid object to create work item
+  WorkItem();
 
- 	//
- 	// Memory related fields and function
- 	//
+  /// Initialize the work item
+  void Initialize(WorkGroup* work_group, unsigned private_segment_size,
+                  unsigned int abs_id_x, unsigned int abs_id_y,
+                  unsigned int abs_id_z, Function* root_function);
 
-	// Declare variable in global segment
-	void DeclareVariableGlobal(const std::string &name, BrigType type, 
-			unsigned long long dim);
+  /// Destructor
+  virtual ~WorkItem();
 
-	// Declare variable in group segment
-	void DeclareVariableGroup(const std::string &name, BrigType type,
-			unsigned long long dim);
+  /// Run one instruction for the workitem at the position pointed
+  bool Execute();
 
-	// Declare variable in private segment
-	void DeclareVariablePrivate(const std::string &name, BrigType type,
-			unsigned long long dim);
+  /// Move the program counter by one. Return false if current PC is
+  /// at the end of the function
+  virtual bool MovePcForwardByOne();
 
-	// Declare variable in argument segment
-	void DeclareVariableArgument(const std::string &name, BrigType type,
-			unsigned long long dim);
+  /// Dump backtrace information
+  void Backtrace(std::ostream& os) const;
 
- 	// Allocate memory for variable
- 	void DeclareVariable();
+  /// Return the stack top stack frame
+  StackFrame* getStackTop() const {
+    // StackFrame *stack_top = stack.back().get();
+    return stack.back().get();
+  }
 
-public:
+  /// Push a stack frame into the stack
+  void PushStackFrame(std::unique_ptr<StackFrame> stack_frame) {
+    this->stack.push_back(std::move(stack_frame));
+  }
 
- 	/// Create a work item. HSA should let grid object to create work item
- 	WorkItem();
+  /// Pop the stackframe at the stack top
+  void PopStack() { stack.pop_back(); }
 
- 	/// Initialize the work item
- 	void Initialize(WorkGroup *work_group,
- 			unsigned private_segment_size,
- 			unsigned int abs_id_x,
- 			unsigned int abs_id_y,
- 			unsigned int abs_id_z,
- 			Function *root_function);
+  /// Finish the execution of a function by poping a frame from the stack
+  ///
+  /// \return
+  ///	Return false if the stack is empty after poping
+  bool ReturnFunction();
 
- 	/// Destructor
- 	virtual ~WorkItem();
+  //
+  // Work item id read only getters
+  //
 
- 	/// Run one instruction for the workitem at the position pointed 
- 	bool Execute();
+  /// Return local ids
+  unsigned int getLocalIdX() const;
+  unsigned int getLocalIdY() const;
+  unsigned int getLocalIdZ() const;
 
- 	/// Move the program counter by one. Return false if current PC is
- 	/// at the end of the function
- 	virtual bool MovePcForwardByOne();
+  /// Return flattened id
+  unsigned int getFlattenedId() const;
 
- 	/// Dump backtrace information
- 	void Backtrace(std::ostream &os) const;
+  /// Return absolute flattened id
+  unsigned int getAbsoluteFlattenedId() const;
 
-	/// Return the stack top stack frame
-	StackFrame* getStackTop() const
-	{
-		//StackFrame *stack_top = stack.back().get();
-		return stack.back().get();
-	}
+  /// Return abs id
+  virtual unsigned int getAbsoluteIdX() const { return abs_id_x; }
+  virtual unsigned int getAbsoluteIdY() const { return abs_id_y; }
+  virtual unsigned int getAbsoluteIdZ() const { return abs_id_z; }
 
- 	/// Push a stack frame into the stack
- 	void PushStackFrame(std::unique_ptr<StackFrame> stack_frame)
- 	{
- 		this->stack.push_back(std::move(stack_frame));
- 	}
+  /// Return the status of the work item
+  WorkItemStatus getStatue() const { return status; }
 
-	/// Pop the stackframe at the stack top
-	void PopStack()
-	{
-		stack.pop_back();
-	}
+  /// Set the status of the work item
+  void setStatus(WorkItemStatus status) { this->status = status; }
 
- 	/// Finish the execution of a function by poping a frame from the stack
- 	///
- 	/// \return
- 	///	Return false if the stack is empty after poping
- 	bool ReturnFunction();
+  /// Return the work group that this workitem is in
+  WorkGroup* getWorkGroup() const { return work_group; }
 
+  /// Return the grid that this work item belongs to
+  Grid* getGrid() const;
 
-
-
- 	//
- 	// Work item id read only getters
- 	//
-
- 	/// Return local ids
- 	unsigned int getLocalIdX() const;
- 	unsigned int getLocalIdY() const;
- 	unsigned int getLocalIdZ() const;
-
- 	/// Return flattened id
- 	unsigned int getFlattenedId() const;
-
- 	/// Return absolute flattened id
- 	unsigned int getAbsoluteFlattenedId() const;
-
-	/// Return abs id
-	virtual unsigned int getAbsoluteIdX() const { return abs_id_x; }
-	virtual unsigned int getAbsoluteIdY() const { return abs_id_y; }
-	virtual unsigned int getAbsoluteIdZ() const { return abs_id_z; }
-
-	/// Return the status of the work item
-	WorkItemStatus getStatue() const { return status; }
-
-	/// Set the status of the work item
-	void setStatus(WorkItemStatus status) 
-	{
-		this->status = status;
-	}
-
-	/// Return the work group that this workitem is in
-	WorkGroup *getWorkGroup() const
-	{
-		return work_group;
-	}
-
-	/// Return the grid that this work item belongs to
-	Grid *getGrid() const;
-
-	/// Translate inner address to flat address
-	unsigned getFlatAddress(BrigSegment segment, unsigned address);
-
+  /// Translate inner address to flat address
+  unsigned getFlatAddress(BrigSegment segment, unsigned address);
 };
 
 }  // namespace HSA
 
- #endif
-
+#endif

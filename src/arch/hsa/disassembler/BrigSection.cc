@@ -22,53 +22,36 @@
 #include "BrigFile.h"
 #include "BrigSection.h"
 
-namespace HSA{
+namespace HSA {
 
-BrigSection::BrigSection(char *buffer):
-		buffer(buffer)
-{
+BrigSection::BrigSection(char* buffer) : buffer(buffer) {}
+
+BrigSection::~BrigSection() {}
+
+unsigned long long BrigSection::getSize() const {
+  BrigSectionHeader* header = (BrigSectionHeader*)buffer;
+  return header->byteCount;
 }
 
-
-BrigSection::~BrigSection()
-{
+std::string BrigSection::getName() const {
+  BrigSectionHeader* header = (BrigSectionHeader*)buffer;
+  return std::string((char*)header->name, 0, header->nameLength);
 }
 
+void BrigSection::DumpSectionHex(std::ostream& os = std::cout) const {
+  os << misc::fmt("\n********** Section %s **********\n",
+                  this->getName().c_str());
 
-unsigned long long BrigSection::getSize() const
-{
-	BrigSectionHeader *header = (BrigSectionHeader *)buffer;	
-	return header->byteCount;
-}
-
-
-std::string BrigSection::getName() const
-{
-	BrigSectionHeader *header = (BrigSectionHeader *)buffer;	
-	return std::string((char *)header->name, 0, 
-			header->nameLength);
-}
-
-
-void BrigSection::DumpSectionHex(std::ostream &os = std::cout) const
-{
-	os << misc::fmt("\n********** Section %s **********\n", 
-			this->getName().c_str());
-	
-	for (unsigned int i=0; i<this->getSize(); i++)
-	{
-		os << misc::fmt("%02x", ((unsigned char *)buffer)[i]);
-		if ((i + 1) % 4 == 0)
-		{
-			os << " ";
-		}
-		if ((i + 1) % 16 == 0)
-		{
-			os << "\n";
-		}
-	}
-	os << "\n";
+  for (unsigned int i = 0; i < this->getSize(); i++) {
+    os << misc::fmt("%02x", ((unsigned char*)buffer)[i]);
+    if ((i + 1) % 4 == 0) {
+      os << " ";
+    }
+    if ((i + 1) % 16 == 0) {
+      os << "\n";
+    }
+  }
+  os << "\n";
 }
 
 }  // namespace HSA
-

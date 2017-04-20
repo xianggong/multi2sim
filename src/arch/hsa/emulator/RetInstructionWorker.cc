@@ -20,22 +20,16 @@
 #include "RetInstructionWorker.h"
 #include "WorkItem.h"
 
-namespace HSA
-{
+namespace HSA {
 
-RetInstructionWorker::RetInstructionWorker(WorkItem *work_item,
-		StackFrame *stack_frame) :
-		HsaInstructionWorker(work_item, stack_frame)
-{
-}
+RetInstructionWorker::RetInstructionWorker(WorkItem* work_item,
+                                           StackFrame* stack_frame)
+    : HsaInstructionWorker(work_item, stack_frame) {}
 
-RetInstructionWorker::~RetInstructionWorker()
-{
-}
+RetInstructionWorker::~RetInstructionWorker() {}
 
-void RetInstructionWorker::Execute(BrigCodeEntry *instruction)
-{
-	work_item->ReturnFunction();
+void RetInstructionWorker::Execute(BrigCodeEntry* instruction) {
+  work_item->ReturnFunction();
 }
 
 }  // namespace HSA

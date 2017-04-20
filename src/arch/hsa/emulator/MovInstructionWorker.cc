@@ -17,93 +17,82 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include <lib/cpp/String.h>
-#include <lib/cpp/Error.h>
 #include <arch/hsa/disassembler/AsmService.h>
 #include <arch/hsa/disassembler/Brig.h>
 #include <arch/hsa/disassembler/BrigCodeEntry.h>
+#include <lib/cpp/Error.h>
+#include <lib/cpp/String.h>
 
 #include "MovInstructionWorker.h"
 #include "WorkItem.h"
 
-namespace HSA
-{
+namespace HSA {
 
-MovInstructionWorker::MovInstructionWorker(WorkItem *work_item,
-		StackFrame *stack_frame) :
-		HsaInstructionWorker(work_item, stack_frame)
-{
+MovInstructionWorker::MovInstructionWorker(WorkItem* work_item,
+                                           StackFrame* stack_frame)
+    : HsaInstructionWorker(work_item, stack_frame) {}
+
+MovInstructionWorker::~MovInstructionWorker() {}
+
+template <typename T>
+void MovInstructionWorker::Inst_MOV_Aux(BrigCodeEntry* instruction) {
+  // Retrieve src value
+  T src0;
+  operand_value_retriever->Retrieve(instruction, 1, &src0);
+
+  // Move to dst value
+  T dst = src0;
+  operand_value_writer->Write(instruction, 0, &dst);
 }
 
+void MovInstructionWorker::Execute(BrigCodeEntry* instruction) {
+  // Call auxiliary function on different type
+  switch (instruction->getType()) {
+    case BRIG_TYPE_B1:
 
-MovInstructionWorker::~MovInstructionWorker()
-{
-}
+      Inst_MOV_Aux<unsigned char>(instruction);
+      break;
 
+    case BRIG_TYPE_B32:
+    case BRIG_TYPE_U32:
 
-template<typename T>
-void MovInstructionWorker::Inst_MOV_Aux(BrigCodeEntry *instruction)
-{
-	// Retrieve src value
-	T src0;
-	operand_value_retriever->Retrieve(instruction, 1, &src0);
+      Inst_MOV_Aux<unsigned int>(instruction);
+      break;
 
-	// Move to dst value
-	T dst = src0;
-	operand_value_writer->Write(instruction, 0, &dst);
-}
+    case BRIG_TYPE_B64:
+    case BRIG_TYPE_U64:
 
+      Inst_MOV_Aux<unsigned long long>(instruction);
+      break;
 
-void MovInstructionWorker::Execute(BrigCodeEntry *instruction)
-{
-	// Call auxiliary function on different type
-	switch (instruction->getType()){
-	case BRIG_TYPE_B1:
+    case BRIG_TYPE_S32:
 
-		Inst_MOV_Aux<unsigned char>(instruction);
-		break;
+      Inst_MOV_Aux<int>(instruction);
+      break;
 
-	case BRIG_TYPE_B32:
-	case BRIG_TYPE_U32:
+    case BRIG_TYPE_S64:
 
-		Inst_MOV_Aux<unsigned int>(instruction);
-		break;
+      Inst_MOV_Aux<long long>(instruction);
+      break;
 
-	case BRIG_TYPE_B64:
-	case BRIG_TYPE_U64:
+    case BRIG_TYPE_F32:
 
-		Inst_MOV_Aux<unsigned long long>(instruction);
-		break;
+      Inst_MOV_Aux<float>(instruction);
+      break;
 
-	case BRIG_TYPE_S32:
+    case BRIG_TYPE_F64:
 
-		Inst_MOV_Aux<int>(instruction);
-		break;
+      Inst_MOV_Aux<double>(instruction);
+      break;
 
-	case BRIG_TYPE_S64:
+    default:
 
-		Inst_MOV_Aux<long long>(instruction);
-		break;
+      throw misc::Panic("Unsupported type for opcode MOV.");
+      break;
+  }
 
-	case BRIG_TYPE_F32:
-
-		Inst_MOV_Aux<float>(instruction);
-		break;
-
-	case BRIG_TYPE_F64:
-
-		Inst_MOV_Aux<double>(instruction);
-		break;
-
-	default:
-
-		throw misc::Panic("Unsupported type for opcode MOV.");
-		break;
-
-	}
-
-	// Move PC forward
-	work_item->MovePcForwardByOne();
+  // Move PC forward
+  work_item->MovePcForwardByOne();
 }
 
 }  // namespace HSA

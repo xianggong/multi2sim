@@ -20,21 +20,17 @@
 #ifndef RUNTIME_CUDA_CONTEXT_H
 #define RUNTIME_CUDA_CONTEXT_H
 
+extern struct list_t* context_list;
 
-extern struct list_t *context_list;
+struct CUctx_st {
+  unsigned id;
 
-struct CUctx_st
-{
-	unsigned id;
+  CUdevice device;
 
-	CUdevice device;
-
-	unsigned version;
+  unsigned version;
 };
 
 CUcontext cuda_context_create(CUdevice device);
 void cuda_context_free(CUcontext context);
 
-
 #endif
-

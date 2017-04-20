@@ -25,34 +25,31 @@
 /* Forward declarations */
 struct opencl_si_device_t;
 
-
 /* Program object */
-struct opencl_si_program_t
-{
-	enum opencl_runtime_type_t type;  /* First field */
+struct opencl_si_program_t {
+  enum opencl_runtime_type_t type; /* First field */
 
-	/* Parent generic program object */
-	struct opencl_program_t *parent;
+  /* Parent generic program object */
+  struct opencl_program_t* parent;
 
-	/* Associated architecture-specific device */
-	struct opencl_si_device_t *device;
+  /* Associated architecture-specific device */
+  struct opencl_si_device_t* device;
 
-	/* Analyzed ELF file */
-	struct elf_file_t *elf_file;
+  /* Analyzed ELF file */
+  struct elf_file_t* elf_file;
 
-	/* Identifier return by driver */
-	int id;
+  /* Identifier return by driver */
+  int id;
 };
 
+struct opencl_si_program_t* opencl_si_program_create(
+    struct opencl_program_t* parent, struct opencl_si_device_t* device,
+    void* binary, unsigned int length);
 
-struct opencl_si_program_t *opencl_si_program_create(
-	struct opencl_program_t *parent, struct opencl_si_device_t *device,
-	void *binary, unsigned int length);
-
-void opencl_si_program_free(struct opencl_si_program_t *program);
+void opencl_si_program_free(struct opencl_si_program_t* program);
 
 /* Return true is a binary file is a valid SI program binary. */
-int opencl_si_program_valid_binary(void *device, void *binary, unsigned int length);
+int opencl_si_program_valid_binary(void* device, void* binary,
+                                   unsigned int length);
 
 #endif
-

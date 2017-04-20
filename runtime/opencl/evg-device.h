@@ -22,19 +22,13 @@
 
 #include "opencl.h"
 
-
-struct opencl_evg_device_t
-{
-	/* Parent generic device object */
-	struct opencl_device_t *parent;
+struct opencl_evg_device_t {
+  /* Parent generic device object */
+  struct opencl_device_t* parent;
 };
 
-
-
-struct opencl_evg_device_t *opencl_evg_device_create(
-		struct opencl_device_t *parent);
-void opencl_evg_device_free(
-		struct opencl_evg_device_t *device);
+struct opencl_evg_device_t* opencl_evg_device_create(
+    struct opencl_device_t* parent);
+void opencl_evg_device_free(struct opencl_evg_device_t* device);
 
 #endif
-

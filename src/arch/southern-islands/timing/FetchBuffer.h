@@ -20,70 +20,55 @@
 #ifndef ARCH_SOUTHERN_ISLANDS_TIMING_FETCH_BUFFER_H
 #define ARCH_SOUTHERN_ISLANDS_TIMING_FETCH_BUFFER_H
 
-#include <memory>
 #include <list>
+#include <memory>
 
 #include "Uop.h"
 
-
-namespace SI
-{
+namespace SI {
 
 // Forward declarations
 class ComputeUnit;
 
-
 /// Class representing a fetch buffer in the compute unit front-end
-class FetchBuffer
-{
-	// Global fetch buffer identifier, assigned in constructor
-	int id;
+class FetchBuffer {
+  // Global fetch buffer identifier, assigned in constructor
+  int id;
 
-	// Compute unit that it belongs to, assigned in constructor
-	ComputeUnit *compute_unit;
+  // Compute unit that it belongs to, assigned in constructor
+  ComputeUnit* compute_unit;
 
-	// Buffer of instructions
-	std::list<std::unique_ptr<Uop>> buffer;
+  // Buffer of instructions
+  std::list<std::unique_ptr<Uop>> buffer;
 
-public:
-	
-	/// Constructor
-	FetchBuffer(int id, ComputeUnit *compute_unit) :
-			id(id),
-			compute_unit(compute_unit)
+ public:
+  /// Constructor
+  FetchBuffer(int id, ComputeUnit* compute_unit)
+      : id(id),
+        compute_unit(compute_unit)
 
-	{
-	}
+  {}
 
-	/// Return the number of uops in the fetch buffer
-	int getSize() { return buffer.size(); }
+  /// Return the number of uops in the fetch buffer
+  int getSize() { return buffer.size(); }
 
-	/// Return the identifier for this fetch buffer
-	int getId() const { return id; }
+  /// Return the identifier for this fetch buffer
+  int getId() const { return id; }
 
-	/// Add instruction to the end of the buffer
-	void addUop(std::unique_ptr<SI::Uop> uop)
-	{
-		buffer.push_back(std::move(uop));
-	}
+  /// Add instruction to the end of the buffer
+  void addUop(std::unique_ptr<SI::Uop> uop) {
+    buffer.push_back(std::move(uop));
+  }
 
-	/// Return an iterator to the first uop in the fetch buffer
-	std::list<std::unique_ptr<Uop>>::iterator begin()
-	{
-		return buffer.begin();
-	}
+  /// Return an iterator to the first uop in the fetch buffer
+  std::list<std::unique_ptr<Uop>>::iterator begin() { return buffer.begin(); }
 
-	/// Return a past-the-end iterator to the fetch buffer
-	std::list<std::unique_ptr<Uop>>::iterator end()
-	{
-		return buffer.end();
-	}
+  /// Return a past-the-end iterator to the fetch buffer
+  std::list<std::unique_ptr<Uop>>::iterator end() { return buffer.end(); }
 
-	/// Remove the uop pointed to by the given iterator.
-	void Remove(std::list<std::unique_ptr<Uop>>::iterator it);
+  /// Remove the uop pointed to by the given iterator.
+  void Remove(std::list<std::unique_ptr<Uop>>::iterator it);
 };
-
 }
 
 #endif
-

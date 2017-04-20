@@ -25,42 +25,32 @@
 /* Forward declarations */
 struct opencl_x86_device_t;
 
-
 /* Program object */
-struct opencl_x86_program_t
-{
-	enum opencl_runtime_type_t type;  /* First field */
+struct opencl_x86_program_t {
+  enum opencl_runtime_type_t type; /* First field */
 
-	/* Parent generic program object */
-	struct opencl_program_t *parent;
+  /* Parent generic program object */
+  struct opencl_program_t* parent;
 
-	/* Associated architecture-specific device */
-	struct opencl_x86_device_t *device;
-	
-	/* Temporary file where the internal ELF file was dumped */
-	char *file_name;
+  /* Associated architecture-specific device */
+  struct opencl_x86_device_t* device;
 
-	/* Handle returned by 'dlopen' when interpreting the internal
-	 * ELF file for dynamic linking. */
-	void *dlhandle;
+  /* Temporary file where the internal ELF file was dumped */
+  char* file_name;
+
+  /* Handle returned by 'dlopen' when interpreting the internal
+   * ELF file for dynamic linking. */
+  void* dlhandle;
 };
 
+struct opencl_x86_program_t* opencl_x86_program_create(
+    struct opencl_program_t* parent, struct opencl_x86_device_t* device,
+    void* binary, unsigned int length);
 
-struct opencl_x86_program_t *opencl_x86_program_create(
-		struct opencl_program_t *parent,
-		struct opencl_x86_device_t *device,
-		void *binary,
-		unsigned int length);
-
-void opencl_x86_program_free(
-		struct opencl_x86_program_t *program);
+void opencl_x86_program_free(struct opencl_x86_program_t* program);
 
 /* Return true is a binary file is a valid x86 program binary. */
-int opencl_x86_program_valid_binary(
-	void *device,
-	void *binary,
-	unsigned int length);
-
+int opencl_x86_program_valid_binary(void* device, void* binary,
+                                    unsigned int length);
 
 #endif
-

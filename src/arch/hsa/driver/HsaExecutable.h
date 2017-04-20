@@ -24,9 +24,7 @@
 
 #include <arch/hsa/disassembler/BrigFile.h>
 
-
-namespace HSA
-{
+namespace HSA {
 class HsaProgram;
 class BrigFile;
 class Function;
@@ -36,79 +34,74 @@ class HsaExecutableSymbol;
 /**
  * An HsaExecutable is a finished executable
  */
-class HsaExecutable
-{
-private:
+class HsaExecutable {
+ private:
+  // Modules in the HSA executable
+  std::vector<std::unique_ptr<BrigFile>> modules;
 
-	// Modules in the HSA executable
-	std::vector<std::unique_ptr<BrigFile>> modules;
+  // Function table for the functions in the brig file
+  std::map<std::string, std::unique_ptr<Function>> function_table;
 
-	// Function table for the functions in the brig file
-	std::map<std::string, std::unique_ptr<Function>> function_table;
+  // Load functions in the brig file.
+  //
+  // \return
+  // 	Number of functions loaded
+  unsigned int loadFunctions(BrigFile* file);
 
-	// Load functions in the brig file.
-	//
-	// \return
-	// 	Number of functions loaded
-	unsigned int loadFunctions(BrigFile *file);
+  // Parse and create a function object
+  void parseFunction(BrigFile* file, std::unique_ptr<BrigCodeEntry> dir);
 
-	// Parse and create a function object
-	void parseFunction(BrigFile *file, std::unique_ptr<BrigCodeEntry> dir);
+  // Preprocess register allocation in a function
+  //
+  // \param entry_point
+  // 	Pointer to first instruction to parse
+  //
+  // \param inst_count
+  // 	Number of instructions in the function
+  //
+  // \param function
+  // 	Pointer to the function to process
+  void preprocessRegisters(BrigFile* binary,
+                           std::unique_ptr<BrigCodeEntry> first_entry,
+                           std::unique_ptr<BrigCodeEntry> next_module_entry,
+                           Function* function);
 
-	// Preprocess register allocation in a function
-	//
-	// \param entry_point
-	// 	Pointer to first instruction to parse
-	//
-	// \param inst_count
-	// 	Number of instructions in the function
-	//
-	// \param function
-	// 	Pointer to the function to process
-	void preprocessRegisters(BrigFile *binary,
-			std::unique_ptr<BrigCodeEntry> first_entry,
-			std::unique_ptr<BrigCodeEntry> next_module_entry,
-			Function* function);
+  // Load output arguments for a function
+  //
+  // \param num_out_arg
+  // 	Number of output arguments
+  //
+  // \param next_dir
+  // 	Pointer to the argument to start with
+  //
+  // \param isInput
+  //	if true, add input arguments. Otherwise, add output arguments
+  //
+  // \param function
+  // 	Pointer to the function to load arguments
+  //
+  // \return
+  // 	Pointer to next directive to parse
+  //
+  std::unique_ptr<BrigCodeEntry> loadArguments(
+      BrigFile* file, unsigned short num_arg,
+      std::unique_ptr<BrigCodeEntry> entry, bool isInput, Function* function);
 
-	// Load output arguments for a function
-	//
-	// \param num_out_arg
-	// 	Number of output arguments
-	//
-	// \param next_dir
-	// 	Pointer to the argument to start with
-	//
-	// \param isInput
-	//	if true, add input arguments. Otherwise, add output arguments
-	//
-	// \param function
-	// 	Pointer to the function to load arguments
-	//
-	// \return
-	// 	Pointer to next directive to parse
-	//
-	std::unique_ptr<BrigCodeEntry> loadArguments(
-			BrigFile *file,
-			unsigned short num_arg,
-			std::unique_ptr<BrigCodeEntry> entry,
-			bool isInput, Function* function);
+ public:
+  /// Constructor
+  HsaExecutable();
 
-public:
+  /// Load code object
+  void LoadCodeObject(HsaCodeObject* code_object);
 
-	/// Constructor
-	HsaExecutable();
+  /// Add a module to the module list
+  void AddModule(const char* module);
 
-	/// Load code object
-	void LoadCodeObject(HsaCodeObject *code_object);
+  /// Get the symbol name
+  HsaExecutableSymbol* getSymbol(const char* symbol_name);
 
-	/// Add a module to the module list
-	void AddModule(const char *module);
-
-	/// Get the symbol name
-	HsaExecutableSymbol *getSymbol(const char *symbol_name);
-
-	/// Return the pointer to the function by the name
-	Function *getFunction(const std::string &name) const;
+  /// Return the pointer to the function by the name
+  Function* getFunction(const std::string& name) const;
 };
 
 }  // namespace HSA

@@ -20,21 +20,16 @@
 #include <arch/hsa/disassembler/BrigCodeEntry.h>
 
 #include "HsaInstructionWorker.h"
-#include "WorkItem.h"
 #include "StackFrame.h"
+#include "WorkItem.h"
 
-namespace HSA
-{
+namespace HSA {
 
-HsaInstructionWorker::HsaInstructionWorker(WorkItem *work_item,
-		StackFrame *stack_frame) :
-		work_item(work_item),
-		stack_frame(stack_frame),
-		operand_value_retriever(new OperandValueRetriever(
-				work_item, stack_frame)),
-		operand_value_writer(new OperandValueWriter(
-				work_item, stack_frame))
-{
-}
-
+HsaInstructionWorker::HsaInstructionWorker(WorkItem* work_item,
+                                           StackFrame* stack_frame)
+    : work_item(work_item),
+      stack_frame(stack_frame),
+      operand_value_retriever(
+          new OperandValueRetriever(work_item, stack_frame)),
+      operand_value_writer(new OperandValueWriter(work_item, stack_frame)) {}
 }

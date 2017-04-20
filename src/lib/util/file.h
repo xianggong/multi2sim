@@ -22,18 +22,17 @@
 
 #include <stdio.h>
 
+FILE* file_open_for_read(char* file_name);
+FILE* file_open_for_write(char* file_name);
+void file_close(FILE* f);
 
-FILE *file_open_for_read(char *file_name);
-FILE *file_open_for_write(char *file_name);
-void file_close(FILE *f);
+int file_can_open_for_read(char* file_name);
+int file_can_open_for_write(char* file_name);
 
-int file_can_open_for_read(char *file_name);
-int file_can_open_for_write(char *file_name);
+int file_read_line(FILE* f, char* line, int size);
+FILE* file_create_temp(char* ret_path, int ret_path_size);
 
-int file_read_line(FILE *f, char *line, int size);
-FILE *file_create_temp(char *ret_path, int ret_path_size);
-
-void file_full_path(char *file_name, char *default_path, char *full_path, int size);
+void file_full_path(char* file_name, char* default_path, char* full_path,
+                    int size);
 
 #endif
-

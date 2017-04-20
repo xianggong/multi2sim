@@ -22,31 +22,27 @@
 
 #include <lib/esim/Event.h>
 
-namespace net
-{
+namespace net {
 
-class Frame : public esim::Frame
-{
+// Forward declarations
+class Packet;
 
-	// Packet
-	Packet *packet;
+class Frame : public esim::Frame {
+  // Packet
+  Packet* packet;
 
-public:
+ public:
+  /// Constructor
+  Frame(Packet* packet) : packet(packet) {}
 
-	/// Constructor
-	Frame(Packet *packet) : packet(packet)
-	{
-	}
+  /// Return the packet
+  Packet* getPacket() const { return packet; }
 
-	/// Return the packet
-	Packet *getPacket() const { return packet; }
-
-	/// If true, the packet associated with this frame will be consumed
-	/// automatically by the destination end node. If false, the user
-	/// is responsible for receiving that in the receive event handler.
-	bool automatic_receive = false;
+  /// If true, the packet associated with this frame will be consumed
+  /// automatically by the destination end node. If false, the user
+  /// is responsible for receiving that in the receive event handler.
+  bool automatic_receive = false;
 };
-
 }
 
 #endif

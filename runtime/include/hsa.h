@@ -221,8 +221,8 @@ typedef enum {
  * @retval ::HSA_STATUS_ERROR_INVALID_ARGUMENT @p status is an invalid
  * status code, or @p status_string is NULL.
  */
-hsa_status_t HSA_API
-    hsa_status_string(hsa_status_t status, const char **status_string);
+hsa_status_t HSA_API hsa_status_string(hsa_status_t status,
+                                       const char** status_string);
 
 /** @} */
 
@@ -431,8 +431,8 @@ typedef enum {
  * @retval ::HSA_STATUS_ERROR_INVALID_ARGUMENT @p attribute is an invalid
  * system attribute, or @p value is NULL.
  */
-hsa_status_t HSA_API
-    hsa_system_get_info(hsa_system_info_t attribute, void *value);
+hsa_status_t HSA_API hsa_system_get_info(hsa_system_info_t attribute,
+                                         void* value);
 
 /**
  * @brief HSA extensions.
@@ -471,9 +471,10 @@ typedef enum {
  * @retval ::HSA_STATUS_ERROR_INVALID_ARGUMENT @p extension is not a valid
  * extension, or @p result is NULL.
  */
-hsa_status_t HSA_API
-    hsa_system_extension_supported(uint16_t extension, uint16_t version_major,
-                                   uint16_t version_minor, bool *result);
+hsa_status_t HSA_API hsa_system_extension_supported(uint16_t extension,
+                                                    uint16_t version_major,
+                                                    uint16_t version_minor,
+                                                    bool* result);
 
 /**
  * @brief Retrieve the function pointers corresponding to a given version of an
@@ -506,9 +507,10 @@ hsa_status_t HSA_API
  * @retval ::HSA_STATUS_ERROR_INVALID_ARGUMENT @p extension is not a valid
  * extension, or @p table is NULL.
  */
-hsa_status_t HSA_API
-    hsa_system_get_extension_table(uint16_t extension, uint16_t version_major,
-                                   uint16_t version_minor, void *table);
+hsa_status_t HSA_API hsa_system_get_extension_table(uint16_t extension,
+                                                    uint16_t version_major,
+                                                    uint16_t version_minor,
+                                                    void* table);
 
 /**
  * @brief Opaque handle representing an agent, a device that participates in
@@ -754,7 +756,7 @@ typedef enum {
  */
 hsa_status_t HSA_API hsa_agent_get_info(hsa_agent_t agent,
                                         hsa_agent_info_t attribute,
-                                        void *value);
+                                        void* value);
 
 /**
  * @brief Iterate over the available agents, and invoke an
@@ -776,9 +778,8 @@ hsa_status_t HSA_API hsa_agent_get_info(hsa_agent_t agent,
  *
  * @retval ::HSA_STATUS_ERROR_INVALID_ARGUMENT @p callback is NULL.
  */
-hsa_status_t HSA_API
-    hsa_iterate_agents(hsa_status_t (*callback)(hsa_agent_t agent, void *data),
-                       void *data);
+hsa_status_t HSA_API hsa_iterate_agents(
+    hsa_status_t (*callback)(hsa_agent_t agent, void* data), void* data);
 
 /*
 
@@ -836,7 +837,7 @@ typedef enum {
  */
 hsa_status_t HSA_API hsa_agent_get_exception_policies(hsa_agent_t agent,
                                                       hsa_profile_t profile,
-                                                      uint16_t *mask);
+                                                      uint16_t* mask);
 
 /**
  * @brief Query if a given version of an extension is supported by an agent
@@ -863,10 +864,11 @@ hsa_status_t HSA_API hsa_agent_get_exception_policies(hsa_agent_t agent,
  * @retval ::HSA_STATUS_ERROR_INVALID_ARGUMENT @p extension is not a valid
  * extension, or @p result is NULL.
  */
-hsa_status_t HSA_API
-    hsa_agent_extension_supported(uint16_t extension, hsa_agent_t agent,
-                                  uint16_t version_major,
-                                  uint16_t version_minor, bool *result);
+hsa_status_t HSA_API hsa_agent_extension_supported(uint16_t extension,
+                                                   hsa_agent_t agent,
+                                                   uint16_t version_major,
+                                                   uint16_t version_minor,
+                                                   bool* result);
 
 /** @} */
 
@@ -924,9 +926,10 @@ typedef int32_t hsa_signal_value_t;
  * num_consumers is greater than 0 but @p consumers is NULL, or @p consumers
  * contains duplicates.
  */
-hsa_status_t HSA_API
-    hsa_signal_create(hsa_signal_value_t initial_value, uint32_t num_consumers,
-                      const hsa_agent_t *consumers, hsa_signal_t *signal);
+hsa_status_t HSA_API hsa_signal_create(hsa_signal_value_t initial_value,
+                                       uint32_t num_consumers,
+                                       const hsa_agent_t* consumers,
+                                       hsa_signal_t* signal);
 
 /**
  * @brief Destroy a signal previous created by ::hsa_signal_create.
@@ -968,14 +971,14 @@ hsa_signal_value_t HSA_API hsa_signal_load_relaxed(hsa_signal_t signal);
  *
  * @param[in] value New signal value.
  */
-void HSA_API
-    hsa_signal_store_relaxed(hsa_signal_t signal, hsa_signal_value_t value);
+void HSA_API hsa_signal_store_relaxed(hsa_signal_t signal,
+                                      hsa_signal_value_t value);
 
 /**
  * @copydoc hsa_signal_store_relaxed
  */
-void HSA_API
-    hsa_signal_store_release(hsa_signal_t signal, hsa_signal_value_t value);
+void HSA_API hsa_signal_store_release(hsa_signal_t signal,
+                                      hsa_signal_value_t value);
 
 /**
  * @brief Atomically set the value of a signal and return its previous value.
@@ -992,25 +995,25 @@ void HSA_API
  *
  */
 hsa_signal_value_t HSA_API
-    hsa_signal_exchange_acq_rel(hsa_signal_t signal, hsa_signal_value_t value);
+hsa_signal_exchange_acq_rel(hsa_signal_t signal, hsa_signal_value_t value);
 
 /**
  * @copydoc hsa_signal_exchange_acq_rel
  */
 hsa_signal_value_t HSA_API
-    hsa_signal_exchange_acquire(hsa_signal_t signal, hsa_signal_value_t value);
+hsa_signal_exchange_acquire(hsa_signal_t signal, hsa_signal_value_t value);
 
 /**
  * @copydoc hsa_signal_exchange_acq_rel
  */
 hsa_signal_value_t HSA_API
-    hsa_signal_exchange_relaxed(hsa_signal_t signal, hsa_signal_value_t value);
+hsa_signal_exchange_relaxed(hsa_signal_t signal, hsa_signal_value_t value);
 
 /**
  * @copydoc hsa_signal_exchange_acq_rel
  */
 hsa_signal_value_t HSA_API
-    hsa_signal_exchange_release(hsa_signal_t signal, hsa_signal_value_t value);
+hsa_signal_exchange_release(hsa_signal_t signal, hsa_signal_value_t value);
 
 /**
  * @brief Atomically set the value of a signal if the observed value is equal to
@@ -1067,26 +1070,26 @@ hsa_signal_value_t HSA_API hsa_signal_cas_release(hsa_signal_t signal,
  * @param[in] value Value to add to the value of the signal.
  *
  */
-void HSA_API
-    hsa_signal_add_acq_rel(hsa_signal_t signal, hsa_signal_value_t value);
+void HSA_API hsa_signal_add_acq_rel(hsa_signal_t signal,
+                                    hsa_signal_value_t value);
 
 /**
  * @copydoc hsa_signal_add_acq_rel
  */
-void HSA_API
-    hsa_signal_add_acquire(hsa_signal_t signal, hsa_signal_value_t value);
+void HSA_API hsa_signal_add_acquire(hsa_signal_t signal,
+                                    hsa_signal_value_t value);
 
 /**
  * @copydoc hsa_signal_add_acq_rel
  */
-void HSA_API
-    hsa_signal_add_relaxed(hsa_signal_t signal, hsa_signal_value_t value);
+void HSA_API hsa_signal_add_relaxed(hsa_signal_t signal,
+                                    hsa_signal_value_t value);
 
 /**
  * @copydoc hsa_signal_add_acq_rel
  */
-void HSA_API
-    hsa_signal_add_release(hsa_signal_t signal, hsa_signal_value_t value);
+void HSA_API hsa_signal_add_release(hsa_signal_t signal,
+                                    hsa_signal_value_t value);
 
 /**
  * @brief Atomically decrement the value of a signal by a given amount.
@@ -1100,26 +1103,26 @@ void HSA_API
  * @param[in] value Value to subtract from the value of the signal.
  *
  */
-void HSA_API
-    hsa_signal_subtract_acq_rel(hsa_signal_t signal, hsa_signal_value_t value);
+void HSA_API hsa_signal_subtract_acq_rel(hsa_signal_t signal,
+                                         hsa_signal_value_t value);
 
 /**
  * @copydoc hsa_signal_subtract_acq_rel
  */
-void HSA_API
-    hsa_signal_subtract_acquire(hsa_signal_t signal, hsa_signal_value_t value);
+void HSA_API hsa_signal_subtract_acquire(hsa_signal_t signal,
+                                         hsa_signal_value_t value);
 
 /**
  * @copydoc hsa_signal_subtract_acq_rel
  */
-void HSA_API
-    hsa_signal_subtract_relaxed(hsa_signal_t signal, hsa_signal_value_t value);
+void HSA_API hsa_signal_subtract_relaxed(hsa_signal_t signal,
+                                         hsa_signal_value_t value);
 
 /**
  * @copydoc hsa_signal_subtract_acq_rel
  */
-void HSA_API
-    hsa_signal_subtract_release(hsa_signal_t signal, hsa_signal_value_t value);
+void HSA_API hsa_signal_subtract_release(hsa_signal_t signal,
+                                         hsa_signal_value_t value);
 
 /**
  * @brief Atomically perform a bitwise AND operation between the value of a
@@ -1134,26 +1137,26 @@ void HSA_API
  * @param[in] value Value to AND with the value of the signal.
  *
  */
-void HSA_API
-    hsa_signal_and_acq_rel(hsa_signal_t signal, hsa_signal_value_t value);
+void HSA_API hsa_signal_and_acq_rel(hsa_signal_t signal,
+                                    hsa_signal_value_t value);
 
 /**
  * @copydoc hsa_signal_and_acq_rel
  */
-void HSA_API
-    hsa_signal_and_acquire(hsa_signal_t signal, hsa_signal_value_t value);
+void HSA_API hsa_signal_and_acquire(hsa_signal_t signal,
+                                    hsa_signal_value_t value);
 
 /**
  * @copydoc hsa_signal_and_acq_rel
  */
-void HSA_API
-    hsa_signal_and_relaxed(hsa_signal_t signal, hsa_signal_value_t value);
+void HSA_API hsa_signal_and_relaxed(hsa_signal_t signal,
+                                    hsa_signal_value_t value);
 
 /**
  * @copydoc hsa_signal_and_acq_rel
  */
-void HSA_API
-    hsa_signal_and_release(hsa_signal_t signal, hsa_signal_value_t value);
+void HSA_API hsa_signal_and_release(hsa_signal_t signal,
+                                    hsa_signal_value_t value);
 
 /**
  * @brief Atomically perform a bitwise OR operation between the value of a
@@ -1167,26 +1170,26 @@ void HSA_API
  *
  * @param[in] value Value to OR with the value of the signal.
  */
-void HSA_API
-    hsa_signal_or_acq_rel(hsa_signal_t signal, hsa_signal_value_t value);
+void HSA_API hsa_signal_or_acq_rel(hsa_signal_t signal,
+                                   hsa_signal_value_t value);
 
 /**
  * @copydoc hsa_signal_or_acq_rel
  */
-void HSA_API
-    hsa_signal_or_acquire(hsa_signal_t signal, hsa_signal_value_t value);
+void HSA_API hsa_signal_or_acquire(hsa_signal_t signal,
+                                   hsa_signal_value_t value);
 
 /**
  * @copydoc hsa_signal_or_acq_rel
  */
-void HSA_API
-    hsa_signal_or_relaxed(hsa_signal_t signal, hsa_signal_value_t value);
+void HSA_API hsa_signal_or_relaxed(hsa_signal_t signal,
+                                   hsa_signal_value_t value);
 
 /**
  * @copydoc hsa_signal_or_acq_rel
  */
-void HSA_API
-    hsa_signal_or_release(hsa_signal_t signal, hsa_signal_value_t value);
+void HSA_API hsa_signal_or_release(hsa_signal_t signal,
+                                   hsa_signal_value_t value);
 
 /**
  * @brief Atomically perform a bitwise XOR operation between the value of a
@@ -1201,26 +1204,26 @@ void HSA_API
  * @param[in] value Value to XOR with the value of the signal.
  *
  */
-void HSA_API
-    hsa_signal_xor_acq_rel(hsa_signal_t signal, hsa_signal_value_t value);
+void HSA_API hsa_signal_xor_acq_rel(hsa_signal_t signal,
+                                    hsa_signal_value_t value);
 
 /**
  * @copydoc hsa_signal_xor_acq_rel
  */
-void HSA_API
-    hsa_signal_xor_acquire(hsa_signal_t signal, hsa_signal_value_t value);
+void HSA_API hsa_signal_xor_acquire(hsa_signal_t signal,
+                                    hsa_signal_value_t value);
 
 /**
  * @copydoc hsa_signal_xor_acq_rel
  */
-void HSA_API
-    hsa_signal_xor_relaxed(hsa_signal_t signal, hsa_signal_value_t value);
+void HSA_API hsa_signal_xor_relaxed(hsa_signal_t signal,
+                                    hsa_signal_value_t value);
 
 /**
  * @copydoc hsa_signal_xor_acq_rel
  */
-void HSA_API
-    hsa_signal_xor_release(hsa_signal_t signal, hsa_signal_value_t value);
+void HSA_API hsa_signal_xor_release(hsa_signal_t signal,
+                                    hsa_signal_value_t value);
 
 /**
  * @brief Wait condition operator.
@@ -1298,21 +1301,17 @@ typedef enum {
  *
  */
 hsa_signal_value_t HSA_API
-    hsa_signal_wait_acquire(hsa_signal_t signal,
-                            hsa_signal_condition_t condition,
-                            hsa_signal_value_t compare_value,
-                            uint64_t timeout_hint,
-                            hsa_wait_state_t wait_state_hint);
+hsa_signal_wait_acquire(hsa_signal_t signal, hsa_signal_condition_t condition,
+                        hsa_signal_value_t compare_value, uint64_t timeout_hint,
+                        hsa_wait_state_t wait_state_hint);
 
 /**
  * @copydoc hsa_signal_wait_acquire
  */
 hsa_signal_value_t HSA_API
-    hsa_signal_wait_relaxed(hsa_signal_t signal,
-                            hsa_signal_condition_t condition,
-                            hsa_signal_value_t compare_value,
-                            uint64_t timeout_hint,
-                            hsa_wait_state_t wait_state_hint);
+hsa_signal_wait_relaxed(hsa_signal_t signal, hsa_signal_condition_t condition,
+                        hsa_signal_value_t compare_value, uint64_t timeout_hint,
+                        hsa_wait_state_t wait_state_hint);
 
 /** @} */
 
@@ -1390,20 +1389,20 @@ typedef struct hsa_queue_s {
   uint32_t features;
 
 #ifdef HSA_LARGE_MODEL
-  void *base_address;
+  void* base_address;
 #elif defined HSA_LITTLE_ENDIAN
   /**
    * Starting address of the HSA runtime-allocated buffer used to store the AQL
    * packets. Must be aligned to the size of an AQL packet.
    */
-  void *base_address;
+  void* base_address;
   /**
    * Reserved. Must be 0.
    */
   uint32_t reserved0;
 #else
   uint32_t reserved0;
-  void *base_address;
+  void* base_address;
 #endif
 
   /**
@@ -1504,12 +1503,11 @@ typedef struct hsa_queue_s {
  * @p size is 0, @p type is an invalid queue type, or @p queue is NULL.
  *
  */
-hsa_status_t HSA_API
-    hsa_queue_create(hsa_agent_t agent, uint32_t size, hsa_queue_type_t type,
-                     void (*callback)(hsa_status_t status, hsa_queue_t *source,
-                                      void *data),
-                     void *data, uint32_t private_segment_size,
-                     uint32_t group_segment_size, hsa_queue_t **queue);
+hsa_status_t HSA_API hsa_queue_create(
+    hsa_agent_t agent, uint32_t size, hsa_queue_type_t type,
+    void (*callback)(hsa_status_t status, hsa_queue_t* source, void* data),
+    void* data, uint32_t private_segment_size, uint32_t group_segment_size,
+    hsa_queue_t** queue);
 
 /**
  * @brief Create a queue for which the application or a kernel is responsible
@@ -1565,10 +1563,11 @@ hsa_status_t HSA_API
  * 0, or @p queue is NULL.
  *
  */
-hsa_status_t HSA_API
-    hsa_soft_queue_create(hsa_region_t region, uint32_t size,
-                          hsa_queue_type_t type, uint32_t features,
-                          hsa_signal_t doorbell_signal, hsa_queue_t **queue);
+hsa_status_t HSA_API hsa_soft_queue_create(hsa_region_t region, uint32_t size,
+                                           hsa_queue_type_t type,
+                                           uint32_t features,
+                                           hsa_signal_t doorbell_signal,
+                                           hsa_queue_t** queue);
 
 /**
  * @brief Destroy a user mode queue.
@@ -1593,7 +1592,7 @@ hsa_status_t HSA_API
  *
  * @retval ::HSA_STATUS_ERROR_INVALID_ARGUMENT @p queue is NULL.
  */
-hsa_status_t HSA_API hsa_queue_destroy(hsa_queue_t *queue);
+hsa_status_t HSA_API hsa_queue_destroy(hsa_queue_t* queue);
 
 /**
  * @brief Inactivate a queue.
@@ -1613,7 +1612,7 @@ hsa_status_t HSA_API hsa_queue_destroy(hsa_queue_t *queue);
  *
  * @retval ::HSA_STATUS_ERROR_INVALID_ARGUMENT @p queue is NULL.
  */
-hsa_status_t HSA_API hsa_queue_inactivate(hsa_queue_t *queue);
+hsa_status_t HSA_API hsa_queue_inactivate(hsa_queue_t* queue);
 
 /**
  * @brief Atomically load the read index of a queue.
@@ -1622,12 +1621,12 @@ hsa_status_t HSA_API hsa_queue_inactivate(hsa_queue_t *queue);
  *
  * @return Read index of the queue pointed by @p queue.
  */
-uint64_t HSA_API hsa_queue_load_read_index_acquire(const hsa_queue_t *queue);
+uint64_t HSA_API hsa_queue_load_read_index_acquire(const hsa_queue_t* queue);
 
 /**
  * @copydoc hsa_queue_load_read_index_acquire
  */
-uint64_t HSA_API hsa_queue_load_read_index_relaxed(const hsa_queue_t *queue);
+uint64_t HSA_API hsa_queue_load_read_index_relaxed(const hsa_queue_t* queue);
 
 /**
  * @brief Atomically load the write index of a queue.
@@ -1636,12 +1635,12 @@ uint64_t HSA_API hsa_queue_load_read_index_relaxed(const hsa_queue_t *queue);
  *
  * @return Write index of the queue pointed by @p queue.
  */
-uint64_t HSA_API hsa_queue_load_write_index_acquire(const hsa_queue_t *queue);
+uint64_t HSA_API hsa_queue_load_write_index_acquire(const hsa_queue_t* queue);
 
 /**
  * @copydoc hsa_queue_load_write_index_acquire
  */
-uint64_t HSA_API hsa_queue_load_write_index_relaxed(const hsa_queue_t *queue);
+uint64_t HSA_API hsa_queue_load_write_index_relaxed(const hsa_queue_t* queue);
 
 /**
  * @brief Atomically set the write index of a queue.
@@ -1651,13 +1650,13 @@ uint64_t HSA_API hsa_queue_load_write_index_relaxed(const hsa_queue_t *queue);
  * @param[in] value Value to assign to the write index.
  *
  */
-void HSA_API hsa_queue_store_write_index_relaxed(const hsa_queue_t *queue,
+void HSA_API hsa_queue_store_write_index_relaxed(const hsa_queue_t* queue,
                                                  uint64_t value);
 
 /**
  * @copydoc hsa_queue_store_write_index_relaxed
  */
-void HSA_API hsa_queue_store_write_index_release(const hsa_queue_t *queue,
+void HSA_API hsa_queue_store_write_index_release(const hsa_queue_t* queue,
                                                  uint64_t value);
 
 /**
@@ -1674,28 +1673,28 @@ void HSA_API hsa_queue_store_write_index_release(const hsa_queue_t *queue,
  *
  * @return Previous value of the write index.
  */
-uint64_t HSA_API hsa_queue_cas_write_index_acq_rel(const hsa_queue_t *queue,
+uint64_t HSA_API hsa_queue_cas_write_index_acq_rel(const hsa_queue_t* queue,
                                                    uint64_t expected,
                                                    uint64_t value);
 
 /**
  * @copydoc hsa_queue_cas_write_index_acq_rel
  */
-uint64_t HSA_API hsa_queue_cas_write_index_acquire(const hsa_queue_t *queue,
+uint64_t HSA_API hsa_queue_cas_write_index_acquire(const hsa_queue_t* queue,
                                                    uint64_t expected,
                                                    uint64_t value);
 
 /**
  * @copydoc hsa_queue_cas_write_index_acq_rel
  */
-uint64_t HSA_API hsa_queue_cas_write_index_relaxed(const hsa_queue_t *queue,
+uint64_t HSA_API hsa_queue_cas_write_index_relaxed(const hsa_queue_t* queue,
                                                    uint64_t expected,
                                                    uint64_t value);
 
 /**
  * @copydoc hsa_queue_cas_write_index_acq_rel
  */
-uint64_t HSA_API hsa_queue_cas_write_index_release(const hsa_queue_t *queue,
+uint64_t HSA_API hsa_queue_cas_write_index_release(const hsa_queue_t* queue,
                                                    uint64_t expected,
                                                    uint64_t value);
 
@@ -1708,26 +1707,26 @@ uint64_t HSA_API hsa_queue_cas_write_index_release(const hsa_queue_t *queue,
  *
  * @return Previous value of the write index.
  */
-uint64_t HSA_API
-    hsa_queue_add_write_index_acq_rel(const hsa_queue_t *queue, uint64_t value);
+uint64_t HSA_API hsa_queue_add_write_index_acq_rel(const hsa_queue_t* queue,
+                                                   uint64_t value);
 
 /**
  * @copydoc hsa_queue_add_write_index_acq_rel
  */
-uint64_t HSA_API
-    hsa_queue_add_write_index_acquire(const hsa_queue_t *queue, uint64_t value);
+uint64_t HSA_API hsa_queue_add_write_index_acquire(const hsa_queue_t* queue,
+                                                   uint64_t value);
 
 /**
  * @copydoc hsa_queue_add_write_index_acq_rel
  */
-uint64_t HSA_API
-    hsa_queue_add_write_index_relaxed(const hsa_queue_t *queue, uint64_t value);
+uint64_t HSA_API hsa_queue_add_write_index_relaxed(const hsa_queue_t* queue,
+                                                   uint64_t value);
 
 /**
  * @copydoc hsa_queue_add_write_index_acq_rel
  */
-uint64_t HSA_API
-    hsa_queue_add_write_index_release(const hsa_queue_t *queue, uint64_t value);
+uint64_t HSA_API hsa_queue_add_write_index_release(const hsa_queue_t* queue,
+                                                   uint64_t value);
 
 /**
  * @brief Atomically set the read index of a queue.
@@ -1742,13 +1741,13 @@ uint64_t HSA_API
  * @param[in] value Value to assign to the read index.
  *
  */
-void HSA_API hsa_queue_store_read_index_relaxed(const hsa_queue_t *queue,
+void HSA_API hsa_queue_store_read_index_relaxed(const hsa_queue_t* queue,
                                                 uint64_t value);
 
 /**
  * @copydoc hsa_queue_store_read_index_relaxed
  */
-void HSA_API hsa_queue_store_read_index_release(const hsa_queue_t *queue,
+void HSA_API hsa_queue_store_read_index_release(const hsa_queue_t* queue,
                                                 uint64_t value);
 /** @} */
 
@@ -1969,7 +1968,7 @@ typedef struct hsa_kernel_dispatch_packet_s {
   uint64_t kernel_object;
 
 #ifdef HSA_LARGE_MODEL
-  void *kernarg_address;
+  void* kernarg_address;
 #elif defined HSA_LITTLE_ENDIAN
   /**
    * Pointer to a buffer containing the kernel arguments. May be NULL.
@@ -1978,14 +1977,14 @@ typedef struct hsa_kernel_dispatch_packet_s {
    * modified once the kernel dispatch packet is enqueued until the dispatch has
    * completed execution.
    */
-  void *kernarg_address;
+  void* kernarg_address;
   /**
    * Reserved. Must be 0.
    */
   uint32_t reserved1;
 #else
   uint32_t reserved1;
-  void *kernarg_address;
+  void* kernarg_address;
 #endif
 
   /**
@@ -2022,19 +2021,19 @@ typedef struct hsa_agent_dispatch_packet_s {
   uint32_t reserved0;
 
 #ifdef HSA_LARGE_MODEL
-  void *return_address;
+  void* return_address;
 #elif defined HSA_LITTLE_ENDIAN
   /**
    * Address where to store the function return values, if any.
    */
-  void *return_address;
+  void* return_address;
   /**
    * Reserved. Must be 0.
    */
   uint32_t reserved1;
 #else
   uint32_t reserved1;
-  void *return_address;
+  void* return_address;
 #endif
 
   /**
@@ -2275,7 +2274,7 @@ typedef enum {
  */
 hsa_status_t HSA_API hsa_region_get_info(hsa_region_t region,
                                          hsa_region_info_t attribute,
-                                         void *value);
+                                         void* value);
 
 /**
  * @brief Iterate over the memory regions associated with a given agent, and
@@ -2303,7 +2302,7 @@ hsa_status_t HSA_API hsa_region_get_info(hsa_region_t region,
  */
 hsa_status_t HSA_API hsa_agent_iterate_regions(
     hsa_agent_t agent,
-    hsa_status_t (*callback)(hsa_region_t region, void *data), void *data);
+    hsa_status_t (*callback)(hsa_region_t region, void* data), void* data);
 
 /**
  * @brief Allocate a block of memory in a given region.
@@ -2335,8 +2334,8 @@ hsa_status_t HSA_API hsa_agent_iterate_regions(
  *
  * @retval ::HSA_STATUS_ERROR_INVALID_ARGUMENT @p ptr is NULL, or @p size is 0.
  */
-hsa_status_t HSA_API
-    hsa_memory_allocate(hsa_region_t region, size_t size, void **ptr);
+hsa_status_t HSA_API hsa_memory_allocate(hsa_region_t region, size_t size,
+                                         void** ptr);
 
 /**
  * @brief Deallocate a block of memory previously allocated using
@@ -2350,7 +2349,7 @@ hsa_status_t HSA_API
  * @retval ::HSA_STATUS_ERROR_NOT_INITIALIZED The HSA runtime has not been
  * initialized.
  */
-hsa_status_t HSA_API hsa_memory_free(void *ptr);
+hsa_status_t HSA_API hsa_memory_free(void* ptr);
 
 /**
  * @brief Copy a block of memory.
@@ -2372,7 +2371,7 @@ hsa_status_t HSA_API hsa_memory_free(void *ptr);
  * @retval ::HSA_STATUS_ERROR_INVALID_ARGUMENT The source or destination
  * pointers are NULL.
  */
-hsa_status_t HSA_API hsa_memory_copy(void *dst, const void *src, size_t size);
+hsa_status_t HSA_API hsa_memory_copy(void* dst, const void* src, size_t size);
 
 /**
  * @brief Change the ownership of a global, coarse-grained buffer.
@@ -2416,7 +2415,7 @@ hsa_status_t HSA_API hsa_memory_copy(void *dst, const void *src, size_t size);
  * @retval ::HSA_STATUS_ERROR_INVALID_ARGUMENT @p ptr is NULL, or @p access is
  * not a valid access value.
  */
-hsa_status_t HSA_API hsa_memory_assign_agent(void *ptr, hsa_agent_t agent,
+hsa_status_t HSA_API hsa_memory_assign_agent(void* ptr, hsa_agent_t agent,
                                              hsa_access_permission_t access);
 
 /**
@@ -2452,7 +2451,7 @@ hsa_status_t HSA_API hsa_memory_assign_agent(void *ptr, hsa_agent_t agent,
  * @retval ::HSA_STATUS_ERROR_INVALID_ARGUMENT @p size is 0 but @p ptr
  * is not NULL.
  */
-hsa_status_t HSA_API hsa_memory_register(void *ptr, size_t size);
+hsa_status_t HSA_API hsa_memory_register(void* ptr, size_t size);
 
 /**
  *
@@ -2472,7 +2471,7 @@ hsa_status_t HSA_API hsa_memory_register(void *ptr, size_t size);
  * initialized.
  *
  */
-hsa_status_t HSA_API hsa_memory_deregister(void *ptr, size_t size);
+hsa_status_t HSA_API hsa_memory_deregister(void* ptr, size_t size);
 
 /** @} */
 
@@ -2573,9 +2572,7 @@ typedef struct hsa_isa_s {
  * @retval ::HSA_STATUS_ERROR_INVALID_ISA_NAME The given name does not
  * correspond to any instruction set architecture.
  */
-hsa_status_t HSA_API hsa_isa_from_name(
-    const char* name,
-    hsa_isa_t* isa);
+hsa_status_t HSA_API hsa_isa_from_name(const char* name, hsa_isa_t* isa);
 
 /**
  * @brief Instruction set architecture attributes.
@@ -2639,11 +2636,8 @@ typedef enum {
  * @retval ::HSA_STATUS_ERROR_INVALID_ARGUMENT @p attribute is an invalid
  * instruction set architecture attribute, or @p value is NULL.
  */
-hsa_status_t HSA_API hsa_isa_get_info(
-    hsa_isa_t isa,
-    hsa_isa_info_t attribute,
-    uint32_t index,
-    void* value);
+hsa_status_t HSA_API hsa_isa_get_info(hsa_isa_t isa, hsa_isa_info_t attribute,
+                                      uint32_t index, void* value);
 
 /**
  * @brief Check if the instruction set architecture of a code object can be
@@ -2665,10 +2659,8 @@ hsa_status_t HSA_API hsa_isa_get_info(
  *
  * @retval ::HSA_STATUS_ERROR_INVALID_ARGUMENT @p result is NULL.
  */
-hsa_status_t HSA_API hsa_isa_compatible(
-    hsa_isa_t code_object_isa,
-    hsa_isa_t agent_isa,
-    bool* result);
+hsa_status_t HSA_API hsa_isa_compatible(hsa_isa_t code_object_isa,
+                                        hsa_isa_t agent_isa, bool* result);
 
 /**
  * @brief An opaque handle to a code object, which contains ISA for finalized
@@ -2735,11 +2727,10 @@ typedef struct hsa_callback_data_s {
  */
 hsa_status_t HSA_API hsa_code_object_serialize(
     hsa_code_object_t code_object,
-    hsa_status_t (*alloc_callback)(size_t size, hsa_callback_data_t data, void **address),
-    hsa_callback_data_t callback_data,
-    const char *options,
-    void **serialized_code_object,
-    size_t *serialized_code_object_size);
+    hsa_status_t (*alloc_callback)(size_t size, hsa_callback_data_t data,
+                                   void** address),
+    hsa_callback_data_t callback_data, const char* options,
+    void** serialized_code_object, size_t* serialized_code_object_size);
 
 /**
  * @brief Deserialize a code object.
@@ -2766,10 +2757,8 @@ hsa_status_t HSA_API hsa_code_object_serialize(
  * code_object are NULL. @p serialized_code_object_size is 0.
  */
 hsa_status_t HSA_API hsa_code_object_deserialize(
-    void *serialized_code_object,
-    size_t serialized_code_object_size,
-    const char *options,
-    hsa_code_object_t *code_object);
+    void* serialized_code_object, size_t serialized_code_object_size,
+    const char* options, hsa_code_object_t* code_object);
 
 /**
  * @brief Destroy a code object.
@@ -2788,8 +2777,7 @@ hsa_status_t HSA_API hsa_code_object_deserialize(
  *
  * @retval ::HSA_STATUS_ERROR_INVALID_CODE_OBJECT @p code_object is invalid.
  */
-hsa_status_t HSA_API hsa_code_object_destroy(
-    hsa_code_object_t code_object);
+hsa_status_t HSA_API hsa_code_object_destroy(hsa_code_object_t code_object);
 
 /**
  * @brief Code object type.
@@ -2861,10 +2849,9 @@ typedef enum {
  *
  * @retval ::HSA_STATUS_ERROR_INVALID_CODE_OBJECT @p code_object is invalid.
  */
-hsa_status_t HSA_API hsa_code_object_get_info(
-    hsa_code_object_t code_object,
-    hsa_code_object_info_t attribute,
-    void *value);
+hsa_status_t HSA_API hsa_code_object_get_info(hsa_code_object_t code_object,
+                                              hsa_code_object_info_t attribute,
+                                              void* value);
 
 /**
  * @brief Code object symbol.
@@ -2899,10 +2886,9 @@ typedef struct hsa_code_symbol_s {
  * @retval ::HSA_STATUS_ERROR_INVALID_ARGUMENT @p symbol_name is NULL, or
  * @p symbol is NULL.
  */
-hsa_status_t HSA_API hsa_code_object_get_symbol(
-    hsa_code_object_t code_object,
-    const char *symbol_name,
-    hsa_code_symbol_t *symbol);
+hsa_status_t HSA_API hsa_code_object_get_symbol(hsa_code_object_t code_object,
+                                                const char* symbol_name,
+                                                hsa_code_symbol_t* symbol);
 
 /**
  * @brief Code object symbol attributes.
@@ -3047,10 +3033,9 @@ typedef enum {
  * @retval ::HSA_STATUS_ERROR_INVALID_ARGUMENT @p attribute is an invalid
  * code symbol attribute, or @p value is NULL.
  */
-hsa_status_t HSA_API hsa_code_symbol_get_info(
-    hsa_code_symbol_t code_symbol,
-    hsa_code_symbol_info_t attribute,
-    void *value);
+hsa_status_t HSA_API hsa_code_symbol_get_info(hsa_code_symbol_t code_symbol,
+                                              hsa_code_symbol_info_t attribute,
+                                              void* value);
 
 /**
  * @brief Iterate over the symbols in a code object, and invoke an
@@ -3078,7 +3063,8 @@ hsa_status_t HSA_API hsa_code_symbol_get_info(
  */
 hsa_status_t HSA_API hsa_code_object_iterate_symbols(
     hsa_code_object_t code_object,
-    hsa_status_t (*callback)(hsa_code_object_t code_object, hsa_code_symbol_t symbol, void* data),
+    hsa_status_t (*callback)(hsa_code_object_t code_object,
+                             hsa_code_symbol_t symbol, void* data),
     void* data);
 
 /** @} */
@@ -3145,10 +3131,8 @@ typedef enum {
  * @p executable is NULL.
  */
 hsa_status_t HSA_API hsa_executable_create(
-    hsa_profile_t profile,
-    hsa_executable_state_t executable_state,
-    const char *options,
-    hsa_executable_t *executable);
+    hsa_profile_t profile, hsa_executable_state_t executable_state,
+    const char* options, hsa_executable_t* executable);
 
 /**
  * @brief Destroy an executable.
@@ -3171,8 +3155,7 @@ hsa_status_t HSA_API hsa_executable_create(
  *
  * @retval ::HSA_STATUS_ERROR_INVALID_EXECUTABLE The executable is invalid.
  */
-hsa_status_t HSA_API hsa_executable_destroy(
-    hsa_executable_t executable);
+hsa_status_t HSA_API hsa_executable_destroy(hsa_executable_t executable);
 
 /**
  * @brief Load code object into the executable.
@@ -3220,10 +3203,8 @@ hsa_status_t HSA_API hsa_executable_destroy(
  * @retval ::HSA_STATUS_ERROR_FROZEN_EXECUTABLE @p executable is frozen.
  */
 hsa_status_t HSA_API hsa_executable_load_code_object(
-    hsa_executable_t executable,
-    hsa_agent_t agent,
-    hsa_code_object_t code_object,
-    const char *options);
+    hsa_executable_t executable, hsa_agent_t agent,
+    hsa_code_object_t code_object, const char* options);
 
 /**
  * @brief Freeze the executable.
@@ -3249,9 +3230,8 @@ hsa_status_t HSA_API hsa_executable_load_code_object(
  *
  * @retval ::HSA_STATUS_ERROR_FROZEN_EXECUTABLE @p executable is already frozen.
  */
-hsa_status_t HSA_API hsa_executable_freeze(
-    hsa_executable_t executable,
-    const char *options);
+hsa_status_t HSA_API hsa_executable_freeze(hsa_executable_t executable,
+                                           const char* options);
 
 /**
  * @brief Executable attributes.
@@ -3289,10 +3269,9 @@ typedef enum {
  * @retval ::HSA_STATUS_ERROR_INVALID_ARGUMENT @p attribute is an invalid
  * executable attribute, or @p value is NULL.
  */
-hsa_status_t HSA_API hsa_executable_get_info(
-    hsa_executable_t executable,
-    hsa_executable_info_t attribute,
-    void *value);
+hsa_status_t HSA_API hsa_executable_get_info(hsa_executable_t executable,
+                                             hsa_executable_info_t attribute,
+                                             void* value);
 
 /**
  * @brief Define an external global variable with program allocation.
@@ -3331,9 +3310,7 @@ hsa_status_t HSA_API hsa_executable_get_info(
  * @retval ::HSA_STATUS_ERROR_FROZEN_EXECUTABLE @p executable is frozen.
  */
 hsa_status_t HSA_API hsa_executable_global_variable_define(
-    hsa_executable_t executable,
-    const char *variable_name,
-    void *address);
+    hsa_executable_t executable, const char* variable_name, void* address);
 
 /**
  * @brief Define an external global variable with agent allocation.
@@ -3376,10 +3353,8 @@ hsa_status_t HSA_API hsa_executable_global_variable_define(
  * @retval ::HSA_STATUS_ERROR_FROZEN_EXECUTABLE @p executable is frozen.
  */
 hsa_status_t HSA_API hsa_executable_agent_global_variable_define(
-    hsa_executable_t executable,
-    hsa_agent_t agent,
-    const char *variable_name,
-    void *address);
+    hsa_executable_t executable, hsa_agent_t agent, const char* variable_name,
+    void* address);
 
 /**
  * @brief Define an external readonly variable.
@@ -3422,10 +3397,8 @@ hsa_status_t HSA_API hsa_executable_agent_global_variable_define(
  * @retval ::HSA_STATUS_ERROR_FROZEN_EXECUTABLE @p executable is frozen.
  */
 hsa_status_t HSA_API hsa_executable_readonly_variable_define(
-    hsa_executable_t executable,
-    hsa_agent_t agent,
-    const char *variable_name,
-    void *address);
+    hsa_executable_t executable, hsa_agent_t agent, const char* variable_name,
+    void* address);
 
 /**
  * @brief Validate executable. Checks that all code objects have matching
@@ -3447,9 +3420,8 @@ hsa_status_t HSA_API hsa_executable_readonly_variable_define(
  *
  * @retval ::HSA_STATUS_ERROR_INVALID_ARGUMENT @p result is NULL.
  */
-hsa_status_t HSA_API hsa_executable_validate(
-    hsa_executable_t executable,
-    uint32_t* result);
+hsa_status_t HSA_API hsa_executable_validate(hsa_executable_t executable,
+                                             uint32_t* result);
 
 /**
  * @brief Executable symbol.
@@ -3494,13 +3466,12 @@ typedef struct hsa_executable_symbol_s {
  * @retval ::HSA_STATUS_ERROR_INVALID_ARGUMENT @p symbol_name is NULL, or
  * @p symbol is NULL.
  */
-hsa_status_t HSA_API hsa_executable_get_symbol(
-    hsa_executable_t executable,
-    const char *module_name,
-    const char *symbol_name,
-    hsa_agent_t agent,
-    int32_t call_convention,
-    hsa_executable_symbol_t *symbol);
+hsa_status_t HSA_API hsa_executable_get_symbol(hsa_executable_t executable,
+                                               const char* module_name,
+                                               const char* symbol_name,
+                                               hsa_agent_t agent,
+                                               int32_t call_convention,
+                                               hsa_executable_symbol_t* symbol);
 
 /**
  * @brief Executable symbol attributes.
@@ -3683,8 +3654,7 @@ typedef enum {
  */
 hsa_status_t HSA_API hsa_executable_symbol_get_info(
     hsa_executable_symbol_t executable_symbol,
-    hsa_executable_symbol_info_t attribute,
-    void *value);
+    hsa_executable_symbol_info_t attribute, void* value);
 
 /**
  * @brief Iterate over the symbols in a executable, and invoke an
@@ -3712,7 +3682,8 @@ hsa_status_t HSA_API hsa_executable_symbol_get_info(
  */
 hsa_status_t HSA_API hsa_executable_iterate_symbols(
     hsa_executable_t executable,
-    hsa_status_t (*callback)(hsa_executable_t executable, hsa_executable_symbol_t symbol, void* data),
+    hsa_status_t (*callback)(hsa_executable_t executable,
+                             hsa_executable_symbol_t symbol, void* data),
     void* data);
 
 /** @} */

@@ -24,24 +24,16 @@
 #include "Frame.h"
 #include "System.h"
 
-
-namespace mem
-{
+namespace mem {
 
 long long Frame::id_counter = 0;
-	
-	
-Frame::Frame(long long id, Module *module, unsigned address) :
-		id(id),
-		module(module),
-		address(address)
-{
-	// Initialize iterators to past-the-end iterators
-	assert(module);
-	accesses_iterator = module->getAccessListEnd();
-	write_accesses_iterator = module->getWriteAccessListEnd();
+
+Frame::Frame(long long id, Module* module, unsigned address)
+    : id(id), module(module), address(address) {
+  // Initialize iterators to past-the-end iterators
+  assert(module);
+  accesses_iterator = module->getAccessListEnd();
+  write_accesses_iterator = module->getWriteAccessListEnd();
 }
 
-
 }  // namespace mem
-

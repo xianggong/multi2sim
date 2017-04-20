@@ -22,68 +22,58 @@
 
 #include <lib/cpp/String.h>
 
-namespace net
-{
+namespace net {
 class Packet;
 class Network;
 class Buffer;
 
-class Connection
-{
-protected:
+class Connection {
+ protected:
+  // Network associated with the connection
+  Network* network;
 
-	// Network associated with the connection
-	Network *network;
+  // Connection Name
+  std::string name;
 
-	// Connection Name
-	std::string name;
+  // Connection Latency
+  int latency = 0;
 
-	// Connection Latency
-	int latency = 0;
+  // List of the source buffers connected to the bus
+  std::vector<Buffer*> source_buffers;
 
-	// List of the source buffers connected to the bus
-	std::vector<Buffer *> source_buffers;
+  // List of the destination buffers connected to the bus
+  std::vector<Buffer*> destination_buffers;
 
-	// List of the destination buffers connected to the bus
-	std::vector<Buffer *> destination_buffers;
+ public:
+  /// Constructor
+  Connection(const std::string& name, Network* network);
 
-public:
+  /// Get the name of the connection
+  const std::string& getName() const { return name; }
 
-	/// Constructor
-	Connection(const std::string &name, Network *network);
+  /// Dump connection information
+  virtual void Dump(std::ostream& os) const = 0;
 
-	/// Get the name of the connection
-	const std::string &getName() const { return name; }
+  /// Adding ports to the bus source list
+  void addSourceBuffer(Buffer* buffer);
 
-	/// Dump connection information
-	virtual void Dump(std::ostream &os) const = 0;
+  /// Adding ports to the bus destination list
+  void addDestinationBuffer(Buffer* buffer);
 
-	/// Adding ports to the bus source list
-	void addSourceBuffer(Buffer *buffer);
+  /// Return number of source buffers
+  int getNumSourceBuffers() const { return source_buffers.size(); }
 
-	/// Adding ports to the bus destination list
-	void addDestinationBuffer(Buffer *buffer);
+  /// Return the source buffer by index
+  Buffer* getSourceBuffer(int index) { return source_buffers[index]; }
 
-	/// Return number of source buffers
-	int getNumSourceBuffers() const { return source_buffers.size(); }
+  /// Return number of destination buffers
+  int getNumDestinationBuffers() const { return destination_buffers.size(); }
 
-	/// Return the source buffer by index
-	Buffer *getSourceBuffer(int index) { return source_buffers[index]; }
+  /// Return the destination buffer by index
+  Buffer* getDestinationBuffer(int index) { return destination_buffers[index]; }
 
-	/// Return number of destination buffers
-	int getNumDestinationBuffers() const 
-	{ 
-		return destination_buffers.size(); 
-	}
-
-	/// Return the destination buffer by index
-	Buffer *getDestinationBuffer(int index) 
-	{ 
-		return destination_buffers[index]; 
-	}
-
-	/// Transfer the packet 
-	virtual void TransferPacket(Packet *packet) = 0;
+  /// Transfer the packet
+  virtual void TransferPacket(Packet* packet) = 0;
 };
 }
 

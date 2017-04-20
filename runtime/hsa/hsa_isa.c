@@ -28,33 +28,19 @@
 #include "debug.h"
 #include "hsa.h"
 
-hsa_status_t HSA_API hsa_isa_from_name(
-    const char* name,
-    hsa_isa_t* isa)
-{
-	__HSA_RUNTIME_NOT_IMPLEMENTED__
-	return HSA_STATUS_SUCCESS;
+hsa_status_t HSA_API hsa_isa_from_name(const char* name, hsa_isa_t* isa) {
+  __HSA_RUNTIME_NOT_IMPLEMENTED__
+  return HSA_STATUS_SUCCESS;
 }
 
-
-hsa_status_t HSA_API hsa_isa_get_info(
-    hsa_isa_t isa,
-    hsa_isa_info_t attribute,
-    uint32_t index,
-    void* value)
-{
-	__HSA_RUNTIME_NOT_IMPLEMENTED__
-	return HSA_STATUS_SUCCESS;
+hsa_status_t HSA_API hsa_isa_get_info(hsa_isa_t isa, hsa_isa_info_t attribute,
+                                      uint32_t index, void* value) {
+  __HSA_RUNTIME_NOT_IMPLEMENTED__
+  return HSA_STATUS_SUCCESS;
 }
 
-
-hsa_status_t HSA_API hsa_isa_compatible(
-    hsa_isa_t code_object_isa,
-    hsa_isa_t agent_isa,
-    bool* result)
-{
-	__HSA_RUNTIME_NOT_IMPLEMENTED__
-	return HSA_STATUS_SUCCESS;
+hsa_status_t HSA_API hsa_isa_compatible(hsa_isa_t code_object_isa,
+                                        hsa_isa_t agent_isa, bool* result) {
+  __HSA_RUNTIME_NOT_IMPLEMENTED__
+  return HSA_STATUS_SUCCESS;
 }
-
-

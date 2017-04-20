@@ -17,91 +17,77 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "Cpu.h"
 #include "Thread.h"
+#include "Cpu.h"
 #include "Timing.h"
 
+namespace x86 {
 
-namespace x86
-{
+void Thread::Decode() {
+  for (int i = 0; i < Cpu::getDecodeWidth(); i++) {
+    // Empty fetch queue
+    if (fetch_queue.size() == 0) break;
 
-void Thread::Decode()
-{
-	for (int i = 0; i < Cpu::getDecodeWidth(); i++)
-	{
-		// Empty fetch queue
-		if (fetch_queue.size() == 0)
-			break;
+    // Full uop queue
+    if ((int)uop_queue.size() >= Cpu::getUopQueueSize()) break;
 
-		// Full uop queue
-		if ((int) uop_queue.size() >= Cpu::getUopQueueSize())
-			break;
+    // Get uop at the head of the fetch queue
+    assert(!fetch_queue.empty());
+    std::shared_ptr<Uop> uop = fetch_queue.front();
 
-		// Get uop at the head of the fetch queue
-		assert(!fetch_queue.empty());
-		std::shared_ptr<Uop> uop = fetch_queue.front();
+    // If instructions come from the trace cache, i.e., are located
+    // in the trace cache queue, copy all of them into the uop queue
+    // in one single decode slot.
+    if (uop->from_trace_cache) {
+      do {
+        // Extract from fetch queue
+        ExtractFromFetchQueue(uop.get());
 
-		// If instructions come from the trace cache, i.e., are located
-		// in the trace cache queue, copy all of them into the uop queue
-		// in one single decode slot.
-		if (uop->from_trace_cache)
-		{
-			do
-			{
-				// Extract from fetch queue
-				ExtractFromFetchQueue(uop.get());
+        // Add to uop queue
+        InsertInUopQueue(uop);
 
-				// Add to uop queue
-				InsertInUopQueue(uop);
+        // Done if fetch queue empty
+        if (fetch_queue.empty()) break;
 
-				// Done if fetch queue empty
-				if (fetch_queue.empty())
-					break;
+        // Next instruction from fetch queue
+        assert(fetch_queue.size());
+        uop = fetch_queue.front();
 
-				// Next instruction from fetch queue
-				assert(fetch_queue.size());
-				uop = fetch_queue.front();
+      } while (uop->from_trace_cache);
 
-			} while (uop->from_trace_cache);
+      // Consume entire decode width
+      break;
+    }
 
-			// Consume entire decode width
-			break;
-		}
+    // Decode one macro-instruction coming from a block in the
+    // instruction cache. If the cache access finished, extract it
+    // from the fetch queue.
+    assert(!uop->mop_index);
+    if (!instruction_module->isInFlightAccess(uop->fetch_access)) {
+      do {
+        // Extract from fetch queue
+        ExtractFromFetchQueue(uop.get());
 
-		// Decode one macro-instruction coming from a block in the
-		// instruction cache. If the cache access finished, extract it
-		// from the fetch queue.
-		assert(!uop->mop_index);
-		if (!instruction_module->isInFlightAccess(uop->fetch_access))
-		{
-			do
-			{
-				// Extract from fetch queue
-				ExtractFromFetchQueue(uop.get());
+        // Add to uop queue
+        InsertInUopQueue(uop);
 
-				// Add to uop queue
-				InsertInUopQueue(uop);
+        // Trace
+        Timing::trace << misc::fmt(
+            "x86.inst "
+            "id=%lld "
+            "core=%d "
+            "stg=\"dec\"\n",
+            uop->getIdInCore(), core->getId());
 
-				// Trace
-				Timing::trace << misc::fmt("x86.inst "
-						"id=%lld "
-						"core=%d "
-						"stg=\"dec\"\n",
-						uop->getIdInCore(),
-						core->getId());
+        // Done if no more instructions in fetch queue
+        if (fetch_queue.empty()) break;
 
-				// Done if no more instructions in fetch queue
-				if (fetch_queue.empty())
-					break;
+        // Next instruction in fetch queue
+        assert(fetch_queue.size());
+        uop = fetch_queue.front();
 
-				// Next instruction in fetch queue
-				assert(fetch_queue.size());
-				uop = fetch_queue.front();
-
-			} while (uop->mop_index);
-		}
-	}
+      } while (uop->mop_index);
+    }
+  }
 }
-
 }
-

@@ -22,9 +22,7 @@
 
 #include "Memory.h"
 
-
-namespace mem
-{
+namespace mem {
 
 /// This class represents a temporary memory used during speculative execution
 /// of a CPU context. Speculative memory writes are stored here. A subsequent
@@ -32,81 +30,72 @@ namespace mem
 /// exists, and will load from the actual complete Memory object otherwise. When
 /// speculative execution ends, the contents of this memory will be just
 /// discarded.
-class SpecMem
-{
-	// Page size
-	static const unsigned LogPageSize = 4;
-	static const unsigned PageSize = 1 << LogPageSize;
-	static const unsigned PageMask = ~(PageSize - 1);
+class SpecMem {
+  // Page size
+  static const unsigned LogPageSize = 4;
+  static const unsigned PageSize = 1 << LogPageSize;
+  static const unsigned PageMask = ~(PageSize - 1);
 
-	// Number of entries in the page table
-	static const unsigned PageTableSize = 32;
+  // Number of entries in the page table
+  static const unsigned PageTableSize = 32;
 
-	// To prevent an excessive growth of speculative memory, this is a limit
-	// of pages. After this limit has reached, no more pages are allocated,
-	// reads will be done from the non-speculative memory, and writes will
-	// be ignored while in speculative mode.
-	static const int MaxPages = 100;
+  // To prevent an excessive growth of speculative memory, this is a limit
+  // of pages. After this limit has reached, no more pages are allocated,
+  // reads will be done from the non-speculative memory, and writes will
+  // be ignored while in speculative mode.
+  static const int MaxPages = 100;
 
-	// Memory page
-	struct Page
-	{
-		unsigned address;
-		char data[PageSize];
-		Page *next;
-	};
+  // Memory page
+  struct Page {
+    unsigned address;
+    char data[PageSize];
+    Page* next;
+  };
 
-	// Associated non-speculative memory
-	Memory *memory;
+  // Associated non-speculative memory
+  Memory* memory;
 
-	// Number of pages
-	int num_pages;
-	
-	// Page table (hash table of pages)
-	Page *pages[PageTableSize];
+  // Number of pages
+  int num_pages;
 
-	// Return the page containing the address, or nullptr if not present
-	Page *getPage(unsigned address);
+  // Page table (hash table of pages)
+  Page* pages[PageTableSize];
 
-	// Create a new page with the given address
-	Page *newPage(unsigned address);
+  // Return the page containing the address, or nullptr if not present
+  Page* getPage(unsigned address);
 
-	// Access the memory at an aligned position
-	void AccessAligned(unsigned address, int size, char *buffer,
-			Memory::AccessType access);
+  // Create a new page with the given address
+  Page* newPage(unsigned address);
 
-	// Access the memory without alignment restrictions
-	void Access(unsigned address, int size, char *buffer,
-			Memory::AccessType access);
-public:
+  // Access the memory at an aligned position
+  void AccessAligned(unsigned address, int size, char* buffer,
+                     Memory::AccessType access);
 
-	/// Create a speculative memory associated with a real memory object
-	SpecMem(Memory *memory);
+  // Access the memory without alignment restrictions
+  void Access(unsigned address, int size, char* buffer,
+              Memory::AccessType access);
 
-	/// Destructor
-	~SpecMem()
-	{
-		Clear();
-	}
+ public:
+  /// Create a speculative memory associated with a real memory object
+  SpecMem(Memory* memory);
 
-	/// Read from the memory
-	void Read(unsigned address, int size, char *buffer)
-	{
-		Access(address, size, buffer, Memory::AccessRead);
-	}
+  /// Destructor
+  ~SpecMem() { Clear(); }
 
-	/// Write to memory
-	void Write(unsigned address, int size, char *buffer)
-	{
-		Access(address, size, buffer, Memory::AccessWrite);
-	}
+  /// Read from the memory
+  void Read(unsigned address, int size, char* buffer) {
+    Access(address, size, buffer, Memory::AccessRead);
+  }
 
-	/// Clear content of the memory
-	void Clear();
+  /// Write to memory
+  void Write(unsigned address, int size, char* buffer) {
+    Access(address, size, buffer, Memory::AccessWrite);
+  }
+
+  /// Clear content of the memory
+  void Clear();
 };
-
 
 }  // namespace mem
 
 #endif
-

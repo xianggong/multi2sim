@@ -20,26 +20,20 @@
 #include <arch/hsa/disassembler/AsmService.h>
 
 #include "Emulator.h"
-#include "Variable.h"
 #include "SegmentManager.h"
+#include "Variable.h"
 
-
-namespace HSA
-{
+namespace HSA {
 
 Variable::Variable(const std::string& name, BrigType type,
-		unsigned long long dim, unsigned address,
-		BrigSegment segment,
-		bool isFormal = false) :
-		name(name),
-		type(type),
-		segment(segment),
-		size(AsmService::TypeToSize(type)),
-		dim(dim),
-		address(address),
-		isFormal(isFormal)
-{
-}
+                   unsigned long long dim, unsigned address,
+                   BrigSegment segment, bool isFormal = false)
+    : name(name),
+      type(type),
+      segment(segment),
+      size(AsmService::TypeToSize(type)),
+      dim(dim),
+      address(address),
+      isFormal(isFormal) {}
 
 }  // namespace HSA
-

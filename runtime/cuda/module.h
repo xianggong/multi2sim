@@ -20,20 +20,16 @@
 #ifndef RUNTIME_CUDA_MODULE_H
 #define RUNTIME_CUDA_MODULE_H
 
-
 #include "api.h"
 
-struct CUmod_st
-{
-	unsigned id;
+struct CUmod_st {
+  unsigned id;
 
-	/* Cubin associated */
-	struct elf_file_t *elf_file;
+  /* Cubin associated */
+  struct elf_file_t* elf_file;
 };
 
-CUmodule cuda_module_create(const char *cubin_path);
+CUmodule cuda_module_create(const char* cubin_path);
 void cuda_module_free(CUmodule module);
 
-
 #endif
-

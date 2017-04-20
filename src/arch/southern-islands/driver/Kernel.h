@@ -28,122 +28,117 @@
 #include <src/arch/southern-islands/disassembler/Binary.h>
 #include <src/arch/southern-islands/emulator/WorkItem.h>
 
-
-namespace SI
-{
+namespace SI {
 
 // Forward declaration
 class NDRange;
 class Program;
 
-class Kernel
-{
-	// Kernel identifier
-	int id = 0;
+class Kernel {
+  // Kernel identifier
+  int id = 0;
 
-	// Kernel name
-	std::string name;
+  // Kernel name
+  std::string name;
 
-	// Program it belongs to
-	Program *program = nullptr;
+  // Program it belongs to
+  Program* program = nullptr;
 
-	// Excerpts of program binary
-	ELFReader::Symbol *metadata_symbol = nullptr;
-	ELFReader::Symbol *header_symbol = nullptr;
-	ELFReader::Symbol *kernel_symbol = nullptr;
+  // Excerpts of program binary
+  ELFReader::Symbol* metadata_symbol = nullptr;
+  ELFReader::Symbol* header_symbol = nullptr;
+  ELFReader::Symbol* kernel_symbol = nullptr;
 
-	// List of kernel arguments
-	std::vector<std::unique_ptr<Argument>> arguments;
+  // List of kernel arguments
+  std::vector<std::unique_ptr<Argument>> arguments;
 
-	// AMD kernel binary (internal ELF)
-	std::unique_ptr<Binary> binary_file;
+  // AMD kernel binary (internal ELF)
+  std::unique_ptr<Binary> binary_file;
 
-	// Memory requirements
-	int local_memory_size = 0;
-	int private_memory_size = 0;
+  // Memory requirements
+  int local_memory_size = 0;
+  int private_memory_size = 0;
 
-	// Kernel function metadata
-	int func_uniqueid = 0;  // Id of kernel function
+  // Kernel function metadata
+  int func_uniqueid = 0;  // Id of kernel function
 
-	// Check for head token 
-	void Expect(std::vector<std::string> &token_list, std::string head_token);
+  // Check for head token
+  void Expect(std::vector<std::string>& token_list, std::string head_token);
 
-	// Check for int 
-	void ExpectInt(std::vector<std::string> &token_list);
+  // Check for int
+  void ExpectInt(std::vector<std::string>& token_list);
 
-	// Check size of token_list
-	void ExpectCount(std::vector<std::string> &token_list, unsigned count);
+  // Check size of token_list
+  void ExpectCount(std::vector<std::string>& token_list, unsigned count);
 
-	// Load metadata
-	void LoadMetaDataV3();
-	
-	// Check metadata version
-	void LoadMetaData();
+  // Load metadata
+  void LoadMetaDataV3();
 
-	// Create buffer description
-	void CreateBufferDescriptor(
-			unsigned base_addr, 
-			unsigned size, 
-			int num_elems,
-			Argument::DataType data_type,
-			WorkItem::BufferDescriptor *buffer_descriptor);
+  // Check metadata version
+  void LoadMetaData();
 
-public:
-	Kernel(int id, const std::string &name, Program *program);
+  // Create buffer description
+  void CreateBufferDescriptor(unsigned base_addr, unsigned size, int num_elems,
+                              Argument::DataType data_type,
+                              WorkItem::BufferDescriptor* buffer_descriptor);
 
-	//
-	// Getters
-	//
+ public:
+  Kernel(int id, const std::string& name, Program* program);
 
-	/// Get kernel binary
-	Binary *getKernelBinaryFile() const { return binary_file.get(); }
+  //
+  // Getters
+  //
 
-	/// Get associated program. 
-	///
-	/// \return Returns a pointer to a program or a nullptr if uninitialized
-	Program *getProgram() const { return program; }
+  /// Get kernel binary
+  Binary* getKernelBinaryFile() const { return binary_file.get(); }
 
-	/// Get reference of arguments list
-	std::vector<std::unique_ptr<Argument>> &getArgs() { return arguments; }
+  /// Get associated program.
+  ///
+  /// \return Returns a pointer to a program or a nullptr if uninitialized
+  Program* getProgram() const { return program; }
 
-	/// Get pointer of an argument by index in arguments list
-	Argument *getArgByIndex(unsigned idx) { return arguments[idx].get(); }
+  /// Get reference of arguments list
+  std::vector<std::unique_ptr<Argument>>& getArgs() { return arguments; }
 
-	/// Get count of arguments
-	unsigned getNumArguments() const { return arguments.size(); }
+  /// Get pointer of an argument by index in arguments list
+  Argument* getArgByIndex(unsigned idx) { return arguments[idx].get(); }
 
-	/// Get mem_size_local
-	int getLocalMemorySize() const { return local_memory_size; }
+  /// Get count of arguments
+  unsigned getNumArguments() const { return arguments.size(); }
 
-	/// Get mem_size_private
-	int getPrivateMemorySize() const { return private_memory_size; }
+  /// Get mem_size_local
+  int getLocalMemorySize() const { return local_memory_size; }
 
-	/// Get kernel id
-	int getId() const { return id; }
+  /// Get mem_size_private
+  int getPrivateMemorySize() const { return private_memory_size; }
 
-	/// Get kernel name
-	std::string getName() const { return name; }
+  /// Get kernel id
+  int getId() const { return id; }
 
-	/// Setup NDRange constant buffers
-	void SetupNDRangeConstantBuffers(NDRange *ndrange);
+  /// Get kernel name
+  std::string getName() const { return name; }
 
-	/// Setup NDRange arguments
-	void SetupNDRangeArgs(NDRange *ndrange);
+  /// Setup NDRange constant buffers
+  void SetupNDRangeConstantBuffers(NDRange* ndrange);
 
-	/// Setup NDRange state
-	void DebugNDRangeState(NDRange *ndrange);
+  /// Setup NDRange arguments
+  void SetupNDRangeArgs(NDRange* ndrange);
 
-	/// Create NDRange tables
-	// TODO - Add param: MMU *gpu_mmu
-	void CreateNDRangeTables(NDRange *ndrange); 
-	
-	/// Create constant buffers
-	// TODO - Add param: MMU *gpu_mmu
-	void CreateNDRangeConstantBuffers(NDRange *ndrange);
-	
-	/// FIXME not implemented yet
-	static void FlushNDRangeBuffers(NDRange *ndrange /*SIGpu *gpu, X86Emu *x86_emu*/);
-	void NDRangeSetupMMU(NDRange *ndrange);
+  /// Setup NDRange state
+  void DebugNDRangeState(NDRange* ndrange);
+
+  /// Create NDRange tables
+  // TODO - Add param: MMU *gpu_mmu
+  void CreateNDRangeTables(NDRange* ndrange);
+
+  /// Create constant buffers
+  // TODO - Add param: MMU *gpu_mmu
+  void CreateNDRangeConstantBuffers(NDRange* ndrange);
+
+  /// FIXME not implemented yet
+  static void FlushNDRangeBuffers(
+      NDRange* ndrange /*SIGpu *gpu, X86Emu *x86_emu*/);
+  void NDRangeSetupMMU(NDRange* ndrange);
 };
 
 }  // namespace SI

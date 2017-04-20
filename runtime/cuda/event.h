@@ -20,27 +20,23 @@
 #ifndef RUNTIME_CUDA_EVENT_H
 #define RUNTIME_CUDA_EVENT_H
 
-
 #include "api.h"
 
-struct CUevent_st
-{
-	unsigned id;
+struct CUevent_st {
+  unsigned id;
 
-	CUstream stream;
+  CUstream stream;
 
-	clock_t t;
+  clock_t t;
 
-	/* Flags */
-	unsigned to_be_recorded;
-	unsigned recorded;
-	unsigned flags;
+  /* Flags */
+  unsigned to_be_recorded;
+  unsigned recorded;
+  unsigned flags;
 };
 
 CUevent cuda_event_create(unsigned flags);
 void cuda_event_free(CUevent event);
 void cuda_event_record(CUevent event);
 
-
 #endif
-

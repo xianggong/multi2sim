@@ -17,29 +17,20 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "BrigSection.h"
 #include "BrigDataEntry.h"
+#include "BrigSection.h"
 
-namespace HSA
-{
+namespace HSA {
 
-const std::string BrigDataEntry::getString() const
-{
-	std::string str((const char *)data->bytes, data->byteCount);
-	return str;
+const std::string BrigDataEntry::getString() const {
+  std::string str((const char*)data->bytes, data->byteCount);
+  return str;
 }
 
+unsigned int BrigDataEntry::getByteCount() const { return data->byteCount; }
 
-unsigned int BrigDataEntry::getByteCount() const
-{
-	return data->byteCount;
+const unsigned char* BrigDataEntry::getBytes() const {
+  return (const unsigned char*)data->bytes;
 }
-
-
-const unsigned char *BrigDataEntry::getBytes() const
-{
-	return (const unsigned char *)data->bytes;
-}
-
 
 }  // namespace HSA

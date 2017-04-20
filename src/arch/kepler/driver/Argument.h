@@ -21,38 +21,29 @@
 
 #include <string>
 
+namespace Kepler {
 
-namespace Kepler
-{
+class Argument {
+  // Name of the argument
+  std::string name;
 
-class Argument
-{
-	// Name of the argument
-	std::string name;
+  // Argument value
+  unsigned value;
 
-	// Argument value
-	unsigned value;
+ public:
+  /// Constructor
+  Argument(const std::string& name) : name(name) {}
 
-public:
+  /// Return the argument name
+  const std::string& getName() { return name; }
 
-	/// Constructor
-	Argument(const std::string &name) :
-			name(name)
-	{
-	}
+  /// Return the argument value
+  unsigned getValue() const { return value; }
 
-	/// Return the argument name
-	const std::string &getName() { return name; }
-
-	/// Return the argument value
-	unsigned getValue() const { return value; }
-
-	/// Set the argument value
-	void setValue(unsigned value) {this->value = value; }
+  /// Set the argument value
+  void setValue(unsigned value) { this->value = value; }
 };
 
-
-} // namespace Kepler
+}  // namespace Kepler
 
 #endif
-

@@ -26,96 +26,73 @@
 #include "Engine.h"
 #include "Trace.h"
 
-
-namespace esim
-{
+namespace esim {
 
 std::unique_ptr<TraceSystem> TraceSystem::instance;
 
+TraceSystem::~TraceSystem() {
+  // Ignore if trace is not active
+  if (!active) return;
 
-TraceSystem::~TraceSystem()
-{
-	// Ignore if trace is not active
-	if (!active)
-		return;
-	
-	// Close ZIP file
-	gzclose(gz_file);
+  // Close ZIP file
+  gzclose(gz_file);
 }
 
+TraceSystem* TraceSystem::getInstance() {
+  // Instance already exists
+  if (instance.get()) return instance.get();
 
-TraceSystem *TraceSystem::getInstance()
-{
-	// Instance already exists
-	if (instance.get())
-		return instance.get();
-	
-	// Create instance
-	instance.reset(new TraceSystem());
-	return instance.get();
+  // Create instance
+  instance.reset(new TraceSystem());
+  return instance.get();
 }
 
-	
-void TraceSystem::setPath(const std::string &path)
-{
-	// Trace must not have been activated yet
-	if (active)
-		throw misc::Panic("Trace already active");
+void TraceSystem::setPath(const std::string& path) {
+  // Trace must not have been activated yet
+  if (active) throw misc::Panic("Trace already active");
 
-	// Save path
-	this->path = path;
-	active = true;
-	
-	// Open ZIP file
-	gz_file = gzopen(path.c_str(), "wt");
-	if (!gz_file)
-		throw misc::Error(misc::fmt("%s: cannot open trace file",
-				path.c_str()));
+  // Save path
+  this->path = path;
+  active = true;
+
+  // Open ZIP file
+  gz_file = gzopen(path.c_str(), "wt");
+  if (!gz_file)
+    throw misc::Error(misc::fmt("%s: cannot open trace file", path.c_str()));
 }
 
+void TraceSystem::Write(const std::string& s, bool print_cycle) {
+  // Trace system must be active
+  assert(active);
 
-void TraceSystem::Write(const std::string &s, bool print_cycle)
-{
-	// Trace system must be active
-	assert(active);
-	
-	// Print cycle
-	if (print_cycle)
-	{
-		esim::Engine *engine = esim::Engine::getInstance();
-		long long cycle = engine->getCycle();
-		if (cycle > last_cycle)
-		{
-			gzprintf(gz_file, "c clk=%lld\n", cycle);
-			last_cycle = cycle;
-		}
-	}
+  // Print cycle
+  if (print_cycle) {
+    esim::Engine* engine = esim::Engine::getInstance();
+    long long cycle = engine->getCycle();
+    if (cycle > last_cycle) {
+      gzprintf(gz_file, "c clk=%lld\n", cycle);
+      last_cycle = cycle;
+    }
+  }
 
-	// Dump string
-	gzwrite(gz_file, s.c_str(), s.length());
+  // Dump string
+  gzwrite(gz_file, s.c_str(), s.length());
 }
 
+void TraceSystem::Header(const std::string& s) {
+  // Check that no cycle-by-cycle info has been dumped yet
+  if (last_cycle >= 0)
+    throw misc::Panic(
+        "Trace header written after "
+        "simulation started");
 
-void TraceSystem::Header(const std::string &s)
-{
-	// Check that no cycle-by-cycle info has been dumped yet
-	if (last_cycle >= 0)
-		throw misc::Panic("Trace header written after "
-				"simulation started");
-
-	// Write it
-	Write(s, false);
+  // Write it
+  Write(s, false);
 }
 
-
-
-
-Trace::Trace()
-{
-	// Keep reference to trace system
-	trace_system = TraceSystem::getInstance();
+Trace::Trace() {
+  // Keep reference to trace system
+  trace_system = TraceSystem::getInstance();
 }
-
 
 }  // namespace esim
-

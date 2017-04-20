@@ -22,16 +22,13 @@
 
 #include "HsaInstructionWorker.h"
 
-namespace HSA
-{
+namespace HSA {
 
-class GridSizeInstructionWorker: public HsaInstructionWorker
-{
-public:
-	GridSizeInstructionWorker(WorkItem *work_item,
-			StackFrame *stack_frame);
-	virtual ~GridSizeInstructionWorker();
-	void Execute(BrigCodeEntry *instruction) override;
+class GridSizeInstructionWorker : public HsaInstructionWorker {
+ public:
+  GridSizeInstructionWorker(WorkItem* work_item, StackFrame* stack_frame);
+  virtual ~GridSizeInstructionWorker();
+  void Execute(BrigCodeEntry* instruction) override;
 };
 
 }  // namespace HSA

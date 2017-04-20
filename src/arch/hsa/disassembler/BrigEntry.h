@@ -20,54 +20,46 @@
 #ifndef ARCH_HSA_DISASSEMBLER_BRIGENTRY_H
 #define ARCH_HSA_DISASSEMBLER_BRIGENTRY_H
 
-namespace HSA
-{
+namespace HSA {
 
 class BrigSection;
 class BrigFile;
 
 // A BrigEntry is a piece of data record from hsa_code, hsa_data or hsa_operand
-// section. 
-class BrigEntry
-{
-protected:
+// section.
+class BrigEntry {
+ protected:
+  // Pointer to the first byte of the entry
+  const char* base;
 
-	// Pointer to the first byte of the entry
-	const char *base;
+  // A Pointer to the section that this brig entry belongs to
+  const BrigSection* section;
 
-	// A Pointer to the section that this brig entry belongs to 
-	const BrigSection *section;
+  // A Pointer to the file that this brig entry belongs to
+  const BrigFile* binary;
 
-	// A Pointer to the file that this brig entry belongs to
-	const BrigFile *binary;
+  // Return the pointer to the brig data. Accessing the buffer should
+  // be forbidden from the ouside of this function
+  const char* getBuffer() const { return base; }
 
-	// Return the pointer to the brig data. Accessing the buffer should 
-	// be forbidden from the ouside of this function
-	const char *getBuffer() const { return base; }
+ public:
+  /// Constructor
+  BrigEntry(const char* buffer) : base(buffer){};
 
-public:
+  /// Get the offset of this entry in the section
+  unsigned int getOffset() const;
 
-	/// Constructor
-	BrigEntry(const char *buffer) :
-			base(buffer)
-	{	
-	};
+  /// Set the BRIG section is belongs to
+  void setSection(const BrigSection* section);
 
-	/// Get the offset of this entry in the section
-	unsigned int getOffset() const;
+  /// Return the section that has this entry
+  const BrigSection* getSection() const { return section; }
 
-	/// Set the BRIG section is belongs to
-	void setSection(const BrigSection *section);
+  /// Returns the file that has this entry
+  const BrigFile* getBinary() const { return binary; };
 
-	/// Return the section that has this entry
-	const BrigSection *getSection() const { return section; }
-
-	/// Returns the file that has this entry
-	const BrigFile *getBinary() const { return binary; };
-
-	/// Set the file that this entry belongs to
-	void setBinary(const BrigFile *binary) { this->binary = binary; }
-
+  /// Set the file that this entry belongs to
+  void setBinary(const BrigFile* binary) { this->binary = binary; }
 };
 
 }  // namespace HSA

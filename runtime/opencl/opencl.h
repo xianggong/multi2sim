@@ -20,14 +20,13 @@
 #ifndef RUNTIME_OPENCL_OPENCL_H
 #define RUNTIME_OPENCL_OPENCL_H
 
-#include <unistd.h>
+#include <elf.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <pthread.h>
-#include <elf.h>
+#include <unistd.h>
 
 #include "../include/CL/cl.h"
-
 
 /* NOTE: The following re-declaration of 'pthread_setaffinity_np' is made to
  * avoid some 'implicit declaration' warnings in older pthread distributions.
@@ -36,13 +35,12 @@
  * line with the '-D' flag, see Makefile.am). */
 #ifndef pthread_setaffinity_np
 int pthread_setaffinity_np(pthread_t thread, size_t cpusetsize,
-		const cpu_set_t *cpuset);
+                           const cpu_set_t* cpuset);
 #endif
 
-/* Set if the user specifies a shared-memory system 
+/* Set if the user specifies a shared-memory system
  * using an M2S_OPENCL_SHARED_MEM=1 environment variable */
 extern int opencl_device_shared_memory;
-
 
 /*
  * Types
@@ -60,52 +58,65 @@ extern int opencl_device_shared_memory;
 #define opencl_sampler_t _cl_sampler
 
 /* Generic call-back function */
-typedef void *(*opencl_callback_t)(void *);
+typedef void* (*opencl_callback_t)(void*);
 
-enum opencl_runtime_type_t
-{
-	opencl_runtime_type_x86=1,
-	opencl_runtime_type_si,
-	opencl_runtime_type_union
+enum opencl_runtime_type_t {
+  opencl_runtime_type_x86 = 1,
+  opencl_runtime_type_si,
+  opencl_runtime_type_union
 };
-
 
 /*
  * Runtime System Calls
  */
 
 /* System call code to communicate with Multi2Sim */
-#define OPENCL_SYSCALL_CODE  329
-
-
-
+#define OPENCL_SYSCALL_CODE 329
 
 /*
  * Error macros
  */
 
-extern char *opencl_err_not_impl;
-extern char *opencl_err_note;
-extern char *opencl_err_param_note;
+extern char* opencl_err_not_impl;
+extern char* opencl_err_note;
+extern char* opencl_err_param_note;
 
-#define __OPENCL_NOT_IMPL__  \
-	fatal("%s: OpenCL call not implemented.\n%s", __FUNCTION__, opencl_err_not_impl);
-#define OPENCL_ARG_NOT_SUPPORTED(p) \
-	fatal("%s: not supported for '" #p "' = 0x%x\n%s", __FUNCTION__, p, opencl_err_note);
-#define OPENCL_ARG_NOT_SUPPORTED_EQ(p, v) \
-	{ if ((p) == (v)) fatal("%s: not supported for '" #p "' = 0x%x\n%s", __FUNCTION__, (v), opencl_err_param_note); }
-#define OPENCL_ARG_NOT_SUPPORTED_NEQ(p, v) \
-	{ if ((p) != (v)) fatal("%s: not supported for '" #p "' != 0x%x\n%s", __FUNCTION__, (v), opencl_err_param_note); }
-#define OPENCL_ARG_NOT_SUPPORTED_LT(p, v) \
-	{ if ((p) < (v)) fatal("%s: not supported for '" #p "' < %d\n%s", __FUNCTION__, (v), opencl_err_param_note); }
-#define OPENCL_ARG_NOT_SUPPORTED_RANGE(p, min, max) \
-	{ if ((p) < (min) || (p) > (max)) fatal("%s: not supported for '" #p "' out of range [%d:%d]\n%s", \
-	__FUNCTION__, (min), (max), opencl_err_param_note); }
-#define OPENCL_ARG_NOT_SUPPORTED_FLAG(p, flag, name) \
-	{ if ((p) & (flag)) fatal("%s: flag '" name "' not supported\n%s", __FUNCTION__, opencl_err_param_note); }
-
-
-
+#define __OPENCL_NOT_IMPL__                                   \
+  fatal("%s: OpenCL call not implemented.\n%s", __FUNCTION__, \
+        opencl_err_not_impl);
+#define OPENCL_ARG_NOT_SUPPORTED(p)                                   \
+  fatal("%s: not supported for '" #p "' = 0x%x\n%s", __FUNCTION__, p, \
+        opencl_err_note);
+#define OPENCL_ARG_NOT_SUPPORTED_EQ(p, v)                                   \
+  {                                                                         \
+    if ((p) == (v))                                                         \
+      fatal("%s: not supported for '" #p "' = 0x%x\n%s", __FUNCTION__, (v), \
+            opencl_err_param_note);                                         \
+  }
+#define OPENCL_ARG_NOT_SUPPORTED_NEQ(p, v)                                   \
+  {                                                                          \
+    if ((p) != (v))                                                          \
+      fatal("%s: not supported for '" #p "' != 0x%x\n%s", __FUNCTION__, (v), \
+            opencl_err_param_note);                                          \
+  }
+#define OPENCL_ARG_NOT_SUPPORTED_LT(p, v)                                 \
+  {                                                                       \
+    if ((p) < (v))                                                        \
+      fatal("%s: not supported for '" #p "' < %d\n%s", __FUNCTION__, (v), \
+            opencl_err_param_note);                                       \
+  }
+#define OPENCL_ARG_NOT_SUPPORTED_RANGE(p, min, max)                    \
+  {                                                                    \
+    if ((p) < (min) || (p) > (max))                                    \
+      fatal("%s: not supported for '" #p "' out of range [%d:%d]\n%s", \
+            __FUNCTION__, (min), (max), opencl_err_param_note);        \
+  }
+#define OPENCL_ARG_NOT_SUPPORTED_FLAG(p, flag, name)               \
+  {                                                                \
+    if ((p) & (flag))                                              \
+      fatal("%s: flag '" name "' not supported\n%s", __FUNCTION__, \
+            opencl_err_param_note);                                \
+  }
 
 /*
  * Call-back functions for object 'opencl_xxx_device_t'
@@ -113,52 +124,44 @@ extern char *opencl_err_param_note;
 
 /* Create an architecture-specific device. Returns an object of type
  * 'opencl_XXX_device_t'. */
-typedef void *(*opencl_arch_device_create_func_t)(
-		struct opencl_device_t *parent);
+typedef void* (*opencl_arch_device_create_func_t)(
+    struct opencl_device_t* parent);
 
 /* Free an architecture-specific device. */
 typedef void (*opencl_arch_device_free_func_t)(
-		void *device);  /* Of type 'opencl_XXX_device_t' */
+    void* device); /* Of type 'opencl_XXX_device_t' */
 
 /* Allocate device memory. The function returns a device pointer.
  * If the device is the x86 CPU, the pointer can be dereferenced
  * normally. If not, the value is just a 32-bit address used by
  * device-specific functions. */
-typedef void *(*opencl_arch_device_mem_alloc_func_t)(
-		void *device,  /* Of type 'opencl_xxx_device_t' */
-		size_t size);
+typedef void* (*opencl_arch_device_mem_alloc_func_t)(
+    void* device, /* Of type 'opencl_xxx_device_t' */
+    size_t size);
 
 /* Free device memory */
 typedef void (*opencl_arch_device_mem_free_func_t)(
-		void *device,  /* Of type 'opencl_xxx_device_t' */
-		void *device_ptr);
+    void* device, /* Of type 'opencl_xxx_device_t' */
+    void* device_ptr);
 
 /* Read from device memory */
 typedef void (*opencl_arch_device_mem_read_func_t)(
-		void *device,  /* Of type 'opencl_xxx_device_t' */
-		void *host_ptr,
-		void *device_ptr,
-		unsigned int size);
+    void* device, /* Of type 'opencl_xxx_device_t' */
+    void* host_ptr, void* device_ptr, unsigned int size);
 
 /* Write into device memory */
 typedef void (*opencl_arch_device_mem_write_func_t)(
-		void *device,  /* Of type 'opencl_xxx_device_t' */
-		void *device_ptr,
-		void *host_ptr,
-		unsigned int size);
+    void* device, /* Of type 'opencl_xxx_device_t' */
+    void* device_ptr, void* host_ptr, unsigned int size);
 
 /* Copy device memory */
 typedef void (*opencl_arch_device_mem_copy_func_t)(
-		void *device,  /* Of type 'opencl_xxx_device_t' */
-		void *device_dest_ptr,
-		void *device_src_ptr,
-		unsigned int size);
+    void* device, /* Of type 'opencl_xxx_device_t' */
+    void* device_dest_ptr, void* device_src_ptr, unsigned int size);
 
 /* Determine the preferred number of work-groups a device has */
 typedef int (*opencl_arch_device_preferred_workgroups_func_t)(
-		void *device); /* Of type opencl_xxx_device_t */
-
-
+    void* device); /* Of type opencl_xxx_device_t */
 
 /*
  * Call-back functions for object 'opencl_xxx_program_t'
@@ -166,23 +169,19 @@ typedef int (*opencl_arch_device_preferred_workgroups_func_t)(
 
 /* Create an architecture-specific program. Returns an object of type
  * 'opencl_XXX_program_t'. */
-typedef void *(*opencl_arch_program_create_func_t)(
-		struct opencl_program_t *parent,
-		void *arch_device,  /* Of type 'opencl_xxx_device_t' */
-		void *binary,
-		unsigned int length);
+typedef void* (*opencl_arch_program_create_func_t)(
+    struct opencl_program_t* parent,
+    void* arch_device, /* Of type 'opencl_xxx_device_t' */
+    void* binary, unsigned int length);
 
 /* Free an architecture-specific program. */
 typedef void (*opencl_arch_program_free_func_t)(
-		void *program);  /* Of type 'opencl_XXX_program_t' */
+    void* program); /* Of type 'opencl_XXX_program_t' */
 
 /* Check if a binary blob is a valid program */
-typedef int (*opencl_arch_program_valid_binary_func_t)(
-	void *device,
-	void *binary,
-	unsigned int length);
-
-
+typedef int (*opencl_arch_program_valid_binary_func_t)(void* device,
+                                                       void* binary,
+                                                       unsigned int length);
 
 /*
  * Call-back functions for object 'opencl_xxx_kernel_t'
@@ -190,45 +189,43 @@ typedef int (*opencl_arch_program_valid_binary_func_t)(
 
 /* Create an architecture-specific kernel. Returns an object of type
  * 'opencl_XXX_kernel_t'. */
-typedef void *(*opencl_arch_kernel_create_func_t)(
-		struct opencl_kernel_t *parent,
-		void *arch_program,  /* Of type 'opencl_xxx_program_t' */
-		const char *kernel_name);
+typedef void* (*opencl_arch_kernel_create_func_t)(
+    struct opencl_kernel_t* parent,
+    void* arch_program, /* Of type 'opencl_xxx_program_t' */
+    const char* kernel_name);
 
 /* Free an architecture-specific kernel. */
 typedef void (*opencl_arch_kernel_free_func_t)(
-		void *kernel);  /* Of type 'opencl_XXX_kernel_t' */
+    void* kernel); /* Of type 'opencl_XXX_kernel_t' */
 
 /* Set a kernel argument */
 typedef int (*opencl_arch_kernel_set_arg_func_t)(
-		void *kernel,  /* Of type 'opencl_XXX_kernel_t' */
-		int arg_index,
-		unsigned int arg_size,
-		void *arg_value);
+    void* kernel, /* Of type 'opencl_XXX_kernel_t' */
+    int arg_index, unsigned int arg_size, void* arg_value);
 
 /* Create an ND-Range */
-typedef void *(*opencl_arch_ndrange_create_func_t)(
-	struct opencl_ndrange_t *ndrange, void *arch_kernel,
-	unsigned int work_dim, unsigned int *global_work_offset,
-	unsigned int *global_work_size, unsigned int *local_work_size,
-	unsigned int fused);
+typedef void* (*opencl_arch_ndrange_create_func_t)(
+    struct opencl_ndrange_t* ndrange, void* arch_kernel, unsigned int work_dim,
+    unsigned int* global_work_offset, unsigned int* global_work_size,
+    unsigned int* local_work_size, unsigned int fused);
 
 /* Initialize an ND-Range */
-typedef void (*opencl_arch_ndrange_init_func_t)(void *ndrange);
+typedef void (*opencl_arch_ndrange_init_func_t)(void* ndrange);
 
 /* Launch an ND-Range */
-typedef void (*opencl_arch_ndrange_run_func_t)(void *ndrange,
-	struct opencl_event_t *event);
+typedef void (*opencl_arch_ndrange_run_func_t)(void* ndrange,
+                                               struct opencl_event_t* event);
 
 /* Run an part of an ND-Range */
-typedef void (*opencl_arch_ndrange_run_partial_func_t)(void *ndrange, 
-		unsigned int work_group_start, unsigned int work_group_count);
+typedef void (*opencl_arch_ndrange_run_partial_func_t)(
+    void* ndrange, unsigned int work_group_start,
+    unsigned int work_group_count);
 
 /* Finish an ND-Range (blocking call) */
-typedef void (*opencl_arch_ndrange_finish_func_t)(void *ndrange);
+typedef void (*opencl_arch_ndrange_finish_func_t)(void* ndrange);
 
 /* Free an ND-Range */
-typedef void (*opencl_arch_ndrange_free_func_t)(void *ndrange);
+typedef void (*opencl_arch_ndrange_free_func_t)(void* ndrange);
 
 /*
  * Global Variables
@@ -237,33 +234,30 @@ typedef void (*opencl_arch_ndrange_free_func_t)(void *ndrange);
 /* Execution in native/simulated mode */
 extern int opencl_native_mode;
 
-
-
 /*
- * Public Functions 
+ * Public Functions
  */
 
-void opencl_debug(char *fmt, ...) __attribute__ ((format (printf, 1, 2)));
+void opencl_debug(char* fmt, ...) __attribute__((format(printf, 1, 2)));
 cl_ulong opencl_get_time();
 
 /* Populate a parameter as a response to OpenCL's many clGet*Info functions */
-cl_int opencl_set_param(const void *src_value, size_t src_size,
-	size_t dest_size, void *dest_value, size_t *size_ret);
-cl_int opencl_set_string(const char *src_string, size_t dest_size,
-	void *dest_string, size_t *size_ret);
+cl_int opencl_set_param(const void* src_value, size_t src_size,
+                        size_t dest_size, void* dest_value, size_t* size_ret);
+cl_int opencl_set_string(const char* src_string, size_t dest_size,
+                         void* dest_string, size_t* size_ret);
 int opencl_is_valid_device_type(cl_device_type device_type);
 
-int opencl_event_wait_list_check(unsigned int num_events, const cl_event *event_list);
+int opencl_event_wait_list_check(unsigned int num_events,
+                                 const cl_event* event_list);
 
 /* get the number of properties in a properties list */
-size_t getPropertiesCount(const void *properties, size_t prop_size);
+size_t getPropertiesCount(const void* properties, size_t prop_size);
 
 /* copy a properties list */
-void copyProperties(void *dest, const void *src, size_t size, size_t numObjs);
+void copyProperties(void* dest, const void* src, size_t size, size_t numObjs);
 
-void *clrt_buffer_allocate(size_t size);
-void clrt_buffer_free(void *buffer);
-
+void* clrt_buffer_allocate(size_t size);
+void clrt_buffer_free(void* buffer);
 
 #endif
-

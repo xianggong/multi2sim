@@ -25,95 +25,84 @@
 
 #include "FunctionalUnit.h"
 
-
-namespace x86
-{
+namespace x86 {
 
 // Forward declarations
 class Timing;
 class Uop;
 
-
 /// Class representing the arithmetic-logic unit
-class Alu
-{
-	//
-	// Static fields
-	//
+class Alu {
+  //
+  // Static fields
+  //
 
-	// Table indexed by a micro-instruction opcode returning the type
-	// of functional unit required by that micro-instruction.
-	static const FunctionalUnit::Type type_table[Uinst::OpcodeCount];
+  // Table indexed by a micro-instruction opcode returning the type
+  // of functional unit required by that micro-instruction.
+  static const FunctionalUnit::Type type_table[Uinst::OpcodeCount];
 
-	// Configuration of each functional unit, given as three integers:
-	//	0 -> Number of instances
-	//	1 -> Total operation latency
-	//	2 -> Issue latency
-	static int configuration[FunctionalUnit::TypeCount][3];
+  // Configuration of each functional unit, given as three integers:
+  //	0 -> Number of instances
+  //	1 -> Total operation latency
+  //	2 -> Issue latency
+  static int configuration[FunctionalUnit::TypeCount][3];
 
+  //
+  // Class members
+  //
 
+  // Vector of functional units, indexed by a functional unit type
+  std::vector<std::unique_ptr<FunctionalUnit>> functional_units;
 
+ public:
+  //
+  // Static functions
+  //
 
-	//
-	// Class members
-	//
+  /// Read functional unit configuration from configuration file
+  static void ParseConfiguration(misc::IniFile* ini_file);
 
-	// Vector of functional units, indexed by a functional unit type
-	std::vector<std::unique_ptr<FunctionalUnit>> functional_units;
+  /// Dump configuration
+  static void DumpConfiguration(std::ostream& os = std::cout);
 
-public:
+  //
+  // Class members
+  //
 
-	//
-	// Static functions
-	//
+  /// Constructor
+  Alu();
 
-	/// Read functional unit configuration from configuration file
-	static void ParseConfiguration(misc::IniFile *ini_file);
+  /// Reserve the functional unit required by the uop. The return value is
+  /// the functional unit latency, or 0 if it could not be reserved. If
+  /// the uop does not require any functional unit, the function returns
+  /// a latency of 1 cycle.
+  int Reserve(Uop* uop);
 
-	/// Dump configuration
-	static void DumpConfiguration(std::ostream &os = std::cout);
+  /// Release all functional units
+  void ReleaseAll();
 
+  /// Dump report for functional units.
+  void DumpReport(std::ostream& os = std::cout) const;
 
+  //
+  // Getters
+  //
 
-	
-	//
-	// Class members
-	//
+  // Get the number of instance based on given type count
+  static int getAluCount(int type_count) {
+    return configuration[type_count][0];
+  }
 
-	/// Constructor
-	Alu();
+  // Get the operation latency based on given type count
+  static int getAluOperationLatency(int type_count) {
+    return configuration[type_count][1];
+  }
 
-	/// Reserve the functional unit required by the uop. The return value is
-	/// the functional unit latency, or 0 if it could not be reserved. If
-	/// the uop does not require any functional unit, the function returns
-	/// a latency of 1 cycle.
-	int Reserve(Uop *uop);
-
-	/// Release all functional units
-	void ReleaseAll();
-
-	/// Dump report for functional units.
-	void DumpReport(std::ostream &os = std::cout) const;
-	
-
-
-
-	//
-	// Getters
-	//
-
-	// Get the number of instance based on given type count
-	static int getAluCount(int type_count) { return configuration[type_count][0]; }
-
-	// Get the operation latency based on given type count
-	static int getAluOperationLatency(int type_count) { return configuration[type_count][1]; }
-
-	// Get the issue latency based on given type count
-	static int getAluIssueLatency(int type_count) { return configuration[type_count][2]; }
-
+  // Get the issue latency based on given type count
+  static int getAluIssueLatency(int type_count) {
+    return configuration[type_count][2];
+  }
 };
-
 }
 
 #endif
-

@@ -26,58 +26,38 @@
 
 #include "HsaExecutable.h"
 
-
-namespace HSA
-{
+namespace HSA {
 
 class HsaExecutable;
 class BrigCodeEntry;
 
-class HsaExecutableSymbol
-{
+class HsaExecutableSymbol {
+  // The executable that this symbol belongs to
+  const HsaExecutable* executable;
 
-	// The executable that this symbol belongs to
-	const HsaExecutable *executable;
+  // The directive that declares the symbol
+  BrigCodeEntry* directive;
 
+ public:
+  /// Constructor
+  HsaExecutableSymbol(const HsaExecutable* executable, BrigCodeEntry* directive)
+      : executable(executable), directive(directive) {}
 
-	// The directive that declares the symbol
-	BrigCodeEntry *directive;
+  /// Destructor
+  ~HsaExecutableSymbol() {}
 
-public:
+  /// Get executable
+  const HsaExecutable* getExecutable() const { return executable; }
 
-	/// Constructor
-	HsaExecutableSymbol(const HsaExecutable *executable,
-			BrigCodeEntry *directive):
-			executable(executable),
-			directive(directive)
-	{
-	}
+  /// Get directive
+  BrigCodeEntry* getDirective() const { return directive; }
 
-	/// Destructor
-	~HsaExecutableSymbol()
-	{
-	}
-
-	/// Get executable
-	const HsaExecutable *getExecutable() const
-	{
-		return executable;
-	}
-
-	/// Get directive
-	BrigCodeEntry *getDirective() const
-	{
-		return directive;
-	}
-
-	/// Get kernel argument segment size
-	unsigned int getKernelArgumentSize() const
-	{
-		std::string name = directive->getName();
-		Function *function = executable->getFunction(name);
-		return function->getArgumentSize();
-	}
-
+  /// Get kernel argument segment size
+  unsigned int getKernelArgumentSize() const {
+    std::string name = directive->getName();
+    Function* function = executable->getFunction(name);
+    return function->getArgumentSize();
+  }
 };
 
 }  // namespace HSA

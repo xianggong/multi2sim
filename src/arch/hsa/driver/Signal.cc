@@ -19,11 +19,8 @@
 
 #include "Signal.h"
 
-namespace HSA
-{
+namespace HSA {
 
-Signal::Signal()
-{
-}
+Signal::Signal() {}
 
 }  // namespace net

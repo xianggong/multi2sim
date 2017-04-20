@@ -26,25 +26,17 @@
 
 #include "Command.h"
 
-
-namespace dram
-{
+namespace dram {
 
 // Forward declarations
 class Bank;
 class Channel;
 
-
 // Possible scheduling algorithms
-enum SchedulerType
-{
-	SchedulerRankBankRoundRobin,
-	SchedulerOldestFirst
-};
+enum SchedulerType { SchedulerRankBankRoundRobin, SchedulerOldestFirst };
 
 // String map for SchedulerType
 extern misc::StringMap SchedulerTypeMap;
-
 
 /// To make a new scheduler, this base class should be subclassed.  The
 /// constructor must contain at least a pointer to the channel that owns it
@@ -53,62 +45,40 @@ extern misc::StringMap SchedulerTypeMap;
 /// required should be added to the class.
 /// After the new scheduler is made, add it to the SchedulerType enum,
 /// SchedulerTypeMap StringMap and the switch block in Channel::Channel.
-class Scheduler
-{
+class Scheduler {
+ protected:
+  // Pointer to the owning channel.
+  Channel* channel;
 
-protected:
+ public:
+  Scheduler(Channel* owner) : channel(owner) {}
 
-	// Pointer to the owning channel.
-	Channel *channel;
-
-public:
-
-	Scheduler(Channel *owner)
-			:
-			channel(owner)
-	{
-	}
-
-	/// Returns the pointer to the next bank that should have its command
-	/// scheduled next.  In the case that one isn't found, nullptr is
-	/// returned.
-	virtual Bank *FindNext() = 0;
+  /// Returns the pointer to the next bank that should have its command
+  /// scheduled next.  In the case that one isn't found, nullptr is
+  /// returned.
+  virtual Bank* FindNext() = 0;
 };
 
+class OldestFirst : public Scheduler {
+ public:
+  OldestFirst(Channel* owner) : Scheduler(owner) {}
 
-class OldestFirst : public Scheduler
-{
-
-public:
-	OldestFirst(Channel *owner)
-			:
-			Scheduler(owner)
-	{
-	}
-
-	/// Returns the the pointer to the next bank that should have its
-	/// command scheduled next based on the Oldest First algorithm.
-	Bank *FindNext();
+  /// Returns the the pointer to the next bank that should have its
+  /// command scheduled next based on the Oldest First algorithm.
+  Bank* FindNext();
 };
 
+class RankBankRoundRobin : public Scheduler {
+  int current_rank = 0;
+  int current_bank = 0;
 
-class RankBankRoundRobin : public Scheduler
-{
-	int current_rank = 0;
-	int current_bank = 0;
+ public:
+  RankBankRoundRobin(Channel* owner) : Scheduler(owner) {}
 
-public:
-
-	RankBankRoundRobin(Channel *owner)
-			:
-			Scheduler(owner)
-	{
-	}
-
-	/// Returns the the pointer to the next bank that should have its
-	/// command scheduled next based on the Rank Bank Round Robin
-	/// algorithm.
-	Bank *FindNext();
+  /// Returns the the pointer to the next bank that should have its
+  /// command scheduled next based on the Rank Bank Round Robin
+  /// algorithm.
+  Bank* FindNext();
 };
 
 }  // namespace dram

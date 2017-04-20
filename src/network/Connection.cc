@@ -18,29 +18,19 @@
  */
 
 #include "Connection.h"
-#include "Network.h"
 #include "Buffer.h"
+#include "Network.h"
 
-namespace net
-{
+namespace net {
 
-Connection::Connection(const std::string &name, Network *network) :
-		network(network),
-		name(name)
-{
+Connection::Connection(const std::string& name, Network* network)
+    : network(network), name(name) {}
+
+void Connection::addSourceBuffer(Buffer* buffer) {
+  this->source_buffers.emplace_back(buffer);
 }
 
-
-void Connection::addSourceBuffer(Buffer* buffer)
-{
-	this->source_buffers.emplace_back(buffer);
+void Connection::addDestinationBuffer(Buffer* buffer) {
+  this->destination_buffers.emplace_back(buffer);
 }
-
-
-void Connection::addDestinationBuffer(Buffer* buffer)
-{
-	this->destination_buffers.emplace_back(buffer);
 }
-
-}
-

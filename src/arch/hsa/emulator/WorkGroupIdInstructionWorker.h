@@ -22,18 +22,15 @@
 
 #include "HsaInstructionWorker.h"
 
-namespace HSA
-{
+namespace HSA {
 
-class WorkGroupIdInstructionWorker: public HsaInstructionWorker
-{
-public:
-	WorkGroupIdInstructionWorker(WorkItem *work_item,
-			StackFrame *stack_frame);
-	virtual ~WorkGroupIdInstructionWorker();
-	void Execute(BrigCodeEntry *instruction) override;
+class WorkGroupIdInstructionWorker : public HsaInstructionWorker {
+ public:
+  WorkGroupIdInstructionWorker(WorkItem* work_item, StackFrame* stack_frame);
+  virtual ~WorkGroupIdInstructionWorker();
+  void Execute(BrigCodeEntry* instruction) override;
 };
 
 }  // namespace HSA
 
-#endif // ARCH_HSA_EMULATOR_WORKGROUPIDINSTRUCTIONWORKER_H
+#endif  // ARCH_HSA_EMULATOR_WORKGROUPIDINSTRUCTIONWORKER_H

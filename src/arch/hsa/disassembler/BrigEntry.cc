@@ -17,22 +17,18 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "BrigSection.h"
 #include "BrigEntry.h"
+#include "BrigSection.h"
 
-namespace HSA
-{
+namespace HSA {
 
-void BrigEntry::setSection(const BrigSection *section) 
-{ 
-	this->section = section; 
-	this->binary = section->getBinary();
+void BrigEntry::setSection(const BrigSection* section) {
+  this->section = section;
+  this->binary = section->getBinary();
 }
 
-
-unsigned int BrigEntry::getOffset() const
-{
-	return base - section->getBuffer();
+unsigned int BrigEntry::getOffset() const {
+  return base - section->getBuffer();
 }
 
 }  // namespace HSA

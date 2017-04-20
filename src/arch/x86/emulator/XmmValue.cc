@@ -21,63 +21,44 @@
 
 #include "XmmValue.h"
 
+namespace x86 {
 
-namespace x86
-{
-
-void XmmValue::DumpAsChar(std::ostream &os) const
-{
-	std::string comma;
-	os << "{ ";
-	for (int i = 0; i < 16; i++)
-	{
-		os << comma << misc::fmt("%02x", as_uchar[i]);
-		comma = ", ";
-	}
-	os << " }";
+void XmmValue::DumpAsChar(std::ostream& os) const {
+  std::string comma;
+  os << "{ ";
+  for (int i = 0; i < 16; i++) {
+    os << comma << misc::fmt("%02x", as_uchar[i]);
+    comma = ", ";
+  }
+  os << " }";
 }
 
-
-void XmmValue::DumpAsShort(std::ostream &os) const
-{
-	std::string comma;
-	os << "{ ";
-	for (int i = 0; i < 8; i++)
-	{
-		os << comma << misc::fmt("%04x", as_ushort[i]);
-		comma = ", ";
-	}
-	os << " }";
+void XmmValue::DumpAsShort(std::ostream& os) const {
+  std::string comma;
+  os << "{ ";
+  for (int i = 0; i < 8; i++) {
+    os << comma << misc::fmt("%04x", as_ushort[i]);
+    comma = ", ";
+  }
+  os << " }";
 }
 
-
-void XmmValue::DumpAsInt(std::ostream &os) const
-{
-	os << misc::fmt("{ %08x, %08x, %08x, %08x }",
-			as_uint[0], as_uint[1], as_uint[2], as_uint[3]);
+void XmmValue::DumpAsInt(std::ostream& os) const {
+  os << misc::fmt("{ %08x, %08x, %08x, %08x }", as_uint[0], as_uint[1],
+                  as_uint[2], as_uint[3]);
 }
 
-
-void XmmValue::DumpAsInt64(std::ostream &os) const
-{
-	os << misc::fmt("{ %016llx, %016llx }",
-			as_uint64[0], as_uint64[1]);
+void XmmValue::DumpAsInt64(std::ostream& os) const {
+  os << misc::fmt("{ %016llx, %016llx }", as_uint64[0], as_uint64[1]);
 }
 
-
-void XmmValue::DumpAsFloat(std::ostream &os) const
-{
-	os << misc::fmt("{ %g, %g, %g, %g }",
-			as_float[0], as_float[1], as_float[2], as_float[3]);
+void XmmValue::DumpAsFloat(std::ostream& os) const {
+  os << misc::fmt("{ %g, %g, %g, %g }", as_float[0], as_float[1], as_float[2],
+                  as_float[3]);
 }
 
-
-void XmmValue::DumpAsDouble(std::ostream &os) const
-{
-	os << misc::fmt("{ %g, %g }",
-			as_double[0], as_double[1]);
+void XmmValue::DumpAsDouble(std::ostream& os) const {
+  os << misc::fmt("{ %g, %g }", as_double[0], as_double[1]);
 }
-
 
 }  // namespace x86
-

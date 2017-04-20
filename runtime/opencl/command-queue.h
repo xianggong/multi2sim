@@ -22,38 +22,34 @@
 
 #include "opencl.h"
 
-
 /*
  * Command Queue
  */
 struct opencl_command_t;
 
-struct opencl_command_queue_t
-{
-	struct opencl_device_t *device;
-	struct opencl_context_t *context;
-	/* List of commands - elements of type opencl_command_t */
-	struct list_t *command_list;
-	
-	cl_command_queue_properties properties;
+struct opencl_command_queue_t {
+  struct opencl_device_t* device;
+  struct opencl_context_t* context;
+  /* List of commands - elements of type opencl_command_t */
+  struct list_t* command_list;
 
-	pthread_t queue_thread;
-	pthread_mutex_t lock;
-	pthread_cond_t cond_process;
+  cl_command_queue_properties properties;
 
-	volatile int process;
+  pthread_t queue_thread;
+  pthread_mutex_t lock;
+  pthread_cond_t cond_process;
+
+  volatile int process;
 };
 
-
 /* Create/free */
-struct opencl_command_queue_t *opencl_command_queue_create(void);
-void opencl_command_queue_free(struct opencl_command_queue_t *command_queue);
+struct opencl_command_queue_t* opencl_command_queue_create(void);
+void opencl_command_queue_free(struct opencl_command_queue_t* command_queue);
 
-void opencl_command_queue_enqueue(struct opencl_command_queue_t *command_queue,
-		struct opencl_command_t *command);
-struct opencl_command_t *opencl_command_queue_dequeue(
-		struct opencl_command_queue_t *command_queue);
-void opencl_command_queue_flush(struct opencl_command_queue_t *command_queue);
-
+void opencl_command_queue_enqueue(struct opencl_command_queue_t* command_queue,
+                                  struct opencl_command_t* command);
+struct opencl_command_t* opencl_command_queue_dequeue(
+    struct opencl_command_queue_t* command_queue);
+void opencl_command_queue_flush(struct opencl_command_queue_t* command_queue);
 
 #endif

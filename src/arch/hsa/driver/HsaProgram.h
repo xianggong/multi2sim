@@ -22,51 +22,45 @@
 
 #include <vector>
 
-namespace HSA
-{
+namespace HSA {
 
 class BrigFile;
 
 /**
  * An HSA program is a group of HSA modules
  */
-class HsaProgram
-{
-private:
+class HsaProgram {
+ private:
+  // Modules in the HSA program
+  std::vector<std::unique_ptr<BrigFile>> modules;
 
-	// Modules in the HSA program
-	std::vector<std::unique_ptr<BrigFile>> modules;
+ public:
+  /**
+   * Constructor
+   */
+  HsaProgram();
 
-public:
+  /**
+   * Copy constructor
+   */
+  HsaProgram(const HsaProgram& program);
 
-	/**
-	 * Constructor
-	 */
-	HsaProgram();
+  /**
+   * Destructor
+   */
+  ~HsaProgram();
 
-	/**
-	 * Copy constructor
-	 */
-	HsaProgram(const HsaProgram &program);
+  /**
+   * Add and HSA module to program
+   */
+  void AddModule(const char* module);
 
-	/**
-	 * Destructor
-	 */
-	~HsaProgram();
-
-	/**
-	 * Add and HSA module to program
-	 */
-	void AddModule(const char *module);
-
-	/**
-	 * Get the modules
-	 */
-	const std::vector<std::unique_ptr<BrigFile>> *getModules() const 
-	{
-		return &modules;
-	}
-	
+  /**
+   * Get the modules
+   */
+  const std::vector<std::unique_ptr<BrigFile>>* getModules() const {
+    return &modules;
+  }
 };
 
 /**

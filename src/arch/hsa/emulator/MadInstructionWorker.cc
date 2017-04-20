@@ -20,68 +20,56 @@
 #include "MadInstructionWorker.h"
 #include "WorkItem.h"
 
-namespace HSA
-{
+namespace HSA {
 
-MadInstructionWorker::MadInstructionWorker(WorkItem *work_item,
-		StackFrame *stack_frame) :
-		HsaInstructionWorker(work_item, stack_frame)
-{
+MadInstructionWorker::MadInstructionWorker(WorkItem* work_item,
+                                           StackFrame* stack_frame)
+    : HsaInstructionWorker(work_item, stack_frame) {}
+
+MadInstructionWorker::~MadInstructionWorker() {}
+
+template <typename T>
+void MadInstructionWorker::Inst_MAD_Aux(BrigCodeEntry* instruction) {
+  // Perform action
+  T src0;
+  T src1;
+  T src2;
+  operand_value_retriever->Retrieve(instruction, 1, &src0);
+  operand_value_retriever->Retrieve(instruction, 2, &src1);
+  operand_value_retriever->Retrieve(instruction, 3, &src2);
+  T des = (src0 * src1) + src2;
+  operand_value_writer->Write(instruction, 0, &des);
 }
 
+void MadInstructionWorker::Execute(BrigCodeEntry* instruction) {
+  switch (instruction->getType()) {
+    case BRIG_TYPE_S32:
 
-MadInstructionWorker::~MadInstructionWorker()
-{
-}
+      Inst_MAD_Aux<int>(instruction);
+      break;
 
+    case BRIG_TYPE_S64:
 
-template<typename T>
-void MadInstructionWorker::Inst_MAD_Aux(BrigCodeEntry *instruction)
-{
-	// Perform action
-	T src0;
-	T src1;
-	T src2;
-	operand_value_retriever->Retrieve(instruction, 1, &src0);
-	operand_value_retriever->Retrieve(instruction, 2, &src1);
-	operand_value_retriever->Retrieve(instruction, 3, &src2);
-	T des = (src0 * src1) + src2;
-	operand_value_writer->Write(instruction, 0, &des);
-}
+      Inst_MAD_Aux<long long>(instruction);
+      break;
 
+    case BRIG_TYPE_U32:
 
-void MadInstructionWorker::Execute(BrigCodeEntry *instruction)
-{
-	switch (instruction->getType())
-	{
-	case BRIG_TYPE_S32:
+      Inst_MAD_Aux<unsigned int>(instruction);
+      break;
 
-		Inst_MAD_Aux<int>(instruction);
-		break;
+    case BRIG_TYPE_U64:
 
-	case BRIG_TYPE_S64:
+      Inst_MAD_Aux<unsigned long long>(instruction);
+      break;
 
-		Inst_MAD_Aux<long long>(instruction);
-		break;
+    default:
 
-	case BRIG_TYPE_U32:
+      throw Error("Illegal type.");
+  }
 
-		Inst_MAD_Aux<unsigned int>(instruction);
-		break;
-
-	case BRIG_TYPE_U64:
-
-		Inst_MAD_Aux<unsigned long long>(instruction);
-		break;
-
-	default:
-
-		throw Error("Illegal type.");
-	}
-
-
-	// Move the pc forward
-	work_item->MovePcForwardByOne();
+  // Move the pc forward
+  work_item->MovePcForwardByOne();
 }
 
 }  // namespace HSA

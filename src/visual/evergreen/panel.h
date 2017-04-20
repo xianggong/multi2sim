@@ -24,13 +24,11 @@
 
 struct vi_evg_panel_t;
 
-struct vi_evg_panel_t *vi_evg_panel_create(void);
-void vi_evg_panel_free(struct vi_evg_panel_t *panel);
+struct vi_evg_panel_t* vi_evg_panel_create(void);
+void vi_evg_panel_free(struct vi_evg_panel_t* panel);
 
-void vi_evg_panel_refresh(struct vi_evg_panel_t *panel);
+void vi_evg_panel_refresh(struct vi_evg_panel_t* panel);
 
-GtkWidget *vi_evg_panel_get_widget(struct vi_evg_panel_t *panel);
-
+GtkWidget* vi_evg_panel_get_widget(struct vi_evg_panel_t* panel);
 
 #endif
-

@@ -22,120 +22,107 @@
 
 #include "ExecutionUnit.h"
 
-
-namespace SI
-{
+namespace SI {
 
 // Forward declarations
 class ComputeUnit;
 
-
 /// Class representing the scalar unit of a compute unit
-class ScalarUnit : public ExecutionUnit
-{
-	// Variable number of decoded Uops
-	std::deque<std::unique_ptr<Uop>> decode_buffer;
+class ScalarUnit : public ExecutionUnit {
+  // Variable number of decoded Uops
+  std::deque<std::unique_ptr<Uop>> decode_buffer;
 
-	// Variable number of register read instructions
-	std::deque<std::unique_ptr<Uop>> read_buffer;
+  // Variable number of register read instructions
+  std::deque<std::unique_ptr<Uop>> read_buffer;
 
-	// Variable number of execution instructions
-	std::deque<std::unique_ptr<Uop>> exec_buffer;
+  // Variable number of execution instructions
+  std::deque<std::unique_ptr<Uop>> exec_buffer;
 
-	// Variable number of register instructions
-	std::deque<std::unique_ptr<Uop>> write_buffer;
+  // Variable number of register instructions
+  std::deque<std::unique_ptr<Uop>> write_buffer;
 
-	// Variable number of pending memory accesses
-	std::deque<std::unique_ptr<Uop>> inflight_buffer;
+  // Variable number of pending memory accesses
+  std::deque<std::unique_ptr<Uop>> inflight_buffer;
 
-public:
-	//
-	// Static fields
-	//
+ public:
+  //
+  // Static fields
+  //
 
-	/// Maximum number of instructions processed per cycle
-	static int width;
+  /// Maximum number of instructions processed per cycle
+  static int width;
 
-	/// Size of the issue buffer in number of instructions
-	static int issue_buffer_size;
+  /// Size of the issue buffer in number of instructions
+  static int issue_buffer_size;
 
-	/// Decode latency in number of cycles
-	static int decode_latency;
+  /// Decode latency in number of cycles
+  static int decode_latency;
 
-	/// Size of the decode buffer in number of instructions
-	static int decode_buffer_size;
+  /// Size of the decode buffer in number of instructions
+  static int decode_buffer_size;
 
-	/// Latency of the read stage in number of cycles
-	static int read_latency;
+  /// Latency of the read stage in number of cycles
+  static int read_latency;
 
-	/// Size of the read buffer in number of instructions
-	static int read_buffer_size;
+  /// Size of the read buffer in number of instructions
+  static int read_buffer_size;
 
-	/// Latency of the execution stage in number of cycles
-	static int exec_latency;
+  /// Latency of the execution stage in number of cycles
+  static int exec_latency;
 
-	/// Size of the execution buffer in number of instructions
-	static int exec_buffer_size;
+  /// Size of the execution buffer in number of instructions
+  static int exec_buffer_size;
 
-	/// Latency of the write stage in number of cycles
-	static int write_latency;
+  /// Latency of the write stage in number of cycles
+  static int write_latency;
 
-	/// Size of the write buffer in number of cycles
-	static int write_buffer_size;
+  /// Size of the write buffer in number of cycles
+  static int write_buffer_size;
 
+  //
+  // Class members
+  //
 
+  /// Constructor
+  ScalarUnit(ComputeUnit* compute_unit) : ExecutionUnit(compute_unit) {}
 
+  /// Run the actions occurring in one cycle
+  void Run();
 
-	//
-	// Class members
-	//
+  /// Return whether there is room in the issue buffer of the scalar
+  /// unit to absorb a new instruction.
+  bool canIssue() const override {
+    return getIssueBufferOccupancy() < issue_buffer_size;
+  }
 
-	/// Constructor
-	ScalarUnit(ComputeUnit *compute_unit) :
-			ExecutionUnit(compute_unit)
-	{
-	}
+  /// Return whether the given uop is a scalar instruction.
+  bool isValidUop(Uop* uop) const override;
 
-	/// Run the actions occurring in one cycle
-	void Run();
-	
-	/// Return whether there is room in the issue buffer of the scalar
-	/// unit to absorb a new instruction.
-	bool canIssue() const override
-	{
-		return getIssueBufferOccupancy() < issue_buffer_size;
-	}
+  /// Issue the given instruction into the scalar unit.
+  void Issue(std::unique_ptr<Uop> uop) override;
 
-	/// Return whether the given uop is a scalar instruction.
-	bool isValidUop(Uop *uop) const override;
-	
-	/// Issue the given instruction into the scalar unit.
-	void Issue(std::unique_ptr<Uop> uop) override;
+  /// Complete the instruction
+  void Complete();
 
-	/// Complete the instruction
-	void Complete();
+  /// Write stage of the execution pipeline.
+  void Write();
 
-	/// Write stage of the execution pipeline.
-	void Write();
+  /// Execute stage of the execution pipeline.
+  void Execute();
 
-	/// Execute stage of the execution pipeline.
-	void Execute();
+  /// Read stage of the execution pipeline.
+  void Read();
 
-	/// Read stage of the execution pipeline.
-	void Read();
+  /// Decode stage of the execution pipeline.
+  void Decode();
 
-	/// Decode stage of the execution pipeline.
-	void Decode();
+  // Statistics
+  long long num_instructions;
 
-	// Statistics
-	long long num_instructions;
-
-	/// Remove the uop pointed to by the given iterator, and return a
-	/// shared pointer reference to the removed entry.
-	std::shared_ptr<Uop> Remove(std::deque<std::shared_ptr<Uop>>::iterator it);
+  /// Remove the uop pointed to by the given iterator, and return a
+  /// shared pointer reference to the removed entry.
+  std::shared_ptr<Uop> Remove(std::deque<std::shared_ptr<Uop>>::iterator it);
 };
-
 }
 
 #endif
-

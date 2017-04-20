@@ -22,82 +22,72 @@
 #include "StInstructionWorker.h"
 #include "WorkItem.h"
 
-namespace HSA
-{
+namespace HSA {
 
-StInstructionWorker::StInstructionWorker(WorkItem *work_item,
-		StackFrame *stack_frame) :
-		HsaInstructionWorker(work_item, stack_frame)
-{
+StInstructionWorker::StInstructionWorker(WorkItem* work_item,
+                                         StackFrame* stack_frame)
+    : HsaInstructionWorker(work_item, stack_frame) {}
+
+StInstructionWorker::~StInstructionWorker() {}
+
+template <typename T>
+void StInstructionWorker::Inst_ST_Aux(BrigCodeEntry* instruction) {
+  // Get address to store
+  unsigned address;
+  operand_value_retriever->Retrieve(instruction, 1, &address);
+
+  // Translate address to flat address
+  address = work_item->getFlatAddress(instruction->getSegment(), address);
+
+  // Move value from register or immediate into memory
+  T src0;
+  operand_value_retriever->Retrieve(instruction, 0, &src0);
+  mem::Memory* memory = Emulator::getInstance()->getMemory();
+  memory->Write(address, sizeof(T), (char*)&src0);
 }
 
+void StInstructionWorker::Execute(BrigCodeEntry* instruction) {
+  // Get type
+  switch (instruction->getType()) {
+    case BRIG_TYPE_U8:
+    case BRIG_TYPE_S8:
 
-StInstructionWorker::~StInstructionWorker()
-{
-}
+      Inst_ST_Aux<unsigned char>(instruction);
+      break;
 
+    case BRIG_TYPE_U16:
+    case BRIG_TYPE_S16:
 
-template<typename T>
-void StInstructionWorker::Inst_ST_Aux(BrigCodeEntry *instruction)
-{
-	// Get address to store
-	unsigned address;
-	operand_value_retriever->Retrieve(instruction, 1, &address);
+      Inst_ST_Aux<unsigned short>(instruction);
+      break;
 
-	// Translate address to flat address
-	address = work_item->getFlatAddress(instruction->getSegment(), address);
+    case BRIG_TYPE_U32:
+    case BRIG_TYPE_S32:
 
-	// Move value from register or immediate into memory
-	T src0;
-	operand_value_retriever->Retrieve(instruction, 0, &src0);
-	mem::Memory *memory = Emulator::getInstance()->getMemory();
-	memory->Write(address, sizeof(T), (char *)&src0);
-}
+      Inst_ST_Aux<unsigned int>(instruction);
+      break;
 
+    case BRIG_TYPE_F32:
+      Inst_ST_Aux<float>(instruction);
+      break;
 
-void StInstructionWorker::Execute(BrigCodeEntry *instruction) {
-	// Get type
-	switch (instruction->getType())
-	{
-	case BRIG_TYPE_U8:
-	case BRIG_TYPE_S8:
+    case BRIG_TYPE_U64:
+    case BRIG_TYPE_S64:
 
-		Inst_ST_Aux<unsigned char>(instruction);
-		break;
+      Inst_ST_Aux<unsigned long long>(instruction);
+      break;
 
-	case BRIG_TYPE_U16:
-	case BRIG_TYPE_S16:
+    case BRIG_TYPE_F64:
+      Inst_ST_Aux<double>(instruction);
+      break;
 
-		Inst_ST_Aux<unsigned short>(instruction);
-		break;
+    default:
+      throw misc::Panic("Type is not supported");
+      break;
+  }
 
-	case BRIG_TYPE_U32:
-	case BRIG_TYPE_S32:
-
-		Inst_ST_Aux<unsigned int>(instruction);
-		break;
-
-	case BRIG_TYPE_F32:
-		Inst_ST_Aux<float>(instruction);
-		break;
-
-	case BRIG_TYPE_U64:
-	case BRIG_TYPE_S64:
-
-		Inst_ST_Aux<unsigned long long>(instruction);
-		break;
-
-	case BRIG_TYPE_F64:
-		Inst_ST_Aux<double>(instruction);
-		break;
-
-	default:
-		throw misc::Panic("Type is not supported");
-		break;
-	}
-
-	// Move the pc forward
-	work_item->MovePcForwardByOne();
+  // Move the pc forward
+  work_item->MovePcForwardByOne();
 }
 
 }  // namespace HSA

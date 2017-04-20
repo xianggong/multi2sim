@@ -20,197 +20,184 @@
 #ifndef DRAM_DRAM_H
 #define DRAM_DRAM_H
 
+#include <iostream>
 #include <map>
 #include <memory>
-#include <iostream>
 #include <vector>
 
 #include <lib/cpp/Debug.h>
 #include <lib/cpp/Error.h>
 #include <lib/cpp/IniFile.h>
-#include <lib/esim/FrequencyDomain.h>
 #include <lib/esim/Event.h>
+#include <lib/esim/FrequencyDomain.h>
 
-
-namespace dram
-{
+namespace dram {
 
 // Forward declarations
 class Controller;
 class Request;
 
-
 /// Class representing a runtime error in dram system
-class Error : public misc::Error
-{
-public:
-
-	/// Constructor
-	Error(const std::string &message) : misc::Error(message)
-	{
-		// Set module prefix
-		AppendPrefix("DRAM");
-	}
+class Error : public misc::Error {
+ public:
+  /// Constructor
+  Error(const std::string& message) : misc::Error(message) {
+    // Set module prefix
+    AppendPrefix("DRAM");
+  }
 };
 
+class System {
+  // Unique instance of this class
+  static std::unique_ptr<System> instance;
 
-class System
-{
-	// Unique instance of this class
-	static std::unique_ptr<System> instance;
+  // Private constructor, used internally to instantiate a singleton. Use
+  // a call to getInstance() instead.
+  System();
 
-	// Private constructor, used internally to instantiate a singleton. Use
-	// a call to getInstance() instead.
-	System();
+  // List of all the memory controllers
+  std::vector<std::unique_ptr<Controller>> controllers;
 
-	// List of all the memory controllers
-	std::vector<std::unique_ptr<Controller>> controllers;
+  // Sizes of address components
+  int physical_size = 0;
+  int logical_size = 0;
+  int rank_size = 0;
+  int bank_size = 0;
+  int row_size = 0;
+  int column_size = 0;
 
-	// Sizes of address components
-	int physical_size = 0;
-	int logical_size = 0;
-	int rank_size = 0;
-	int bank_size = 0;
-	int row_size = 0;
-	int column_size = 0;
+  /// Frequency
+  static int frequency;
 
-	/// Frequency
-	static int frequency;
+  // Stand-alone simulator instantiator
+  static bool stand_alone;
 
-	// Stand-alone simulator instantiator
-	static bool stand_alone;
+  // Message to display with '--net-help'
+  static const std::string help_message;
 
-	// Message to display with '--net-help'
-	static const std::string help_message;
+  // Counter of commands created in the system.  This serves to let every
+  // command have a unique id for logging purposes.
+  int next_command_id = -1;
 
-	// Counter of commands created in the system.  This serves to let every
-	// command have a unique id for logging purposes.
-	int next_command_id = -1;
+  /// Finds the integer base 2 log of a number.
+  int Log2(unsigned num);
 
-	/// Finds the integer base 2 log of a number.
-	int Log2(unsigned num);
+  /// Sets the sizes of each address component, in the number of bits
+  /// required to represent it.
+  void GenerateAddressSizes();
 
-	/// Sets the sizes of each address component, in the number of bits
-	/// required to represent it.
-	void GenerateAddressSizes();
+ public:
+  // Error messages
+  static const char* err_config_note;
 
-public:
+  // Show help for the dram configuration
+  static bool help;
 
-	// Error messages
-	static const char *err_config_note;
+  /// Destroy the singleton if allocated.
+  static void Destroy();
 
-	// Show help for the dram configuration
-	static bool help;
+  /// Debugger
+  static misc::Debug debug;
 
-	/// Destroy the singleton if allocated.
-	static void Destroy();
+  /// Activity log
+  static misc::Debug activity;
 
-	/// Debugger
-	static misc::Debug debug;
+  // EventTypes and FrequencyDomains for DRAM
+  static esim::FrequencyDomain* frequency_domain;
+  static esim::Event* event_request;
+  static esim::Event* event_command_return;
 
-	/// Activity log
-	static misc::Debug activity;
+  /// Obtain the instance of the dram simulator singleton.
+  static System* getInstance();
 
-	// EventTypes and FrequencyDomains for DRAM
-	static esim::FrequencyDomain *frequency_domain;
-	static esim::Event *event_request;
-	static esim::Event *event_command_return;
+  /// Returns a channel that belongs to this controller with the
+  /// specified id.
+  Controller* getController(int id) { return controllers[id].get(); }
 
-	/// Obtain the instance of the dram simulator singleton.
-	static System *getInstance();
+  /// Returns whether or not DRAM is running as a stand alone simulator.
+  static bool isStandAlone() { return stand_alone; }
 
-	/// Returns a channel that belongs to this controller with the
-	/// specified id.
-	Controller *getController(int id) { return controllers[id].get(); }
+  /// Returns the size in bits of the physical channel address component.
+  int getPhysicalSize() const { return physical_size; }
 
-	/// Returns whether or not DRAM is running as a stand alone simulator.
-	static bool isStandAlone() { return stand_alone; }
+  /// Returns the size in bits of the logical channel address component.
+  int getLogicalSize() const { return logical_size; }
 
-	/// Returns the size in bits of the physical channel address component.
-	int getPhysicalSize() const { return physical_size; }
+  /// Returns the size in bits of the rank address component.
+  int getRankSize() const { return rank_size; }
 
-	/// Returns the size in bits of the logical channel address component.
-	int getLogicalSize() const { return logical_size; }
+  /// Returns the size in bits of the bank address component.
+  int getBankSize() const { return bank_size; }
 
-	/// Returns the size in bits of the rank address component.
-	int getRankSize() const { return rank_size; }
+  /// Returns the size in bits of the row address component.
+  int getRowSize() const { return row_size; }
 
-	/// Returns the size in bits of the bank address component.
-	int getBankSize() const { return bank_size; }
+  /// Returns the size in bits of the column address component.
+  int getColumnSize() const { return column_size; }
 
-	/// Returns the size in bits of the row address component.
-	int getRowSize() const { return row_size; }
+  /// Return the maximum address
+  int getCapacity();
 
-	/// Returns the size in bits of the column address component.
-	int getColumnSize() const { return column_size; }
+  /// Register command-line options
+  static void RegisterOptions();
 
-	/// Return the maximum address
-	int getCapacity();
+  /// Process command-line options
+  static void ProcessOptions();
 
-	/// Register command-line options
-	static void RegisterOptions();
+  /// Parse a configuration file
+  void ParseConfiguration(misc::IniFile* ini_file);
 
-	/// Process command-line options
-	static void ProcessOptions();
+  // Initialize the dram system by parsing the dram configuration
+  // file passed with '--dram-config'
+  void ReadConfiguration();
 
-	/// Parse a configuration file
-	void ParseConfiguration(misc::IniFile *ini_file);
+  /// Run the stand-alone DRAM simulation loop.
+  void Run();
 
-	// Initialize the dram system by parsing the dram configuration
-	// file passed with '--dram-config'
-	void ReadConfiguration();
+  /// Returns the next available unique command id.
+  int getNextCommandId();
 
-	/// Run the stand-alone DRAM simulation loop.
-	void Run();
+  /// Add a request to the system. Should be used in the standalone
+  /// simulator only; during full simulation, requests should be
+  /// sent to the controllers through a network.
+  void AddRequest(std::shared_ptr<Request> request);
 
-	/// Returns the next available unique command id.
-	int getNextCommandId();
+  /// Activate debug information for the dram simulator.
+  ///
+  /// \param path
+  ///	Path to dump debug information. Strings \c stdout and \c stderr
+  ///	are special values referring to the standard output and standard
+  ///	error output, respectively.
+  static void setDebugPath(const std::string& path) {
+    debug.setPath(path);
+    debug.setPrefix("[dram]");
+  }
 
-	/// Add a request to the system. Should be used in the standalone
-	/// simulator only; during full simulation, requests should be
-	/// sent to the controllers through a network.
-	void AddRequest(std::shared_ptr<Request> request);
+  /// Activate activity debug information for the dram simulator.
+  ///
+  /// \param path
+  ///	Path to dump debug information. Strings \c stdout and \c stderr
+  ///	are special values referring to the standard output and standard
+  ///	error output, respectively.
+  static void setActivityDebugPath(const std::string& path) {
+    activity.setPath(path);
+    activity.setPrefix("[dram-activity]");
+  }
 
-	/// Activate debug information for the dram simulator.
-	///
-	/// \param path
-	///	Path to dump debug information. Strings \c stdout and \c stderr
-	///	are special values referring to the standard output and standard
-	///	error output, respectively.
-	static void setDebugPath(const std::string &path)
-	{
-		debug.setPath(path);
-		debug.setPrefix("[dram]");
-	}
+  /// Send a read request to the dram device
+  void Read(long long address);
 
-	/// Activate activity debug information for the dram simulator.
-	///
-	/// \param path
-	///	Path to dump debug information. Strings \c stdout and \c stderr
-	///	are special values referring to the standard output and standard
-	///	error output, respectively.
-	static void setActivityDebugPath(const std::string &path)
-	{
-		activity.setPath(path);
-		activity.setPrefix("[dram-activity]");
-	}
+  /// Send a write request to the dram device
+  void Write(long long address);
 
-	/// Send a read request to the dram device
-	void Read(long long address);
+  /// Dump the object to an output stream.
+  void Dump(std::ostream& os = std::cout) const;
 
-	/// Send a write request to the dram device
-	void Write(long long address);
-
-	/// Dump the object to an output stream.
-	void Dump(std::ostream &os = std::cout) const;
-
-	/// Dump object with the << operator
-	friend std::ostream &operator<<(std::ostream &os,
-			const System &object)
-	{
-		object.Dump(os);
-		return os;
-	}
+  /// Dump object with the << operator
+  friend std::ostream& operator<<(std::ostream& os, const System& object) {
+    object.Dump(os);
+    return os;
+  }
 };
 
 }  // namespace dram

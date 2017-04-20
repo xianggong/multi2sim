@@ -19,10 +19,4 @@
 
 #include "Frame.h"
 
-
-namespace esim
-{
-
-
-}  // namespace esim
-
+namespace esim {}  // namespace esim

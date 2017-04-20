@@ -20,65 +20,60 @@
 #ifndef NETWORK_PACKET_H
 #define NETWORK_PACKET_H
 
-namespace net
-{
+namespace net {
 class Message;
 class Node;
 class Buffer;
 
-class Packet
-{
-	// Message that this packet is part of
-	Message *message;
+class Packet {
+  // Message that this packet is part of
+  Message* message;
 
-	// Size of the packet
-	int size;
+  // Size of the packet
+  int size;
 
-	// The index of the packet in a message
-	int id;
+  // The index of the packet in a message
+  int id;
 
-	// In transit until cycle
-	long long busy;
+  // In transit until cycle
+  long long busy;
 
-	// Current position in the network, which node it is at
-	Node *node;
+  // Current position in the network, which node it is at
+  Node* node;
 
-	// Current position in the network, which buffer it is at
-	Buffer *buffer;
+  // Current position in the network, which buffer it is at
+  Buffer* buffer;
 
+ public:
+  /// Constructor
+  Packet(Message* message, int size);
 
-public:
+  /// Get session id
+  int getId() const { return id; }
 
-	/// Constructor
-	Packet(Message *message, int size);
+  /// Get message
+  Message* getMessage() const { return message; }
 
-	/// Get session id
-	int getId() const { return id; }
+  /// Get size
+  int getSize() const { return size; }
 
-	/// Get message
-	Message *getMessage() const { return message; }
+  /// Update the node that the packet is at
+  void setNode(Node* node) { this->node = node; }
 
-	/// Get size
-	int getSize() const { return size; }
+  /// Get the node that the packet is at
+  Node* getNode() const { return node; }
 
-	/// Update the node that the packet is at
-	void setNode(Node *node) { this->node = node; }
+  /// Update the buffer that the packet is at
+  void setBuffer(Buffer* buffer) { this->buffer = buffer; }
 
-	/// Get the node that the packet is at
-	Node *getNode() const { return node; }
+  /// Get buffer
+  Buffer* getBuffer() const { return buffer; }
 
-	/// Update the buffer that the packet is at
-	void setBuffer(Buffer *buffer) { this->buffer = buffer; }
+  /// Update the cycle until which the packet is in transit
+  void setBusy(long long busy) { this->busy = busy; }
 
-	/// Get buffer
-	Buffer *getBuffer() const { return buffer; }
-
-	/// Update the cycle until which the packet is in transit
-	void setBusy(long long busy) { this->busy = busy; }
-
-	/// Get the cycle which the packet is busy
-	long long getBusy() const { return busy; }
-
+  /// Get the cycle which the packet is busy
+  long long getBusy() const { return busy; }
 };
 
 }  // namespace net

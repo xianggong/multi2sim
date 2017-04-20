@@ -17,59 +17,45 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include <arch/kepler/driver/Driver.h>
 #include <arch/hsa/driver/Driver.h>
+#include <arch/kepler/driver/Driver.h>
 #include <arch/southern-islands/driver/Driver.h>
 #include <lib/cpp/Misc.h>
 
 #include "Driver.h"
 
-
-namespace comm
-{
-
+namespace comm {
 
 std::unique_ptr<DriverPool> DriverPool::instance;
 
+DriverPool* DriverPool::getInstance() {
+  // Return existing instance
+  if (instance.get()) return instance.get();
 
-DriverPool* DriverPool::getInstance()
-{
-	// Return existing instance
-	if (instance.get())
-		return instance.get();
-	
-	// Create new driver pool
-	instance = misc::new_unique<DriverPool>();
-	return instance.get();	
+  // Create new driver pool
+  instance = misc::new_unique<DriverPool>();
+  return instance.get();
 }
 
+void DriverPool::Register(Driver* driver) {
+  // Add it to the pool
+  drivers.push_back(driver);
 
-void DriverPool::Register(Driver *driver)
-{
-	// Add it to the pool
-	drivers.push_back(driver);
-
-	// Record driver's path
-	paths.insert(driver->getPath());
+  // Record driver's path
+  paths.insert(driver->getPath());
 }
 
+Driver* DriverPool::getDriverByPath(const std::string& path) {
+  // Traverse all drivers
+  for (auto driver : drivers)
+    if (driver->getPath() == path) return driver;
 
-Driver *DriverPool::getDriverByPath(const std::string &path)
-{
-	// Traverse all drivers
-	for (auto driver : drivers)
-		if (driver->getPath() == path)
-			return driver;
-	
-	// Not found
-	return nullptr;
+  // Not found
+  return nullptr;
 }
 
-
-bool DriverPool::isPathRegistered(const std::string &path)
-{
-	return paths.count(path);
+bool DriverPool::isPathRegistered(const std::string& path) {
+  return paths.count(path);
 }
 
 }  // namespace comm
-

@@ -17,74 +17,63 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include <lib/cpp/String.h>
-#include <lib/cpp/Error.h>
 #include <arch/hsa/disassembler/AsmService.h>
 #include <arch/hsa/disassembler/Brig.h>
 #include <arch/hsa/disassembler/BrigCodeEntry.h>
+#include <lib/cpp/Error.h>
+#include <lib/cpp/String.h>
 
 #include "ShlInstructionWorker.h"
 #include "WorkItem.h"
 
-namespace HSA
-{
+namespace HSA {
 
-ShlInstructionWorker::ShlInstructionWorker(WorkItem *work_item,
-		StackFrame *stack_frame) :
-		HsaInstructionWorker(work_item, stack_frame)
-{
+ShlInstructionWorker::ShlInstructionWorker(WorkItem* work_item,
+                                           StackFrame* stack_frame)
+    : HsaInstructionWorker(work_item, stack_frame) {}
+
+ShlInstructionWorker::~ShlInstructionWorker() {}
+
+template <typename T>
+void ShlInstructionWorker::Inst_SHL_Aux(BrigCodeEntry* instruction) {
+  // Perform action
+  T src0;
+  unsigned int src1;
+  operand_value_retriever->Retrieve(instruction, 1, &src0);
+  operand_value_retriever->Retrieve(instruction, 2, &src1);
+  T des = src0 << src1;
+  operand_value_writer->Write(instruction, 0, &des);
 }
 
+void ShlInstructionWorker::Execute(BrigCodeEntry* instruction) {
+  switch (instruction->getType()) {
+    case BRIG_TYPE_S32:
 
-ShlInstructionWorker::~ShlInstructionWorker()
-{
-}
+      Inst_SHL_Aux<int>(instruction);
+      break;
 
+    case BRIG_TYPE_S64:
 
-template<typename T>
-void ShlInstructionWorker::Inst_SHL_Aux(BrigCodeEntry *instruction)
-{
-	// Perform action
-	T src0;
-	unsigned int src1;
-	operand_value_retriever->Retrieve(instruction, 1, &src0);
-	operand_value_retriever->Retrieve(instruction, 2, &src1);
-	T des = src0 << src1;
-	operand_value_writer->Write(instruction, 0, &des);
-}
+      Inst_SHL_Aux<long long>(instruction);
+      break;
 
+    case BRIG_TYPE_U32:
 
-void ShlInstructionWorker::Execute(BrigCodeEntry *instruction)
-{
-	switch (instruction->getType())
-	{
-	case BRIG_TYPE_S32:
+      Inst_SHL_Aux<unsigned int>(instruction);
+      break;
 
-		Inst_SHL_Aux<int>(instruction);
-		break;
+    case BRIG_TYPE_U64:
 
-	case BRIG_TYPE_S64:
+      Inst_SHL_Aux<unsigned long long>(instruction);
+      break;
 
-		Inst_SHL_Aux<long long>(instruction);
-		break;
+    default:
 
-	case BRIG_TYPE_U32:
+      throw misc::Error("Illegal type.");
+  }
 
-		Inst_SHL_Aux<unsigned int>(instruction);
-		break;
-
-	case BRIG_TYPE_U64:
-
-		Inst_SHL_Aux<unsigned long long>(instruction);
-		break;
-
-	default:
-
-		throw misc::Error("Illegal type.");
-	}
-
-	// Move the pc forward
-	work_item->MovePcForwardByOne();
+  // Move the pc forward
+  work_item->MovePcForwardByOne();
 }
 
 }  // namespace HSA

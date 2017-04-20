@@ -22,27 +22,23 @@
 
 #include "HsaInstructionWorker.h"
 
-namespace HSA
-{
+namespace HSA {
 
-class CvtInstructionWorker : public HsaInstructionWorker
-{
-	template<typename SrcType, typename DstType>
-	void Inst_CVT_chop_Aux(BrigCodeEntry *instruction);
-	template<typename SrcType, typename DstType>
-	void Inst_CVT_zext_Aux(BrigCodeEntry *instruction);
-	template<typename SrcType, typename DstType>
-	void Inst_CVT_sext_Aux(BrigCodeEntry *instruction);
-	template<typename SrcType, typename DstType>
-	void Inst_CVT_u2f_Aux(BrigCodeEntry *instruction);
+class CvtInstructionWorker : public HsaInstructionWorker {
+  template <typename SrcType, typename DstType>
+  void Inst_CVT_chop_Aux(BrigCodeEntry* instruction);
+  template <typename SrcType, typename DstType>
+  void Inst_CVT_zext_Aux(BrigCodeEntry* instruction);
+  template <typename SrcType, typename DstType>
+  void Inst_CVT_sext_Aux(BrigCodeEntry* instruction);
+  template <typename SrcType, typename DstType>
+  void Inst_CVT_u2f_Aux(BrigCodeEntry* instruction);
 
-public:
-	CvtInstructionWorker(WorkItem *work_item,
-			StackFrame *stack_frame);
-	virtual ~CvtInstructionWorker();
-	void Execute(BrigCodeEntry *instruction) override;
+ public:
+  CvtInstructionWorker(WorkItem* work_item, StackFrame* stack_frame);
+  virtual ~CvtInstructionWorker();
+  void Execute(BrigCodeEntry* instruction) override;
 };
-
 }
 
 #endif  // ARCH_HSA_EMULATOR_CVTINSTRUCTIONWORKER_H

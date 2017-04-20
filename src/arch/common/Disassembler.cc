@@ -25,36 +25,26 @@
 #include "Arch.h"
 #include "Disassembler.h"
 
+namespace comm {
 
-namespace comm
-{
-
-Disassembler::Disassembler(const std::string &name) :
-		name(name)
-{
-	// Register disassembler in architecture pool
-	ArchPool *arch_pool = ArchPool::getInstance();
-	arch_pool->RegisterDisassembler(name, this);
+Disassembler::Disassembler(const std::string& name) : name(name) {
+  // Register disassembler in architecture pool
+  ArchPool* arch_pool = ArchPool::getInstance();
+  arch_pool->RegisterDisassembler(name, this);
 }
 
+bool Disassembler::isToken(const std::string& fmt, const std::string& token,
+                           int& length) {
+  // Token is not prefix
+  length = 0;
+  if (!misc::StringPrefix(fmt, token)) return false;
 
-bool Disassembler::isToken(const std::string &fmt, const std::string &token,
-		int &length)
-{
-	// Token is not prefix
-	length = 0;
-	if (!misc::StringPrefix(fmt, token))
-		return false;
-	
-	// Token is not end of word
-	if (fmt.size() > token.size() && isalnum(fmt[token.size()]))
-		return false;
+  // Token is not end of word
+  if (fmt.size() > token.size() && isalnum(fmt[token.size()])) return false;
 
-	// Token found
-	length = token.size();
-	return true;
+  // Token found
+  length = token.size();
+  return true;
 }
-
 
 }  // namespace comm
-

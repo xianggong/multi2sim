@@ -19,7 +19,4 @@
 
 #include "WorkGroupIdInstructionWorker.h"
 
-namespace HSA
-{
-
-}  // namespace HSA
+namespace HSA {}  // namespace HSA

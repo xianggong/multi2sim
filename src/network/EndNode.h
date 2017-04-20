@@ -22,25 +22,17 @@
 
 #include "Node.h"
 
-namespace net
-{
+namespace net {
 
 // An end node is where the packet is generated and consumed
-class EndNode : public Node
-{
-public:
+class EndNode : public Node {
+ public:
+  /// Constructor
+  EndNode(Network* network, int index, int input_buffer_size,
+          int output_buffer_size, const std::string& name, void* user_data);
 
-	/// Constructor
-	EndNode(Network *network,
-			int index,
-			int input_buffer_size,
-			int output_buffer_size,
-			const std::string &name,
-			void *user_data);
-
-	/// Dump node information
-	void Dump(std::ostream &os) const;
-
+  /// Dump node information
+  void Dump(std::ostream& os) const;
 };
 
 }  // namespace net

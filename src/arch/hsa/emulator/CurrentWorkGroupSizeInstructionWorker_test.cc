@@ -19,7 +19,4 @@
 
 #include "CurrentWorkGroupSizeInstructionWorker.h"
 
-namespace HSA
-{
-
-}  // namespace HSA
+namespace HSA {}  // namespace HSA

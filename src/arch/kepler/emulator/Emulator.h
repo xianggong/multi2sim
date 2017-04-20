@@ -33,9 +33,7 @@
 #include <lib/cpp/Misc.h>
 #include <memory/Memory.h>
 
-
-namespace Kepler
-{
+namespace Kepler {
 
 class Disassembler;
 class Grid;
@@ -44,229 +42,210 @@ class ThreadBlock;
 class Thread;
 class Function;
 
-class Emulator : public comm::Emulator
-{
-	// Debugger file
-	static std::string isa_debug_file;
+class Emulator : public comm::Emulator {
+  // Debugger file
+  static std::string isa_debug_file;
 
-	// Simulation kind
-	static comm::Arch::SimKind sim_kind;
+  // Simulation kind
+  static comm::Arch::SimKind sim_kind;
 
-	// Emu singleton instance
-	static std::unique_ptr<Emulator> instance;
+  // Emu singleton instance
+  static std::unique_ptr<Emulator> instance;
 
-	// Disassembler
-	Disassembler *disassembler;
+  // Disassembler
+  Disassembler* disassembler;
 
-	// List of Grids created by the guest application
-	std::vector<std::unique_ptr<Grid>> grids;
+  // List of Grids created by the guest application
+  std::vector<std::unique_ptr<Grid>> grids;
 
-	// List of Grid
-	std::list<Grid *> pending_grids;
-	std::list<Grid *> running_grids;
-	std::list<Grid *> finished_grids;
+  // List of Grid
+  std::list<Grid*> pending_grids;
+  std::list<Grid*> running_grids;
+  std::list<Grid*> finished_grids;
 
-	// Memory
-	std::unique_ptr<mem::Memory> global_memory;
-	std::unique_ptr<mem::Memory> constant_memory;
-	std::unique_ptr<mem::Memory> shared_memory;
+  // Memory
+  std::unique_ptr<mem::Memory> global_memory;
+  std::unique_ptr<mem::Memory> constant_memory;
+  std::unique_ptr<mem::Memory> shared_memory;
 
-	// Field initialized in constructor. Global memory total size
-	unsigned global_memory_total_size;
+  // Field initialized in constructor. Global memory total size
+  unsigned global_memory_total_size;
 
-	// Field initialized in constructor. Shared memory total size
-	unsigned shared_memory_total_size;
+  // Field initialized in constructor. Shared memory total size
+  unsigned shared_memory_total_size;
 
-	// Flags indicating whether the first 32 bytes of constant memory
-	// are initialized. A warning will be issued by the simulator
-	// if an uninitialized element is used by the kernel.
-	bool const_mem_init[32];
+  // Flags indicating whether the first 32 bytes of constant memory
+  // are initialized. A warning will be issued by the simulator
+  // if an uninitialized element is used by the kernel.
+  bool const_mem_init[32];
 
-	// Number of ALU instructions executed
-	long long num_alu_instructions = 0;
+  // Number of ALU instructions executed
+  long long num_alu_instructions = 0;
 
-	// Number of branch instructions executed
-	long long num_branch_instructions = 0;
+  // Number of branch instructions executed
+  long long num_branch_instructions = 0;
 
-	// Number of shared memory instructions executed
-	long long num_shared_mem_instructions = 0;
+  // Number of shared memory instructions executed
+  long long num_shared_mem_instructions = 0;
 
-	// Number of global memory instructions executed
-	long long num_global_memory_instructions = 0;
+  // Number of global memory instructions executed
+  long long num_global_memory_instructions = 0;
 
-	/// Constructor
-	Emulator();
+  /// Constructor
+  Emulator();
 
-public:
+ public:
+  /// Runtime error for Kepler
+  class Error : public misc::Error {
+   public:
+    /// Constructor
+    Error(const std::string& message) : misc::Error(message) {
+      // Add module prefix
+      AppendPrefix("Kepler emulator");
+    }
+  };
 
-	/// Runtime error for Kepler
-	class Error : public misc::Error
-	{
-	public:
+  /// Debugger
+  static misc::Debug isa_debug;
 
-		/// Constructor
-		Error(const std::string &message) : misc::Error(message)
-		{
-			// Add module prefix
-			AppendPrefix("Kepler emulator");
-		}
-	};
+  /// Kepler emulator maximum cycles
+  long long max_cycles;
 
-	/// Debugger
-	static misc::Debug isa_debug;
+  /// Kepler emulator maximum number of instructions
+  long long max_instructions;
 
-	/// Kepler emulator maximum cycles
-	long long max_cycles;
+  /// Kepler emulator maximum number of functions
+  int max_functions;
 
-	/// Kepler emulator maximum number of instructions
-	long long max_instructions;
+  /// Warp size
+  static const int warp_size = 32;
 
-	/// Kepler emulator maximum number of functions
-	int max_functions;
+  // Field initialized in constructor. Global memory top address
+  unsigned global_memory_top;
 
-	/// Warp size
-	static const int warp_size = 32;
+  // Field initialized in constructor. Global memory freed size
+  unsigned global_memory_free_size;
 
-	// Field initialized in constructor. Global memory top address
-	unsigned global_memory_top;
+  /// Get the only instance of the Kepler emulator. If the instance does not
+  /// exist yet, it will be created, and will remain allocated until the
+  /// end of the execution.
+  static Emulator* getInstance();
 
-	// Field initialized in constructor. Global memory freed size
-	unsigned global_memory_free_size;
+  /// Get grid list size
+  unsigned getGridSize() { return grids.size(); }
 
-	/// Get the only instance of the Kepler emulator. If the instance does not
-	/// exist yet, it will be created, and will remain allocated until the
-	/// end of the execution.
-	static Emulator *getInstance();
+  /// Get the assambler
+  Disassembler* getAsm() const { return disassembler; }
 
-	/// Get grid list size
-	unsigned getGridSize() { return grids.size(); }
+  /// Get global memory top
+  unsigned getGlobalMemoryTop() const { return global_memory_top; }
 
-	/// Get the assambler
-	Disassembler *getAsm() const { return disassembler;}
+  /// Get global memory free size
+  unsigned getGlobalMemoryFreeSize() const { return global_memory_free_size; }
 
-	/// Get global memory top
-	unsigned getGlobalMemoryTop() const { return global_memory_top; }
+  /// Get global memory Total size
+  unsigned getGlobalMemoryTotalSize() const { return global_memory_total_size; }
 
-	/// Get global memory free size
-	unsigned getGlobalMemoryFreeSize() const { return global_memory_free_size; }
+  /// Get ALU instruction count
+  unsigned getNumAluInstructions() const { return num_alu_instructions; }
 
-	/// Get global memory Total size
-	unsigned getGlobalMemoryTotalSize() const
-	{
-		return global_memory_total_size;
-	}
+  /// Get Shared memory total size
+  unsigned getSharedMemoryTotalSize() const { return shared_memory_total_size; }
 
-	/// Get ALU instruction count
-	unsigned getNumAluInstructions() const { return num_alu_instructions; }
+  /// Get global memory
+  mem::Memory* getGlobalMemory() const { return global_memory.get(); }
 
-	/// Get Shared memory total size
-	unsigned getSharedMemoryTotalSize() const
-	{
-		return shared_memory_total_size;
-	}
+  /// Get constant memory
+  mem::Memory* getConstMemory() const { return constant_memory.get(); }
 
-	/// Get global memory
-	mem::Memory *getGlobalMemory() const  { return global_memory.get(); }
+  /// Return the number of available grids
+  int getNumGrids() { return grids.size(); }
 
-	/// Get constant memory
-	mem::Memory *getConstMemory() const { return constant_memory.get();}
+  /// Return the grid with the given identifier, or `nullptr` if the
+  /// identifier does not correspond to a valid module.
+  Grid* getGrid(int index) {
+    return misc::inRange((unsigned)index, 0, grids.size()) ? grids[index].get()
+                                                           : nullptr;
+  }
 
-	/// Return the number of available grids
-	int getNumGrids() { return grids.size(); }
+  /// Set global memory top
+  void SetGlobalMemoryTop(unsigned global_memory_top) {
+    this->global_memory_top = global_memory_top;
+  }
 
-	/// Return the grid with the given identifier, or `nullptr` if the
-	/// identifier does not correspond to a valid module.
-	Grid *getGrid(int index)
-	{
-		return misc::inRange((unsigned) index, 0, grids.size()) ?
-				grids[index].get() :
-				nullptr;
-	}
+  /// Set global memory free size
+  void setGlobalMemoryFreeSize(unsigned global_memory_free_size) {
+    this->global_memory_free_size = global_memory_free_size;
+  }
 
-	/// Set global memory top
-	void SetGlobalMemoryTop(unsigned global_memory_top)
-	{
-		this->global_memory_top = global_memory_top;
-	}
+  /// Increment ALU instruction counter
+  void incNumAluInstructions() { num_alu_instructions++; }
 
-	/// Set global memory free size
-	void setGlobalMemoryFreeSize(unsigned global_memory_free_size)
-	{
-		this->global_memory_free_size = global_memory_free_size;
-	}
+  /// Increse global memory top
+  void incGloablMemoryTop(unsigned inc) { global_memory_top += inc; }
 
-	/// Increment ALU instruction counter
-	void incNumAluInstructions() { num_alu_instructions++; }
+  /// Dump Kepler Emulator in a human-readable fashion into an output
+  /// stream (or standard output if argument \a os is omitted.
+  void Dump(std::ostream& os = std::cout) const;
 
-	/// Increse global memory top
-	void incGloablMemoryTop(unsigned inc) { global_memory_top += inc; }
+  /// Dump emulator state (equivalent to Dump())
+  friend std::ostream& operator<<(std::ostream& os, const Emulator& emu) {
+    emu.Dump(os);
+    return os;
+  }
 
-	/// Dump Kepler Emulator in a human-readable fashion into an output
-	/// stream (or standard output if argument \a os is omitted.
-	void Dump(std::ostream &os = std::cout) const;
+  /// Dump the statistics summary
+  void DumpSummary(std::ostream& os);
 
-	/// Dump emulator state (equivalent to Dump())
-	friend std::ostream &operator<<(std::ostream &os, const Emulator &emu)
-	{
-		emu.Dump(os);
-		return os;
-	}
+  /// Run one iteration of the emulation loop
+  bool Run();
 
-	/// Dump the statistics summary
-	void DumpSummary(std::ostream &os);
+  /// Write Constant Memory
+  /// \param starting address to be written in
+  /// \param size of data
+  /// \param data buffer
+  void WriteConstantMemory(unsigned address, unsigned size,
+                           const char* buffer) {
+    constant_memory->Write(address, size, buffer);
+  }
 
-	/// Run one iteration of the emulation loop
-	bool Run();
+  /// Write Global Memory
+  /// \param starting address to be written in
+  /// \param size of data
+  /// \param data buffer
+  void WriteGlobalMemory(unsigned address, unsigned size, const char* buffer) {
+    global_memory->Write(address, size, buffer);
+  }
 
-	/// Write Constant Memory
-	/// \param starting address to be written in
-	/// \param size of data
-	/// \param data buffer
-	void WriteConstantMemory(unsigned address, unsigned size, const char *buffer)
-	{
-		constant_memory->Write(address, size, buffer);
-	}
+  /// Read Global Memory
+  /// \param starting address to be read in
+  /// \param size of data
+  /// \param data buffer
+  void ReadConstantMemory(unsigned address, unsigned size, char* buffer) {
+    constant_memory->Read(address, size, buffer);
+  }
 
-	/// Write Global Memory
-	/// \param starting address to be written in
-	/// \param size of data
-	/// \param data buffer
-	void WriteGlobalMemory(unsigned address, unsigned size, const char *buffer)
-	{
-		global_memory->Write(address, size, buffer);
-	}
+  /// Read Global Memory
+  /// \param starting address to be read in
+  /// \param size of data
+  /// \param data buffer
+  void ReadGlobalMemory(unsigned address, unsigned size, char* buffer) {
+    global_memory->Read(address, size, buffer);
+  }
 
-	/// Read Global Memory
-	/// \param starting address to be read in
-	/// \param size of data
-	/// \param data buffer
-	void ReadConstantMemory(unsigned address, unsigned size, char *buffer)
-	{
-		constant_memory->Read(address, size, buffer);
-	}
+  /// Push an element into pending grid list
+  void PushPendingGrid(Grid* grid);
 
-	/// Read Global Memory
-	/// \param starting address to be read in
-	/// \param size of data
-	/// \param data buffer
-	void ReadGlobalMemory(unsigned address, unsigned size, char *buffer)
-	{
-		global_memory->Read(address, size, buffer);
-	}
+  /// Create a new grid to the grid list and return a pointer to it.
+  Grid* addGrid(Function* function);
 
-	/// Push an element into pending grid list
-	void PushPendingGrid(Grid *grid);
+  /// Register command-line options
+  static void RegisterOptions();
 
-	/// Create a new grid to the grid list and return a pointer to it.
-	Grid *addGrid(Function *function);
-
-	/// Register command-line options
-	static void RegisterOptions();
-
-	/// Process command-line options
-	static void ProcessOptions();
+  /// Process command-line options
+  static void ProcessOptions();
 };
 
-}  //namespace Kepler
+}  // namespace Kepler
 
 #endif

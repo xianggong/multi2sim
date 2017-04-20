@@ -26,172 +26,147 @@
 #include <lib/cpp/CommandLine.h>
 #include <lib/cpp/Debug.h>
 
-#include "Program.h"
 #include "Kernel.h"
+#include "Program.h"
 
-namespace SI
-{
+namespace SI {
 
 // Forward Declarations
 class Program;
 
-
 /// Southern Islands driver
-class Driver : public comm::Driver
-{
-	// Debug file name, as set by user
-	static std::string debug_file;
-	
-	// Unique instance of singleton
-	static std::unique_ptr<Driver> instance;
+class Driver : public comm::Driver {
+  // Debug file name, as set by user
+  static std::string debug_file;
 
-	// Primary list of Programs
-	std::vector<std::unique_ptr<Program>> programs;
+  // Unique instance of singleton
+  static std::unique_ptr<Driver> instance;
 
-	// Primary list of Kernels
-	std::vector<std::unique_ptr<Kernel>> kernels;
+  // Primary list of Programs
+  std::vector<std::unique_ptr<Program>> programs;
 
-	// Indicates whether memory is fused or not
-	bool fused = false;
+  // Primary list of Kernels
+  std::vector<std::unique_ptr<Kernel>> kernels;
 
-	// Enumeration with all ABI call codes. Each entry of Driver.def will
-	// expand into an assignment. For example, entry
-	//
-	//	DEFCALL(Init, 1)
-	//
-	// expands to
-	//
-	//	CallCodeInit = 1
-	//
-	// A last element 'CallCodeCount' is equal to one unit higher than the
-	// latest ABI call found in the file.
-	enum
-	{
+  // Indicates whether memory is fused or not
+  bool fused = false;
+
+  // Enumeration with all ABI call codes. Each entry of Driver.def will
+  // expand into an assignment. For example, entry
+  //
+  //	DEFCALL(Init, 1)
+  //
+  // expands to
+  //
+  //	CallCodeInit = 1
+  //
+  // A last element 'CallCodeCount' is equal to one unit higher than the
+  // latest ABI call found in the file.
+  enum {
 #define DEFCALL(name, code) CallCode##name = code,
 #include "Driver.def"
 #undef DEFCALL
-		CallCodeCount
-	};
+    CallCodeCount
+  };
 
-	// ABI call functions. Each entry in Driver.def will expand into a
-	// function prototype. For example, entry
-	//
-	//	DEFCALL(Init, 1)
-	//
-	// expands to
-	//
-	//	void CallInit(mem::Memory *memory, unsigned args_ptr);
-	//
-#define DEFCALL(name, code) \
-	int Call##name(comm::Context *context, \
-			mem::Memory *memory, \
-			unsigned args_ptr);
+// ABI call functions. Each entry in Driver.def will expand into a
+// function prototype. For example, entry
+//
+//	DEFCALL(Init, 1)
+//
+// expands to
+//
+//	void CallInit(mem::Memory *memory, unsigned args_ptr);
+//
+#define DEFCALL(name, code)                                   \
+  int Call##name(comm::Context* context, mem::Memory* memory, \
+                 unsigned args_ptr);
 #include "Driver.def"
 #undef DEFCALL
 
-	// System call names
-	static const char *call_name[CallCodeCount];
+  // System call names
+  static const char* call_name[CallCodeCount];
 
-	// Prototype of a member function executing an ABI call
-	typedef int (Driver::*CallFn)(comm::Context *context,
-			mem::Memory *memory,
-			unsigned args_ptr);
+  // Prototype of a member function executing an ABI call
+  typedef int (Driver::*CallFn)(comm::Context* context, mem::Memory* memory,
+                                unsigned args_ptr);
 
-	// Table of ABI call execution functions
-	static const CallFn call_fn[CallCodeCount];
+  // Table of ABI call execution functions
+  static const CallFn call_fn[CallCodeCount];
 
-	// Add program
-	Program *AddProgram(int program_id);
+  // Add program
+  Program* AddProgram(int program_id);
 
-	// Add kernel
-	Kernel *AddKernel(int kernel_id, const std::string &func, Program *program);
-	
-public:
+  // Add kernel
+  Kernel* AddKernel(int kernel_id, const std::string& func, Program* program);
 
-	//
-	// Error class
-	//
+ public:
+  //
+  // Error class
+  //
 
-	/// Error related with the Southern Islands driver
-	class Error : public misc::Error
-	{
-	public:
+  /// Error related with the Southern Islands driver
+  class Error : public misc::Error {
+   public:
+    /// Constructor
+    Error(const std::string& message) : misc::Error(message) {
+      AppendPrefix("Southern Islands driver");
+    }
+  };
 
-		/// Constructor
-		Error(const std::string &message) : misc::Error(message)
-		{
-			AppendPrefix("Southern Islands driver");
-		}
-	};
+  //
+  // Static fields
+  //
 
+  /// Maximum work goup buffer size
+  static const unsigned MaxWorkGroupBufferSize = 1024 * 1024;
 
+  /// Debugger
+  static misc::Debug debug;
 
+  /// Obtain instance of the singleton
+  static Driver* getInstance();
 
-	//
-	// Static fields
-	//
-	
-	/// Maximum work goup buffer size
-	static const unsigned MaxWorkGroupBufferSize = 1024 * 1024;
-	
-	/// Debugger
-	static misc::Debug debug;
+  /// Register command-line options
+  static void RegisterOptions();
 
-	/// Obtain instance of the singleton
-	static Driver *getInstance();
+  /// Process command-line options
+  static void ProcessOptions();
 
-	/// Register command-line options
-	static void RegisterOptions();
+  //
+  // Member functions
+  //
 
-	/// Process command-line options
-	static void ProcessOptions();
+  /// Constructor
+  Driver() : comm::Driver("Southern Islands", "/dev/southern-islands") {}
 
+  /// Invoke an ABI call. See documentation for comm::Driver::Call for
+  /// details on the meaning of the arguments.
+  int Call(comm::Context* context, mem::Memory* memory, int code,
+           unsigned args_ptr);
 
+  /// Get reference to the main program list
+  std::vector<std::unique_ptr<Program>>& getPrograms() { return programs; }
 
+  /// Get count of programs in list
+  int getProgramCount() const { return programs.size(); }
 
-	//
-	// Member functions
-	//
+  /// Get program by its ID
+  Program* getProgramById(unsigned id) {
+    assert(id < programs.size());
+    return programs[id].get();
+  }
 
-	/// Constructor
-	Driver() : comm::Driver("Southern Islands",
-			"/dev/southern-islands")
-	{
-	}
+  /// Get count of kernels in list
+  int getKernelCount() const { return kernels.size(); }
 
-	/// Invoke an ABI call. See documentation for comm::Driver::Call for
-	/// details on the meaning of the arguments.
-	int Call(comm::Context *context,
-			mem::Memory *memory,
-			int code,
-			unsigned args_ptr);
-	
-	/// Get reference to the main program list
-	std::vector<std::unique_ptr<Program>> &getPrograms() { return programs; }
-
-	/// Get count of programs in list
-	int getProgramCount() const { return programs.size(); }
-
-	/// Get program by its ID
-	Program *getProgramById(unsigned id)
-	{
-		assert(id < programs.size());
-		return programs[id].get();
-	}
-
-	/// Get count of kernels in list
-	int getKernelCount() const { return kernels.size(); }
-
-	/// Get kernel by its Id
-	Kernel *getKernelById(unsigned id)
-	{
-		assert(id < kernels.size());
-		return kernels[id].get();
-	}
+  /// Get kernel by its Id
+  Kernel* getKernelById(unsigned id) {
+    assert(id < kernels.size());
+    return kernels[id].get();
+  }
 };
-
 
 }  // namespace SI
 
 #endif
-

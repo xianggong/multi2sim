@@ -23,200 +23,204 @@
 #include "Gpu.h"
 #include "Timing.h"
 
-
-namespace SI
-{
+namespace SI {
 
 // Static variables
 int Gpu::num_compute_units = 32;
-unsigned Gpu::register_allocation_size = 32;
-int Gpu::num_scalar_registers = 2048;
-int Gpu::num_vector_registers = 65536;
-int Gpu::lds_allocation_size = 64; 
-int Gpu::lds_size = 65536;
 long long Gpu::max_cycles = 0;
 
-// String map of the argument's access type                                      
-const misc::StringMap Gpu::register_allocation_granularity_map =                                
-{                                                                                
-	{ "Wavefront", RegisterAllocationWavefront },
-	{ "WorkGroup", RegisterAllocationWorkGroup }
-}; 
+// String map of the argument's access type
+const misc::StringMap Gpu::register_allocation_granularity_map = {
+    {"Wavefront", RegisterAllocationWavefront},
+    {"WorkGroup", RegisterAllocationWorkGroup}};
 
-Gpu::Gpu()
-{
-	// Create MMU
-	mmu = misc::new_unique<mem::Mmu>("Southern Islands");
+Gpu::Gpu() {
+  // Create MMU
+  mmu = misc::new_unique<mem::Mmu>("Southern Islands");
 
-	// Create compute units
-	compute_units.reserve(num_compute_units);
-	for (int i = 0; i < num_compute_units; i++)
-	{
-		// Add new compute unit to the overall list of compute units
-		compute_units.emplace_back(misc::new_unique<ComputeUnit>(i, this));
-		
-		// Add compute units to the list of available compute units
-		ComputeUnit *compute_unit = compute_units.back().get();
-		InsertInAvailableComputeUnits(compute_unit);
-	}
+  // Create compute units
+  compute_units.reserve(num_compute_units);
+  for (int i = 0; i < num_compute_units; i++) {
+    // Add new compute unit to the overall list of compute units
+    compute_units.emplace_back(misc::new_unique<ComputeUnit>(i, this));
+
+    // Add compute units to the list of available compute units
+    ComputeUnit* compute_unit = compute_units.back().get();
+    InsertInAvailableComputeUnits(compute_unit);
+  }
 }
 
-
-ComputeUnit *Gpu::getAvailableComputeUnit()
-{
-	if (available_compute_units.empty())
-		return nullptr;
-	else
-		return available_compute_units.front();
+ComputeUnit* Gpu::getAvailableComputeUnit() {
+  if (available_compute_units.empty())
+    return nullptr;
+  else
+    return available_compute_units.front();
 }
 
+void Gpu::InsertInAvailableComputeUnits(ComputeUnit* compute_unit) {
+  // Sanity
+  assert(!compute_unit->in_available_compute_units);
 
-void Gpu::InsertInAvailableComputeUnits(ComputeUnit *compute_unit)
-{
-	// Sanity
-	assert(!compute_unit->in_available_compute_units);
-	
-	// Insert compute_unit
-	compute_unit->in_available_compute_units = true;
-	compute_unit->available_compute_units_iterator = 
-			available_compute_units.insert(
-			available_compute_units.end(), 
-			compute_unit);
+  // Insert compute_unit
+  compute_unit->in_available_compute_units = true;
+  compute_unit->available_compute_units_iterator =
+      available_compute_units.insert(available_compute_units.end(),
+                                     compute_unit);
 }
 
+void Gpu::RemoveFromAvailableComputeUnits(ComputeUnit* compute_unit) {
+  // Sanity
+  assert(compute_unit->in_available_compute_units);
 
-void Gpu::RemoveFromAvailableComputeUnits(ComputeUnit *compute_unit)
-{
-	// Sanity
-	assert(compute_unit->in_available_compute_units);
-	
-	// Remove context
-	available_compute_units.erase(
-			compute_unit->available_compute_units_iterator);
-	compute_unit->in_available_compute_units = false;
-	compute_unit->available_compute_units_iterator = 
-			available_compute_units.end();
+  // Remove context
+  available_compute_units.erase(compute_unit->available_compute_units_iterator);
+  compute_unit->in_available_compute_units = false;
+  compute_unit->available_compute_units_iterator =
+      available_compute_units.end();
 }
 
+void Gpu::MapNDRange(NDRange* ndrange) {
+  // Check that at least one work-group can be allocated per
+  // wavefront pool
+  Gpu::CalcGetWorkGroupsPerWavefrontPool(
+      ndrange->getLocalSize1D(), ndrange->getNumVgprUsed(),
+      ndrange->getNumSgprUsed(), ndrange->getLocalMemTop());
 
-void Gpu::MapNDRange(NDRange *ndrange)
-{
-	// Check that at least one work-group can be allocated per 
-	// wavefront pool
-	Gpu::CalcGetWorkGroupsPerWavefrontPool(ndrange->getLocalSize1D(),
-			ndrange->getNumVgprUsed(),
-			ndrange->getLocalMemTop());
+  // Make sure the number of work groups per wavefront pool is non-zero
+  if (!work_groups_per_wavefront_pool) {
+    throw Timing::Error(
+        misc::fmt("work-group resources cannot be allocated to a compute "
+                  "unit.\n\tA compute unit in the GPU has a limit in "
+                  "number of wavefronts, number\n\tof registers, and "
+                  "amount of local memory. If the work-group size\n"
+                  "\texceeds any of these limits, the ND-Range cannot "
+                  "be executed.\n"));
+  }
 
-	// Make sure the number of work groups per wavefront pool is non-zero
-	if (!work_groups_per_wavefront_pool)
-	{
-		throw Timing::Error(misc::fmt("work-group resources cannot be allocated to a compute "
-			"unit.\n\tA compute unit in the GPU has a limit in "
-			"number of wavefronts, number\n\tof registers, and "
-			"amount of local memory. If the work-group size\n"
-			"\texceeds any of these limits, the ND-Range cannot "
-			"be executed.\n"));
-	}
+  // Calculate limit of work groups per compute unit
+  work_groups_per_compute_unit =
+      work_groups_per_wavefront_pool * ComputeUnit::num_wavefront_pools;
+  Emulator::scheduler_debug << misc::fmt("Hardware limit: %d WG per CU\n",
+                                         work_groups_per_compute_unit);
 
-	// Calculate limit of work groups per compute unit
-	work_groups_per_compute_unit = work_groups_per_wavefront_pool *
-			ComputeUnit::num_wavefront_pools;
-	assert(work_groups_per_wavefront_pool <=
-			ComputeUnit::max_work_groups_per_wavefront_pool);
-	// Debug info
-	Emulator::scheduler_debug << misc::fmt("NDRange %d calculations:\n"
-			"\t%d work group per wavefront pool\n"
-			"\t%d work group slot per compute unit\n",
-			ndrange->getId(),
-			work_groups_per_wavefront_pool,
-			work_groups_per_compute_unit);
+  // Limit work groups per compute unit from environment variable
+  char* env = getenv("M2S_WG_LIMIT");
+  if (env) {
+    int wg_limit = atoi(env);
+    work_groups_per_compute_unit = wg_limit;
+    Emulator::scheduler_debug << misc::fmt("Manual limit: %d WG per CU\n",
+                                           work_groups_per_compute_unit);
+  }
 
-	// Map ndrange
-	mapped_ndrange = ndrange;
+  assert(work_groups_per_wavefront_pool <=
+         ComputeUnit::max_work_groups_per_wavefront_pool);
+  // Debug info
+  Emulator::scheduler_debug << misc::fmt(
+      "NDRange %d calculations:\n"
+      "\t%d work group per wavefront pool\n"
+      "\t%d work group slot per compute unit\n",
+      ndrange->getId(), work_groups_per_wavefront_pool,
+      work_groups_per_compute_unit);
+
+  // Map ndrange
+  mapped_ndrange = ndrange;
 }
 
+void Gpu::UnmapNDRange(NDRange* ndrange) {
+  // Unmap NDRange
+  mapped_ndrange = nullptr;
 
-void Gpu::UnmapNDRange(NDRange *ndrange)
-{
-	// Unmap NDRange
-	mapped_ndrange = nullptr;
-
-	//Erase every workgroup in each compute unit, setting the
-	// work_groups size to 0
-	for (auto &compute_unit : compute_units)
-		compute_unit->Reset();
+  // Erase every workgroup in each compute unit, setting the
+  // work_groups size to 0
+  for (auto& compute_unit : compute_units) compute_unit->Reset();
 }
 
+void Gpu::CalcGetWorkGroupsPerWavefrontPool(int work_items_per_work_group,
+                                            int vector_registers_per_work_item,
+                                            int scalar_registers_per_wavefront,
+                                            int local_memory_per_work_group) {
+  // Get maximum number of work-groups per SIMD as limited by the
+  // maximum number of wavefronts, given the number of wavefronts per
+  // work-group in the NDRange
+  assert(WorkGroup::WavefrontSize > 0);
+  int wavefronts_per_work_group =
+      (work_items_per_work_group + WorkGroup::WavefrontSize - 1) /
+      WorkGroup::WavefrontSize;
+  int max_work_groups_limited_by_max_wavefronts =
+      ComputeUnit::max_wavefronts_per_wavefront_pool /
+      wavefronts_per_work_group;
 
-void Gpu::CalcGetWorkGroupsPerWavefrontPool(int work_items_per_work_group, 
-		int registers_per_work_item, int local_memory_per_work_group)
-{
-	// Get maximum number of work-groups per SIMD as limited by the 
-	// maximum number of wavefronts, given the number of wavefronts per 
-	// work-group in the NDRange
-	assert(WorkGroup::WavefrontSize > 0);
-	int wavefronts_per_work_group = (work_items_per_work_group + 
-			WorkGroup::WavefrontSize - 1) / 
-			WorkGroup::WavefrontSize;
-	int max_work_groups_limited_by_max_wavefronts = 
-			ComputeUnit::max_wavefronts_per_wavefront_pool /
-			wavefronts_per_work_group;
+  // Get maximum number of work-groups per SIMD as limited by the number
+  // of available registers, given the number of registers used per
+  // work-item.
+  int vector_registers_per_work_group;
+  int scalar_registers_per_work_group;
+  if (register_allocation_granularity == RegisterAllocationWavefront) {
+    vector_registers_per_work_group =
+        misc::RoundUp(vector_registers_per_work_item * WorkGroup::WavefrontSize,
+                      ComputeUnit::register_allocation_size) *
+        wavefronts_per_work_group;
+    scalar_registers_per_work_group =
+        scalar_registers_per_wavefront * wavefronts_per_work_group;
+  } else {
+    vector_registers_per_work_group = misc::RoundUp(
+        vector_registers_per_work_item * work_items_per_work_group,
+        ComputeUnit::register_allocation_size);
+    scalar_registers_per_work_group =
+        scalar_registers_per_wavefront * wavefronts_per_work_group;
+  }
 
-	// Get maximum number of work-groups per SIMD as limited by the number 
-	// of available registers, given the number of registers used per 
-	// work-item.
-	int registers_per_work_group;
-	if (register_allocation_granularity == RegisterAllocationWavefront)
-	{
-		registers_per_work_group = misc::RoundUp(
-				registers_per_work_item *
-				WorkGroup::WavefrontSize, 
-				register_allocation_size) * 
-				wavefronts_per_work_group;
-	}
-	else
-	{
-		registers_per_work_group = misc::RoundUp(
-				registers_per_work_item *
-				work_items_per_work_group, 
-				register_allocation_size);
-	}
-	
-	// FIXME need to account for scalar registers
-	int max_work_groups_limited_by_num_registers = 
-			registers_per_work_group ?
-			num_vector_registers / registers_per_work_group :
-			ComputeUnit::max_work_groups_per_wavefront_pool;
+  int max_work_groups_limited_by_num_vector_registers =
+      vector_registers_per_work_group
+          ? ComputeUnit::num_vector_registers / vector_registers_per_work_group
+          : ComputeUnit::max_work_groups_per_wavefront_pool;
 
-	// Get maximum number of work-groups per SIMD as limited by the 
-	// amount of available local memory, given the local memory used 
-	// by each work-group in the NDRange
-	local_memory_per_work_group = misc::RoundUp(local_memory_per_work_group, 
-			lds_allocation_size);
-	int max_work_groups_limited_by_local_memory = 
-			local_memory_per_work_group ?
-			lds_size / local_memory_per_work_group :
-			ComputeUnit::max_work_groups_per_wavefront_pool;
+  int max_work_groups_limited_by_num_scalar_registers =
+      scalar_registers_per_work_group
+          ? ComputeUnit::num_scalar_registers / scalar_registers_per_work_group
+          : ComputeUnit::max_work_groups_per_wavefront_pool;
 
-	// Based on the limits above, calculate the actual limit of work-groups 
-	// per SIMD.
-	work_groups_per_wavefront_pool = 
-			ComputeUnit::max_work_groups_per_wavefront_pool;
-	work_groups_per_wavefront_pool = std::min(work_groups_per_wavefront_pool,
-			max_work_groups_limited_by_max_wavefronts);
-	work_groups_per_wavefront_pool= std::min(work_groups_per_wavefront_pool, 
-			max_work_groups_limited_by_num_registers);
-	work_groups_per_wavefront_pool = std::min(work_groups_per_wavefront_pool, 
-			max_work_groups_limited_by_local_memory);
+  int max_work_groups_limited_by_num_registers =
+      std::min(max_work_groups_limited_by_num_scalar_registers,
+               max_work_groups_limited_by_num_vector_registers);
+
+  // Get maximum number of work-groups per SIMD as limited by the
+  // amount of available local memory, given the local memory used
+  // by each work-group in the NDRange
+  local_memory_per_work_group = misc::RoundUp(local_memory_per_work_group,
+                                              ComputeUnit::lds_alloc_size);
+  int max_work_groups_limited_by_local_memory =
+      local_memory_per_work_group
+          ? ComputeUnit::lds_size / local_memory_per_work_group
+          : ComputeUnit::max_work_groups_per_wavefront_pool;
+
+  // Based on the limits above, calculate the actual limit of work-groups
+  // per SIMD.
+  work_groups_per_wavefront_pool =
+      ComputeUnit::max_work_groups_per_wavefront_pool;
+  work_groups_per_wavefront_pool =
+      std::min(work_groups_per_wavefront_pool,
+               max_work_groups_limited_by_max_wavefronts);
+  work_groups_per_wavefront_pool = std::min(
+      work_groups_per_wavefront_pool, max_work_groups_limited_by_num_registers);
+  work_groups_per_wavefront_pool = std::min(
+      work_groups_per_wavefront_pool, max_work_groups_limited_by_local_memory);
+
+  // Debug information
+  if (work_groups_per_wavefront_pool ==
+      max_work_groups_limited_by_max_wavefronts) {
+    Emulator::scheduler_debug << "WG is limited by max wavefronts\n";
+  } else if (work_groups_per_wavefront_pool ==
+             max_work_groups_limited_by_local_memory) {
+    Emulator::scheduler_debug << "WG is limited by local memory\n";
+  } else if (work_groups_per_wavefront_pool ==
+             max_work_groups_limited_by_num_registers) {
+    Emulator::scheduler_debug << "WG is limited by number of registers\n";
+  }
 }
 
-
-void Gpu::Run()
-{
-	// Advance one cycle in each compute unit
-	for (auto &compute_unit : compute_units)
-		compute_unit->Run();
+void Gpu::Run() {
+  // Advance one cycle in each compute unit
+  for (auto& compute_unit : compute_units) compute_unit->Run();
 }
-
 }
-

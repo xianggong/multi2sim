@@ -1,4 +1,4 @@
-/* 
+/*
  *  Multi2Sim
  *  Copyright (C) 2016 Amir Kavyan Ziabari (aziabari@ece.neu.edu)
  *
@@ -20,86 +20,81 @@
 #ifndef NETWORK_MESSAGE_H
 #define NETWORK_MESSAGE_H
 
-#include <vector>
 #include <memory>
+#include <vector>
 
 #include "Packet.h"
 
-namespace net 
-{
+namespace net {
 class Node;
 class Network;
 
-class Message
-{
+class Message {
+  // Id of the message
+  long long id;
 
-	// Id of the message
-	long long id;
+  // Network that this message belongs to
+  Network* network;
 
-	// Network that this message belongs to 
-	Network *network;
+  // Source node
+  Node* source_node;
 
-	// Source node
-	Node *source_node;
+  // Destination node
+  Node* destination_node;
 
-	// Destination node
-	Node *destination_node;
+  // Size of the message
+  int size;
 
-	// Size of the message
-	int size;
+  // A list of packet
+  std::vector<std::unique_ptr<Packet>> packets;
 
-	// A list of packet
-	std::vector<std::unique_ptr<Packet>> packets;
+  // A list of received packets
+  std::vector<Packet*> received_packets;
 
-	// A list of received packets
-	std::vector<Packet *> received_packets;
+  // Cycle when the message was sent
+  long long send_cycle;
 
-	// Cycle when the message was sent
-	long long send_cycle;
+ public:
+  /// Constructor
+  Message(long long id, Network* network, Node* source_node,
+          Node* destination_node, int size, long long cycle);
 
-public:
+  /// Packetize
+  void Packetize(int packet_size);
 
-	/// Constructor
-	Message(long long id, Network *network, 
-			Node *source_node, Node *destination_node,
-			int size, long long cycle);
+  /// Collect a packet that has arrived at its destination. If the
+  /// packet are the last packet to receive, return true. Otherwise,
+  /// return false.
+  ///
+  /// This function can only be called in the received event handler.
+  /// This function would check if the packet belongs to the message,
+  /// and the packet has not been received before. This function would
+  /// not pop the packet from the buffer.
+  bool Assemble(Packet* packet);
 
-	/// Packetize
-	void Packetize(int packet_size);
+  /// Get id of the message
+  long long getId() const { return id; }
 
-	/// Collect a packet that has arrived at its destination. If the 
-	/// packet are the last packet to receive, return true. Otherwise, 
-	/// return false.
-	///
-	/// This function can only be called in the received event handler. 
-	/// This function would check if the packet belongs to the message, 
-	/// and the packet has not been received before. This function would
-	/// not pop the packet from the buffer.
-	bool Assemble(Packet *packet);
+  /// Get the network
+  Network* getNetwork() const { return network; }
 
-	/// Get id of the message
-	long long getId() const { return id; }
+  /// Get source node
+  Node* getSourceNode() const { return source_node; }
 
-	/// Get the network
-	Network *getNetwork() const { return network; }
+  /// Get destination node
+  Node* getDestinationNode() const { return destination_node; }
 
-	/// Get source node
-	Node *getSourceNode() const { return source_node; }
+  /// Get message size
+  int getSize() const { return size; }
 
-	/// Get destination node
-	Node *getDestinationNode() const { return destination_node; }
+  /// Get the cycle that message was sent
+  long long getSendCycle() const { return send_cycle; }
 
-	/// Get message size
-	int getSize() const { return size; }
+  /// Get number of packets belongs to the message
+  int getNumPackets() const { return packets.size(); }
 
-	/// Get the cycle that message was sent
-	long long getSendCycle() const { return send_cycle; }
-
-	/// Get number of packets belongs to the message
-	int getNumPackets() const { return packets.size(); }
-
-	/// Get packet by index
-	Packet *getPacket(int index) const { return packets[index].get(); }
+  /// Get packet by index
+  Packet* getPacket(int index) const { return packets[index].get(); }
 };
 
 }  // namespace net

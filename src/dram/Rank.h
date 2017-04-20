@@ -20,82 +20,68 @@
 #ifndef DRAM_RANK_H
 #define DRAM_RANK_H
 
-#include <vector>
 #include <iostream>
+#include <vector>
 
 #include "Command.h"
 
-
-namespace dram
-{
+namespace dram {
 
 // Forward declarations
 class Bank;
 class Channel;
 
+class Rank {
+  int id;
 
-class Rank
-{
-	int id;
+  // Pointer to the owning channel.
+  Channel* channel;
 
-	// Pointer to the owning channel.
-	Channel *channel;
+  // List of ranks contained in this channel
+  std::vector<std::unique_ptr<Bank>> banks;
 
-	// List of ranks contained in this channel
-	std::vector<std::unique_ptr<Bank>> banks;
+  // Last scheduled command information
+  CommandType last_scheduled_command_type = CommandInvalid;
+  long long last_scheduled_commands[5] = {-100, -100, -100, -100, -100};
 
-	// Last scheduled command information
-	CommandType last_scheduled_command_type = CommandInvalid;
-	long long last_scheduled_commands[5] = {-100, -100, -100, -100, -100};
+ public:
+  Rank(int id, Channel* parent, int num_banks, int num_rows, int num_columns,
+       int num_bits);
 
-public:
+  /// Returns the id of this rank, which is unique in the channel that
+  /// this rank belongs to.
+  int getId() { return id; }
 
-	Rank(int id,
-			Channel *parent,
-			int num_banks,
-			int num_rows,
-			int num_columns,
-			int num_bits);
+  /// Returns a bank that belongs to this rank with the specified id.
+  Bank* getBank(int id) const { return banks[id].get(); }
 
-	/// Returns the id of this rank, which is unique in the channel that
-	/// this rank belongs to.
-	int getId() { return id; }
+  /// Returns the channel that this rank belongs to.
+  Channel* getChannel() const { return channel; }
 
-	/// Returns a bank that belongs to this rank with the specified id.
-	Bank *getBank(int id) const { return banks[id].get(); }
+  /// Returns the type of the last scheduled command.
+  CommandType getLastScheduledCommandType() const {
+    return last_scheduled_command_type;
+  }
 
-	/// Returns the channel that this rank belongs to.
-	Channel *getChannel() const { return channel; }
+  /// Returns the cycle that the last scheduled command of the specfied
+  /// type was made in.
+  long long getLastScheduledCommand(CommandType type) const {
+    return last_scheduled_commands[type];
+  }
 
-	/// Returns the type of the last scheduled command.
-	CommandType getLastScheduledCommandType() const
-	{
-		return last_scheduled_command_type;
-	}
+  /// Updates the cycle of the last scheduled command of the specified
+  /// type and updates the last scheduled command type.
+  void setLastScheduledCommand(CommandType type);
 
-	/// Returns the cycle that the last scheduled command of the specfied
-	/// type was made in.
-	long long getLastScheduledCommand(CommandType type) const
-	{
-		return last_scheduled_commands[type];
-	}
+  /// Dump the object to an output stream.
+  void dump(std::ostream& os = std::cout) const;
 
-	/// Updates the cycle of the last scheduled command of the specified
-	/// type and updates the last scheduled command type.
-	void setLastScheduledCommand(CommandType type);
-
-	/// Dump the object to an output stream.
-	void dump(std::ostream &os = std::cout) const;
-
-	/// Dump object with the << operator
-	friend std::ostream &operator<<(std::ostream &os,
-			const Rank &object)
-	{
-		object.dump(os);
-		return os;
-	}
+  /// Dump object with the << operator
+  friend std::ostream& operator<<(std::ostream& os, const Rank& object) {
+    object.dump(os);
+    return os;
+  }
 };
-
 
 }  // namespace dram
 

@@ -20,26 +20,23 @@
 #ifndef LIB_UTIL_TIMER_H
 #define LIB_UTIL_TIMER_H
 
-enum m2s_timer_state_t
-{
-	m2s_timer_state_invalid,
-	m2s_timer_state_stopped,
-	m2s_timer_state_running
+enum m2s_timer_state_t {
+  m2s_timer_state_invalid,
+  m2s_timer_state_stopped,
+  m2s_timer_state_running
 };
 
 struct m2s_timer_t;
 
-struct m2s_timer_t *m2s_timer_create(char *name);
-void m2s_timer_free(struct m2s_timer_t *timer);
+struct m2s_timer_t* m2s_timer_create(char* name);
+void m2s_timer_free(struct m2s_timer_t* timer);
 
-void m2s_timer_start(struct m2s_timer_t *timer);
-void m2s_timer_stop(struct m2s_timer_t *timer);
-void m2s_timer_reset(struct m2s_timer_t *timer);
+void m2s_timer_start(struct m2s_timer_t* timer);
+void m2s_timer_stop(struct m2s_timer_t* timer);
+void m2s_timer_reset(struct m2s_timer_t* timer);
 
-long long m2s_timer_get_value(struct m2s_timer_t *timer);
-enum m2s_timer_state_t m2s_timer_get_state(struct m2s_timer_t *timer);
-char *m2s_timer_get_name(struct m2s_timer_t *timer);
-
-
+long long m2s_timer_get_value(struct m2s_timer_t* timer);
+enum m2s_timer_state_t m2s_timer_get_state(struct m2s_timer_t* timer);
+char* m2s_timer_get_name(struct m2s_timer_t* timer);
 
 #endif

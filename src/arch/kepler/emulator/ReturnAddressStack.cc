@@ -19,47 +19,42 @@
 
 #include "ReturnAddressStack.h"
 
-namespace Kepler
-{
+namespace Kepler {
 
 unsigned ReturnAddressStack::common_counter = 1;
 
-void ReturnAddressStack::push(unsigned address, unsigned am, std::unique_ptr<SyncStack>& ss)
-{
-	/*
-	ReturnAddressStackEntry temp_entry(address, ss, common_counter);
-	std::unique_ptr<ReturnAddressStackEntry> temp(&temp_entry);
-	*/
+void ReturnAddressStack::push(unsigned address, unsigned am,
+                              std::unique_ptr<SyncStack>& ss) {
+  /*
+  ReturnAddressStackEntry temp_entry(address, ss, common_counter);
+  std::unique_ptr<ReturnAddressStackEntry> temp(&temp_entry);
+  */
 
-	std::unique_ptr<ReturnAddressStackEntry> temp(new ReturnAddressStackEntry
-			(address, am, ss, common_counter));
-	ret_stack.push_front(std::move(temp));
+  std::unique_ptr<ReturnAddressStackEntry> temp(
+      new ReturnAddressStackEntry(address, am, ss, common_counter));
+  ret_stack.push_front(std::move(temp));
 
-	common_counter++;
+  common_counter++;
 }
 
+bool ReturnAddressStack::pop() {
+  if (ret_stack.size() == 0)
+    return false;
+  else {
+    ret_stack.pop_front();
+    common_counter--;
 
-bool ReturnAddressStack::pop()
-{
-	if (ret_stack.size() == 0)
-		return false;
-	else
-	{
-		ret_stack.pop_front();
-		common_counter--;
-
-		return ret_stack.size() ? true : false;
-	}
+    return ret_stack.size() ? true : false;
+  }
 }
 
-void ReturnAddressStack::Dump(std::ostream &os) const
-{
-	os << "Return Address Stack Dump Info\n";
-	os << "Counter	Return Address\n";
-	for (auto i = ret_stack.begin(); i != ret_stack.end(); ++i)
-		os << std::hex << i->get()->getCounter() << "	"
-			<< i->get()->getReturnAddress() << "	"
-			<< i->get()->getActiveMask() << std::endl;
+void ReturnAddressStack::Dump(std::ostream& os) const {
+  os << "Return Address Stack Dump Info\n";
+  os << "Counter	Return Address\n";
+  for (auto i = ret_stack.begin(); i != ret_stack.end(); ++i)
+    os << std::hex << i->get()->getCounter() << "	"
+       << i->get()->getReturnAddress() << "	" << i->get()->getActiveMask()
+       << std::endl;
 }
 
-}	// namespace
+}  // namespace

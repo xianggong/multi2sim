@@ -17,57 +17,49 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include <lib/cpp/String.h>
-#include <lib/cpp/Error.h>
 #include <arch/hsa/disassembler/AsmService.h>
 #include <arch/hsa/disassembler/Brig.h>
 #include <arch/hsa/disassembler/BrigCodeEntry.h>
+#include <lib/cpp/Error.h>
+#include <lib/cpp/String.h>
 
 #include "CbrInstructionWorker.h"
 #include "WorkItem.h"
 
-namespace HSA
-{
+namespace HSA {
 
-CbrInstructionWorker::CbrInstructionWorker(WorkItem *work_item,
-		StackFrame *stack_frame) :
-		HsaInstructionWorker(work_item, stack_frame)
-{
-	// TODO Auto-generated constructor stub
-
+CbrInstructionWorker::CbrInstructionWorker(WorkItem* work_item,
+                                           StackFrame* stack_frame)
+    : HsaInstructionWorker(work_item, stack_frame) {
+  // TODO Auto-generated constructor stub
 }
 
-
-CbrInstructionWorker::~CbrInstructionWorker()
-{
-	// TODO Auto-generated destructor stub
+CbrInstructionWorker::~CbrInstructionWorker() {
+  // TODO Auto-generated destructor stub
 }
 
+void CbrInstructionWorker::Execute(BrigCodeEntry* instruction) {
+  // Retrieve condition
+  unsigned char condition;
+  operand_value_retriever->Retrieve(instruction, 0, &condition);
 
-void CbrInstructionWorker::Execute(BrigCodeEntry *instruction)
-{
-	// Retrieve condition
-	unsigned char condition;
-	operand_value_retriever->Retrieve(instruction, 0, &condition);
+  // Jump if condition is true
+  if (condition) {
+    // Retrieve 1st operand
+    auto operand1 = instruction->getOperand(1);
+    if (operand1->getKind() == BRIG_KIND_OPERAND_CODE_REF) {
+      auto label = operand1->getRef();
 
-	// Jump if condition is true
-	if (condition){
-		// Retrieve 1st operand
-		auto operand1 = instruction->getOperand(1);
-		if (operand1->getKind() == BRIG_KIND_OPERAND_CODE_REF)
-		{
-			auto label = operand1->getRef();
+      // Redirect pc to a certain label
+      stack_frame->setPc(std::move(label));
+      return;
+    } else {
+      throw misc::Panic("Unsupported operand type for CBR.");
+    }
+  }
 
-			// Redirect pc to a certain label
-			stack_frame->setPc(std::move(label));
-			return;
-		}else{
-			throw misc::Panic("Unsupported operand type for CBR.");
-		}
-	}
-
-	// Move PC forward
-	work_item->MovePcForwardByOne();
+  // Move PC forward
+  work_item->MovePcForwardByOne();
 }
 
 }  // namespace HSA

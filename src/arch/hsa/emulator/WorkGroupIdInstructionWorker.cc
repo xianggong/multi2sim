@@ -20,55 +20,46 @@
 #include "WorkGroupIdInstructionWorker.h"
 #include "WorkItem.h"
 
-namespace HSA
-{
+namespace HSA {
 
 WorkGroupIdInstructionWorker::WorkGroupIdInstructionWorker(
-		WorkItem *work_item,
-		StackFrame *stack_frame) :
-		HsaInstructionWorker(work_item, stack_frame)
-{
-}
+    WorkItem* work_item, StackFrame* stack_frame)
+    : HsaInstructionWorker(work_item, stack_frame) {}
 
+WorkGroupIdInstructionWorker::~WorkGroupIdInstructionWorker() {}
 
-WorkGroupIdInstructionWorker::~WorkGroupIdInstructionWorker()
-{
-}
+void WorkGroupIdInstructionWorker::Execute(BrigCodeEntry* instruction) {
+  uint32_t dim;
+  uint32_t id;
+  operand_value_retriever->Retrieve(instruction, 1, &dim);
+  switch (dim) {
+    case 0:
 
+      id = work_item->getWorkGroup()->getGroupIdX();
+      break;
 
-void WorkGroupIdInstructionWorker::Execute(BrigCodeEntry *instruction)
-{
-	uint32_t dim;
-	uint32_t id;
-	operand_value_retriever->Retrieve(instruction, 1, &dim);
-	switch(dim)
-	{
-	case 0:
+    case 1:
 
-		id = work_item->getWorkGroup()->getGroupIdX();
-		break;
+      id = work_item->getWorkGroup()->getGroupIdY();
+      break;
 
-	case 1:
+    case 2:
 
-		id = work_item->getWorkGroup()->getGroupIdY();
-		break;
+      id = work_item->getWorkGroup()->getGroupIdZ();
+      break;
 
-	case 2:
+    default:
 
-		id = work_item->getWorkGroup()->getGroupIdZ();
-		break;
+      throw misc::Error(
+          "Trying to getting work item absolute id "
+          "other than x, y and z axis.");
+  }
 
-	default:
+  // Write result back
+  operand_value_writer->Write(instruction, 0, &id);
 
-		throw misc::Error("Trying to getting work item absolute id "
-				"other than x, y and z axis.");
-	}
-
-	// Write result back
-	operand_value_writer->Write(instruction, 0, &id);
-
-	// Move pc to next instruction
-	work_item->MovePcForwardByOne();
+  // Move pc to next instruction
+  work_item->MovePcForwardByOne();
 }
 
 }  // namespace HSA

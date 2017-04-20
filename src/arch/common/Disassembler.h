@@ -22,46 +22,39 @@
 
 #include <string>
 
-namespace comm
-{
+namespace comm {
 
-class Disassembler
-{
-	// Name of disassembler
-	std::string name;
+class Disassembler {
+  // Name of disassembler
+  std::string name;
 
-public:
+ public:
+  /// Constructor
+  Disassembler(const std::string& name);
 
-	/// Constructor
-	Disassembler(const std::string &name);
+  /// Check whether a token is found in the begninning of a format string.
+  ///
+  /// \param fmt
+  ///	Format string in the beginning of which to search for the token.
+  ///
+  /// \param token
+  ///	Token to search for.
+  ///
+  /// \param length
+  ///	This argument is optional (see overloaded function isToken()).
+  ///	If specified, the function returns here the length of the token
+  //	if found.
+  static bool isToken(const std::string& fmt, const std::string& token,
+                      int& length);
 
-	/// Check whether a token is found in the begninning of a format string.
-	///
-	/// \param fmt
-	///	Format string in the beginning of which to search for the token.
-	///
-	/// \param token
-	///	Token to search for.
-	///
-	/// \param length
-	///	This argument is optional (see overloaded function isToken()).
-	///	If specified, the function returns here the length of the token
-	//	if found.
-	static bool isToken(const std::string &fmt, const std::string &token,
-			int &length);
-
-	/// Alternative version of function isToken() where the length of the
-	/// obtained token is not returned (argument \a length is omitted).
-	static bool isToken(const std::string &fmt, const std::string &token)
-	{
-		int length;
-		return isToken(fmt, token, length);
-	}
-
+  /// Alternative version of function isToken() where the length of the
+  /// obtained token is not returned (argument \a length is omitted).
+  static bool isToken(const std::string& fmt, const std::string& token) {
+    int length;
+    return isToken(fmt, token, length);
+  }
 };
-
 
 }  // namespace comm
 
 #endif
-

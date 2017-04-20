@@ -19,7 +19,4 @@
 
 #include "HsaExecutableSymbol.h"
 
-namespace HSA
-{
-
-} // namespace HSA
+namespace HSA {}  // namespace HSA

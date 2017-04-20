@@ -17,40 +17,29 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "Engine.h"
 #include "FrequencyDomain.h"
+#include "Engine.h"
 
+namespace esim {
 
-namespace esim
-{
-
-FrequencyDomain::FrequencyDomain(const std::string &name, int frequency) :
-		name(name),
-		frequency(frequency),
-		cycle_time(1000000ll / frequency)
-{
-	// Save simulator engine
-	engine = Engine::getInstance();
-}
-	
-	
-long long FrequencyDomain::getCycle() const
-{
-	return engine->getTime() / cycle_time + 1;
+FrequencyDomain::FrequencyDomain(const std::string& name, int frequency)
+    : name(name), frequency(frequency), cycle_time(1000000ll / frequency) {
+  // Save simulator engine
+  engine = Engine::getInstance();
 }
 
-
-void FrequencyDomain::setFrequency(int frequency)
-{
-	// Update fields
-	this->frequency = frequency;
-	cycle_time = 1000000ll / frequency;
-
-	// Update fastest frequency information in engine
-	Engine *engine = Engine::getInstance();
-	engine->UpdateFastestFrequency();
+long long FrequencyDomain::getCycle() const {
+  return engine->getTime() / cycle_time + 1;
 }
 
+void FrequencyDomain::setFrequency(int frequency) {
+  // Update fields
+  this->frequency = frequency;
+  cycle_time = 1000000ll / frequency;
+
+  // Update fastest frequency information in engine
+  Engine* engine = Engine::getInstance();
+  engine->UpdateFastestFrequency();
+}
 
 }  // namespace esim
-

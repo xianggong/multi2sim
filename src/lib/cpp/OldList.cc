@@ -22,268 +22,212 @@
 #include "Error.h"
 #include "List.h"
 
+namespace misc {
 
-namespace misc
-{
+List::Node* List::getCurrent() {
+  // Past the end
+  if (current_index == size) {
+    error = ErrorBounds;
+    return nullptr;
+  }
 
-
-List::Node *List::getCurrent()
-{
-	// Past the end
-	if (current_index == size)
-	{
-		error = ErrorBounds;
-		return nullptr;
-	}
-
-	// Found
-	error = ErrorOK;
-	return current;
+  // Found
+  error = ErrorOK;
+  return current;
 }
 
+List::Node* List::Next() {
+  // List empty
+  if (size == 0) {
+    error = ErrorEmpty;
+    return nullptr;
+  }
 
-List::Node *List::Next()
-{
-	// List empty
-	if (size == 0)
-	{
-		error = ErrorEmpty;
-		return nullptr;
-	}
+  // Past the end
+  if (current_index == size) {
+    error = ErrorBounds;
+    return nullptr;
+  }
 
-	// Past the end
-	if (current_index == size)
-	{
-		error = ErrorBounds;
-		return nullptr;
-	}
+  // Next element
+  current_index++;
+  current = current->next;
 
-	// Next element
-	current_index++;
-	current = current->next;
+  // Past the end reached
+  if (current_index == size) {
+    error = ErrorBounds;
+    return nullptr;
+  }
 
-	// Past the end reached
-	if (current_index == size)
-	{
-		error = ErrorBounds;
-		return nullptr;
-	}
-
-	// Valid element
-	error = ErrorOK;
-	return current;
+  // Valid element
+  error = ErrorOK;
+  return current;
 }
 
+List::Node* List::Prev() {
+  // List is empty
+  if (size == 0) {
+    error = ErrorEmpty;
+    return nullptr;
+  }
 
-List::Node *List::Prev()
-{
-	// List is empty
-	if (size == 0)
-	{
-		error = ErrorEmpty;
-		return nullptr;
-	}
+  // Already in the beginning
+  if (current_index == 0) {
+    error = ErrorBounds;
+    return nullptr;
+  }
 
-	// Already in the beginning
-	if (current_index == 0)
-	{
-		error = ErrorBounds;
-		return nullptr;
-	}
+  // Previous element
+  current_index--;
+  current = current ? current->prev : tail;
 
-	// Previous element
-	current_index--;
-	current = current ? current->prev : tail;
-
-	// Valid element
-	error = ErrorOK;
-	return current;
+  // Valid element
+  error = ErrorOK;
+  return current;
 }
 
+List::Node* List::Front() {
+  // List is empty
+  if (size == 0) {
+    error = ErrorEmpty;
+    return nullptr;
+  }
 
-List::Node *List::Front()
-{
-	// List is empty
-	if (size == 0)
-	{
-		error = ErrorEmpty;
-		return nullptr;
-	}
+  // Go to head
+  current_index = 0;
+  current = head;
 
-	// Go to head
-	current_index = 0;
-	current = head;
-
-	// Valid element
-	error = ErrorOK;
-	return current;
+  // Valid element
+  error = ErrorOK;
+  return current;
 }
 
+List::Node* List::Back() {
+  // List is empty
+  if (size == 0) {
+    error = ErrorEmpty;
+    return nullptr;
+  }
 
-List::Node *List::Back()
-{
-	// List is empty
-	if (size == 0)
-	{
-		error = ErrorEmpty;
-		return nullptr;
-	}
+  // Go to tail
+  current_index = size - 1;
+  current = tail;
 
-	// Go to tail
-	current_index = size - 1;
-	current = tail;
-
-	// Valid element
-	error = ErrorOK;
-	return current;
+  // Valid element
+  error = ErrorOK;
+  return current;
 }
 
-
-void List::End()
-{
-	current_index = size;
-	current = nullptr;
-	error = ErrorOK;
+void List::End() {
+  current_index = size;
+  current = nullptr;
+  error = ErrorOK;
 }
 
+List::Node* List::Insert(Node* node) {
+  // Invalid node
+  if (node == nullptr) throw misc::Panic("Inserted node cannot be null");
 
-List::Node *List::Insert(Node *node)
-{
-	// Invalid node
-	if (node == nullptr)
-		throw misc::Panic("Inserted node cannot be null");
+  // Node is already in a list
+  if (node->in_list) throw misc::Panic("Inserted node is already in a list");
 
-	// Node is already in a list
-	if (node->in_list)
-		throw misc::Panic("Inserted node is already in a list");
+  // Insert it
+  if (size == 0) {
+    // List is empty
+    current = node;
+    head = node;
+    tail = node;
+  } else if (current == head) {
+    // Insert at the head
+    node->next = head;
+    head->prev = node;
+    head = node;
+  } else if (current == nullptr) {
+    // Insert at the tail
+    node->prev = tail;
+    tail->next = node;
+    tail = node;
+  } else {
+    // Insert in the middle
+    node->prev = current->prev;
+    node->next = current;
+    current->prev = node;
+    node->prev->next = node;
+  }
 
-	// Insert it
-	if (size == 0)
-	{
-		// List is empty
-		current = node;
-		head = node;
-		tail = node;
-	}
-	else if (current == head)
-	{
-		// Insert at the head
-		node->next = head;
-		head->prev = node;
-		head = node;
-	}
-	else if (current == nullptr)
-	{
-		// Insert at the tail
-		node->prev = tail;
-		tail->next = node;
-		tail = node;
-	}
-	else
-	{
-		// Insert in the middle
-		node->prev = current->prev;
-		node->next = current;
-		current->prev = node;
-		node->prev->next = node;
-	}
-	
-	// Update state
-	error = ErrorOK;
-	size++;
-	current = node;
-	node->in_list = true;
-	return node;
+  // Update state
+  error = ErrorOK;
+  size++;
+  current = node;
+  node->in_list = true;
+  return node;
 }
 
+List::Node* List::Remove() {
+  // Check bounds
+  if (current_index == size) {
+    error = ErrorBounds;
+    return nullptr;
+  }
 
-List::Node *List::Remove()
-{
-	// Check bounds
-	if (current_index == size)
-	{
-		error = ErrorBounds;
-		return nullptr;
-	}
+  // Remove current element
+  Node* node = current;
+  if (size == 1) {
+    head = nullptr;
+    tail = nullptr;
+  } else if (node == head) {
+    node->next->prev = nullptr;
+    head = node->next;
+  } else if (node == tail) {
+    node->prev->next = nullptr;
+    tail = node->prev;
+  } else {
+    node->prev->next = node->next;
+    node->next->prev = node->prev;
+  }
 
-	// Remove current element
-	Node *node = current;
-	if (size == 1)
-	{
-		head = nullptr;
-		tail = nullptr;
-	}
-	else if (node == head)
-	{
-		node->next->prev = nullptr;
-		head = node->next;
-	}
-	else if (node == tail)
-	{
-		node->prev->next = nullptr;
-		tail = node->prev;
-	}
-	else
-	{
-		node->prev->next = node->next;
-		node->next->prev = node->prev;
-	}
+  // Mark as removed
+  assert(node->in_list);
+  node->in_list = false;
 
-	// Mark as removed
-	assert(node->in_list);
-	node->in_list = false;
-
-	// Update state
-	assert(size > 0);
-	error = ErrorOK;
-	size--;
-	current = node->next;
-	return node;
+  // Update state
+  assert(size > 0);
+  error = ErrorOK;
+  size--;
+  current = node->next;
+  return node;
 }
 
+void List::Remove(Node* node) {
+  // Check valid node
+  if (node == nullptr) throw misc::Panic("Removed element cannot be null");
 
-void List::Remove(Node *node)
-{
-	// Check valid node
-	if (node == nullptr)
-		throw misc::Panic("Removed element cannot be null");
-	
-	// Check that node was in a list
-	if (!node->in_list)
-		throw misc::Panic("Removed element is not in the list");
+  // Check that node was in a list
+  if (!node->in_list) throw misc::Panic("Removed element is not in the list");
 
-	// Remove element
-	if (size == 1)
-	{
-		assert(head == node && tail == node);
-		head = nullptr;
-		tail = nullptr;
-	}
-	else if (node == head)
-	{
-		node->next->prev = nullptr;
-		head = node->next;
-	}
-	else if (node == tail)
-	{
-		node->prev->next = nullptr;
-		tail = node->prev;
-	}
-	else
-	{
-		node->prev->next = node->next;
-		node->next->prev = node->prev;
-	}
+  // Remove element
+  if (size == 1) {
+    assert(head == node && tail == node);
+    head = nullptr;
+    tail = nullptr;
+  } else if (node == head) {
+    node->next->prev = nullptr;
+    head = node->next;
+  } else if (node == tail) {
+    node->prev->next = nullptr;
+    tail = node->prev;
+  } else {
+    node->prev->next = node->next;
+    node->next->prev = node->prev;
+  }
 
-	// Update state
-	assert(size > 0);
-	node->in_list = false;
-	error = ErrorOK;
-	size--;
-	current = head;
-	current_index = 0;
+  // Update state
+  assert(size > 0);
+  node->in_list = false;
+  error = ErrorOK;
+  size--;
+  current = head;
+  current_index = 0;
 }
-
 
 }  // namespace misc
-

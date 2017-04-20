@@ -22,33 +22,29 @@
 
 #include "opencl.h"
 
-
 /* Event object */
-struct opencl_event_t
-{
-	cl_int status;
-	pthread_mutex_t mutex;
-	pthread_cond_t cond;
+struct opencl_event_t {
+  cl_int status;
+  pthread_mutex_t mutex;
+  pthread_cond_t cond;
 
-	struct opencl_command_queue_t *command_queue;
-	struct opencl_context_t *context;
-	cl_command_type type;
+  struct opencl_command_queue_t* command_queue;
+  struct opencl_context_t* context;
+  cl_command_type type;
 
-	/* Profiling Information */
-	cl_ulong time_queued;
-	cl_ulong time_submit;
-	cl_ulong time_start;
-	cl_ulong time_end;
+  /* Profiling Information */
+  cl_ulong time_queued;
+  cl_ulong time_submit;
+  cl_ulong time_start;
+  cl_ulong time_end;
 };
 
-
 /* Create/free */
-struct opencl_event_t *opencl_event_create(struct opencl_command_queue_t *command_queue, cl_command_type type);
-void opencl_event_free(struct opencl_event_t *event);
+struct opencl_event_t* opencl_event_create(
+    struct opencl_command_queue_t* command_queue, cl_command_type type);
+void opencl_event_free(struct opencl_event_t* event);
 
-void opencl_event_set_status(struct opencl_event_t *event, cl_int status);
-void opencl_event_wait(struct opencl_event_t *event);
-
+void opencl_event_set_status(struct opencl_event_t* event, cl_int status);
+void opencl_event_wait(struct opencl_event_t* event);
 
 #endif
-

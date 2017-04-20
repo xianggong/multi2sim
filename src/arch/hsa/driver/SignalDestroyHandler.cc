@@ -25,36 +25,28 @@
 #include "SignalDestroyHandler.h"
 #include "SignalManager.h"
 
-namespace HSA
-{
+namespace HSA {
 
-SignalDestroyHandler::SignalDestroyHandler(
-		SignalManager *signal_manager) :
-		signal_manager(signal_manager)
-{
+SignalDestroyHandler::SignalDestroyHandler(SignalManager* signal_manager)
+    : signal_manager(signal_manager) {}
+
+SignalDestroyHandler::~SignalDestroyHandler() {
+  // TODO Auto-generated destructor stub
 }
 
+void SignalDestroyHandler::Process(mem::Memory* memory, uint32_t args_ptr) {
+  // Retrieve data
+  auto data = misc::new_unique<Data>();
+  memory->Read(args_ptr, sizeof(Data), (char*)data.get());
 
-SignalDestroyHandler::~SignalDestroyHandler()
-{
-	// TODO Auto-generated destructor stub
-}
+  // Destory signal
+  signal_manager->DestorySignal(data->signal);
 
+  // Return hsa_status_t
+  data->status = HSA_STATUS_SUCCESS;
 
-void SignalDestroyHandler::Process(mem::Memory *memory, uint32_t args_ptr)
-{
-	// Retrieve data
-	auto data = misc::new_unique<Data>();
-	memory->Read(args_ptr, sizeof(Data), (char *)data.get());
-
-	// Destory signal
-	signal_manager->DestorySignal(data->signal);
-
-	// Return hsa_status_t
-	data->status = HSA_STATUS_SUCCESS;
-
-	// Write return value back
-	memory->Write(args_ptr, sizeof(Data), (char *)data.get());
+  // Write return value back
+  memory->Write(args_ptr, sizeof(Data), (char*)data.get());
 }
 
 }  // namespace HSA

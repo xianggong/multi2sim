@@ -22,31 +22,27 @@
 #include "list.h"
 #include "mhandle.h"
 
-
 /* Create a context */
-CUcontext cuda_context_create(CUdevice device)
-{
-	CUcontext context;
+CUcontext cuda_context_create(CUdevice device) {
+  CUcontext context;
 
-	/* Create context */
-	context = xcalloc(1, sizeof(struct CUctx_st));
+  /* Create context */
+  context = xcalloc(1, sizeof(struct CUctx_st));
 
-	/* Initialize */
-	context->id = list_count(context_list);
-	context->device = device;
-	context->version = 5050;
+  /* Initialize */
+  context->id = list_count(context_list);
+  context->device = device;
+  context->version = 5050;
 
-	/* Add to context list */
-	list_add(context_list, context);
+  /* Add to context list */
+  list_add(context_list, context);
 
-	return context;
+  return context;
 }
 
 /* Free context */
-void cuda_context_free(CUcontext context)
-{
-	list_remove(context_list, context);
+void cuda_context_free(CUcontext context) {
+  list_remove(context_list, context);
 
-	free(context);
+  free(context);
 }
-

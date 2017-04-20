@@ -21,9 +21,7 @@
 
 #include <lib/cpp/Misc.h>
 
-
-namespace x86
-{
+namespace x86 {
 
 // Macros defined to prevent accidental use of functions that cause unsafe
 // execution in speculative mode.
@@ -34,21 +32,11 @@ namespace x86
 #define warning __COMPILATION_ERROR__
 #define assert __COMPILATION_ERROR__
 
+#define __UNIMPLEMENTED__ \
+  throw misc::Panic(misc::fmt("Unimplemented instruction %s", __FUNCTION__));
 
-#define __UNIMPLEMENTED__ throw misc::Panic(misc::fmt("Unimplemented instruction %s", __FUNCTION__));
+void Context::ExecuteInst_palignr_xmm_xmmm128_imm8() { __UNIMPLEMENTED__ }
 
-
-void Context::ExecuteInst_palignr_xmm_xmmm128_imm8()
-{
-	__UNIMPLEMENTED__
-}
-
-void Context::ExecuteInst_pshufb_xmm_xmmm128()
-{
-	__UNIMPLEMENTED__
-}
-
-
+void Context::ExecuteInst_pshufb_xmm_xmmm128() { __UNIMPLEMENTED__ }
 
 }  // namespace x86
-

@@ -20,39 +20,35 @@
 #ifndef RUNTIME_CUDA_FUNCTION_H
 #define RUNTIME_CUDA_FUNCTION_H
 
-
 #include "api.h"
 
-struct CUfunc_st
-{
-	int id;
+struct CUfunc_st {
+  int id;
 
-	char *name;
+  char* name;
 
-	/* CUDA function binary */
-	struct elf_file_t *bin;
+  /* CUDA function binary */
+  struct elf_file_t* bin;
 
-	/* Instruction buffer, i.e., .text section in cubin */
-	unsigned inst_buf_size;
-	unsigned long long *inst_buf;
+  /* Instruction buffer, i.e., .text section in cubin */
+  unsigned inst_buf_size;
+  unsigned long long* inst_buf;
 
-	/* Mandatory fields according to NVIDIA's documentation */
-	int maxThreadsPerBlock;
-	size_t sharedSizeBytes;
-	size_t constSizeBytes;
-	size_t localSizeBytes;
-	int numRegs;
-	int ptxVersion;
-	int binaryVersion;
-	CUfunc_cache cache_config;
+  /* Mandatory fields according to NVIDIA's documentation */
+  int maxThreadsPerBlock;
+  size_t sharedSizeBytes;
+  size_t constSizeBytes;
+  size_t localSizeBytes;
+  int numRegs;
+  int ptxVersion;
+  int binaryVersion;
+  CUfunc_cache cache_config;
 
-	/* Used to find the function in the function list */
-	unsigned host_func_ptr;
+  /* Used to find the function in the function list */
+  unsigned host_func_ptr;
 };
 
-CUfunction cuda_function_create(CUmodule module, const char *function_name);
+CUfunction cuda_function_create(CUmodule module, const char* function_name);
 void cuda_function_free(CUfunction function);
 
-
 #endif
-

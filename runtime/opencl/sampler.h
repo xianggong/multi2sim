@@ -22,19 +22,13 @@
 
 #include "opencl.h"
 
-
 /* Sampler object */
-struct _cl_sampler
-{
-	unsigned int id;
+struct _cl_sampler {
+  unsigned int id;
 };
 
-
 /* Create/free */
-struct opencl_sampler_t *opencl_sampler_create(void);
-void opencl_sampler_free(struct opencl_sampler_t *sampler);
-
-
+struct opencl_sampler_t* opencl_sampler_create(void);
+void opencl_sampler_free(struct opencl_sampler_t* sampler);
 
 #endif
-

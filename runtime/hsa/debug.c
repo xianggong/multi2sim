@@ -24,36 +24,30 @@
 
 #include "debug.h"
 
-
-void m2s_hsa_fatal(char *fmt, ...)
-{
-	va_list va;
-	va_start(va, fmt);
-	fprintf(stderr, "\nHSA runtime error: ");
-	vfprintf(stderr, fmt, va);
-	fprintf(stderr, "\n\n");
-	fflush(NULL);
-	exit(1);
+void m2s_hsa_fatal(char *fmt, ...) {
+  va_list va;
+  va_start(va, fmt);
+  fprintf(stderr, "\nHSA runtime error: ");
+  vfprintf(stderr, fmt, va);
+  fprintf(stderr, "\n\n");
+  fflush(NULL);
+  exit(1);
 }
 
-
-void m2s_hsa_panic(char *fmt, ...)
-{
-	va_list va;
-	va_start(va, fmt);
-	fprintf(stderr, "\nHSA runtime panic: ");
-	vfprintf(stderr, fmt, va);
-	fprintf(stderr, "\n\n");
-	fflush(NULL);
-	abort();
+void m2s_hsa_panic(char *fmt, ...) {
+  va_list va;
+  va_start(va, fmt);
+  fprintf(stderr, "\nHSA runtime panic: ");
+  vfprintf(stderr, fmt, va);
+  fprintf(stderr, "\n\n");
+  fflush(NULL);
+  abort();
 }
 
-
-void m2s_hsa_warning(char *fmt, ...)
-{
-	va_list va;
-	va_start(va, fmt);
-	fprintf(stderr, "\nHSA runtime warning: ");
-	vfprintf(stderr, fmt, va);
-	fprintf(stderr, "\n\n");
+void m2s_hsa_warning(char *fmt, ...) {
+  va_list va;
+  va_start(va, fmt);
+  fprintf(stderr, "\nHSA runtime warning: ");
+  vfprintf(stderr, fmt, va);
+  fprintf(stderr, "\n\n");
 }

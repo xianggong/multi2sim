@@ -20,132 +20,106 @@
 #ifndef NETWORK_BUS_H
 #define NETWORK_BUS_H
 
-#include "Connection.h"
 #include "Buffer.h"
+#include "Connection.h"
 
-namespace net
-{
+namespace net {
 class Buffer;
 
-class Lane
-{
+class Lane {
+  friend class Bus;
 
-	friend class Bus;
+  // Lane bandwidth
+  int bandwidth;
 
-	// Lane bandwidth
-	int bandwidth;
+  // Bus lane index
+  int index;
 
-	// Bus lane index
-	int index;
+  //
+  // Statistics
+  //
 
+  // Number of bytes that was transfered through the lane
+  long long transferred_bytes = 0;
 
+  // Number of cycles that the lane was busy
+  long long busy_cycles = 0;
 
-	//
-	// Statistics
-	//
+  // Number of packets that traversed the lane
+  long long transferred_packets = 0;
 
-	// Number of bytes that was transfered through the lane
-	long long transferred_bytes = 0;
+ public:
+  // Constructor
+  Lane(int bandwidth) : bandwidth(bandwidth) {}
 
-	// Number of cycles that the lane was busy
-	long long busy_cycles = 0;
+  // Dumping lane statistics
+  void Dump(std::ostream& os = std::cout) const;
 
-	// Number of packets that traversed the lane
-	long long transferred_packets = 0;
+  // Getter for bandwidth
+  int getBandwidth() const { return bandwidth; }
 
+  // Increase the amount of transfered bytes
+  void incTransferredBytes(int bytes) { transferred_bytes += bytes; }
 
+  // Increase the number of transfered packets
+  void incTransferredPackets() { transferred_packets++; }
 
-public:
+  // Increase the number of cycles that the lane was busy
+  void incBusyCycles(long long cycles) { busy_cycles += cycles; }
 
-	// Constructor
-	Lane(int bandwidth) : bandwidth(bandwidth) {}
+  //
+  // Public fields
+  //
 
-	// Dumping lane statistics
-	void Dump(std::ostream &os = std::cout) const;
+  // Last cycle lane was scheduled
+  long long scheduled_when = 0;
 
-	// Getter for bandwidth
-	int getBandwidth() const { return bandwidth; }
+  // The last buffer that was scheduled
+  Buffer* scheduled_buffer = nullptr;
 
-	// Increase the amount of transfered bytes
-	void incTransferredBytes(int bytes) { transferred_bytes += bytes; }
-
-	// Increase the number of transfered packets
-	void incTransferredPackets() { transferred_packets++; }
-
-	// Increase the number of cycles that the lane was busy
-	void incBusyCycles(long long cycles) { busy_cycles += cycles;}
-
-
-
-
-	//
-	// Public fields
-	//
-
-	// Last cycle lane was scheduled
-	long long scheduled_when = 0;
-
-	// The last buffer that was scheduled
-	Buffer *scheduled_buffer = nullptr;
-
-	// lane is busy until this cycle
-	long long busy = -1;
-
+  // lane is busy until this cycle
+  long long busy = -1;
 };
 
+class Bus : public Connection {
+ private:
+  // List of the Lanes in the bus
+  std::vector<std::unique_ptr<Lane>> lanes;
 
-class Bus : public Connection
-{
+  //
+  // Arbitration and scheduling
+  //
 
-private:
+  // Arbitration for each lane
+  Buffer* LaneArbitration(Lane* lane);
 
-	// List of the Lanes in the bus
-	std::vector<std::unique_ptr<Lane>> lanes;
+  // Arbitration between available lanes
+  Lane* Arbitration(Buffer* current_buffer);
 
+ public:
+  // Constructor
+  Bus(Network* network, const std::string& name, int bandwidth, int num_lanes);
 
+  // Get the number of lanes
+  int getNumberLanes() const { return lanes.size(); }
 
+  // Get Lane
+  Lane* getLaneByIndex(int id) { return lanes.at(id).get(); }
 
-	//
-	// Arbitration and scheduling
-	//
+  // Dump information about Bus
+  void Dump(std::ostream& os) const;
 
-	// Arbitration for each lane
-	Buffer *LaneArbitration(Lane *lane);
+  /// Transfer the packet from an output buffer
+  void TransferPacket(Packet* packet);
 
-	// Arbitration between available lanes
-	Lane *Arbitration(Buffer *current_buffer);
+  //
+  // Public fields
+  //
 
-public:
-
-	// Constructor
-	Bus(Network *network, const std::string &name,
-			int bandwidth, int num_lanes);
-
-	// Get the number of lanes
-	int getNumberLanes() const { return lanes.size(); }
-
-	// Get Lane
-	Lane* getLaneByIndex(int id) { return lanes.at(id).get(); }
-
-	// Dump information about Bus
-	void Dump(std::ostream &os) const;
-
-	/// Transfer the packet from an output buffer
-	void TransferPacket(Packet *packet);
-
-
-
-
-	//
-	// Public fields
-	//
-
-	// The index of last node scheduled on the bus
-	int last_node_index = -1;
-
+  // The index of last node scheduled on the bus
+  int last_node_index = -1;
 };
 
 }  // namespace net
 
 #endif
-

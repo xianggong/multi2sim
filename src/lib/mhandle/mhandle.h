@@ -27,7 +27,6 @@
 #define MHANDLE_TOSTRING(x) MHANDLE_STRINGIFY(x)
 #define MHANDLE_AT __FILE__ ":" MHANDLE_TOSTRING(__LINE__)
 
-
 /* Under regular circumstances, including 'mhandle.h' will forbid the use of
  * malloc/calloc/realloc/strdup functions, and force the use of their equivalent
  * functions with the 'x' prefix (xmalloc/xcalloc/...). If macro
@@ -43,8 +42,7 @@
 #define realloc(x, sz) __ERROR_USE_XREALLOC_INSTEAD__
 #define strdup(x) __ERROR_USE_XSTRDUP_INSTEAD__
 
-#endif  /* MHANDLE_ALLOW_NON_X_FUNCTIONS */
-
+#endif /* MHANDLE_ALLOW_NON_X_FUNCTIONS */
 
 #ifdef MHANDLE
 
@@ -58,7 +56,8 @@
 #define mhandle_check_ptr(ptr) __mhandle_check_ptr((ptr))
 #define mhandle_done() __mhandle_done()
 #define mhandle_used_memory() __mhandle_used_memory()
-#define mhandle_register_ptr(ptr, size) __mhandle_register_ptr((ptr), (size), MHANDLE_AT)
+#define mhandle_register_ptr(ptr, size) \
+  __mhandle_register_ptr((ptr), (size), MHANDLE_AT)
 
 #else
 
@@ -75,21 +74,19 @@
 
 #endif
 
+void* mhandle_malloc(size_t size, char* at);
+void* mhandle_calloc(size_t nmemb, size_t size, char* at);
+void* mhandle_realloc(void* ptr, size_t size, char* at);
+char* mhandle_strdup(const char* s, char* at);
+void mhandle_free(void* ptr, char* at);
 
+void* __xmalloc(size_t size, char* at);
+void* __xcalloc(size_t nmemb, size_t size, char* at);
+void* __xrealloc(void* ptr, size_t size, char* at);
+void* __xstrdup(const char* s, char* at);
 
-void *mhandle_malloc(size_t size, char *at);
-void *mhandle_calloc(size_t nmemb, size_t size, char *at);
-void *mhandle_realloc(void *ptr, size_t size, char *at);
-char *mhandle_strdup(const char *s, char *at);
-void mhandle_free(void *ptr, char *at);
-
-void *__xmalloc(size_t size, char *at);
-void *__xcalloc(size_t nmemb, size_t size, char *at);
-void *__xrealloc(void *ptr, size_t size, char *at);
-void *__xstrdup(const char *s, char *at);
-
-void __mhandle_check(char *at);
-void __mhandle_check_ptr(void *ptr);
+void __mhandle_check(char* at);
+void __mhandle_check_ptr(void* ptr);
 void __mhandle_done();
 unsigned long __mhandle_used_memory();
 
@@ -97,7 +94,6 @@ unsigned long __mhandle_used_memory();
  * pointer can be registered using 'mhandle_register_ptr' to prevent function
  * 'free' from reporting invalid pointer errors. This pointer will not have the
  * extra corruption bytes. */
-void __mhandle_register_ptr(void *ptr, unsigned long size, char *at);
+void __mhandle_register_ptr(void* ptr, unsigned long size, char* at);
 
 #endif
-

@@ -21,9 +21,9 @@
 #define RUNTIME_HSA_DEBUG_H
 
 /* debug messages */
-void m2s_hsa_warning(char *fmt, ...) __attribute__ ((format (printf, 1, 2)));
-void m2s_hsa_fatal(char *fmt, ...) __attribute__ ((format (printf, 1, 2)));
-void m2s_hsa_panic(char *fmt, ...) __attribute__ ((format (printf, 1, 2)));
+void m2s_hsa_warning(char* fmt, ...) __attribute__((format(printf, 1, 2)));
+void m2s_hsa_fatal(char* fmt, ...) __attribute__((format(printf, 1, 2)));
+void m2s_hsa_panic(char* fmt, ...) __attribute__((format(printf, 1, 2)));
 
 #define warning m2s_hsa_warning
 #define fatal m2s_hsa_fatal

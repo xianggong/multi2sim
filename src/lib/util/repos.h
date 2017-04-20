@@ -26,9 +26,9 @@
 struct repos_t;
 
 /* Creation/destruction */
-struct repos_t *repos_create(int objsize, char *name);
-void repos_free(struct repos_t *repos);
-void repos_free_dump(struct repos_t *repos, void(*dump)(void *, FILE *));
+struct repos_t* repos_create(int objsize, char* name);
+void repos_free(struct repos_t* repos);
+void repos_free_dump(struct repos_t* repos, void (*dump)(void*, FILE*));
 
 /* Functions to create and free repository objects.
  * The first time an object is created, its memory is allocated
@@ -36,12 +36,12 @@ void repos_free_dump(struct repos_t *repos, void(*dump)(void *, FILE *));
  * the object is instead inserted into the repository to be
  * fast returned in a subsequent call to repos_create_object.
  * All objects are free()d when a call to repos_free is made */
-void *repos_create_object(struct repos_t *repos);
-void repos_free_object(struct repos_t *repos, void *obj);
+void* repos_create_object(struct repos_t* repos);
+void repos_free_object(struct repos_t* repos, void* obj);
 
 /* Return non-0 if an object is allocated (not freed) in the
  * specified repository. The object must have been created
  * with the repository */
-int repos_allocated_object(struct repos_t *repos, void *obj);
+int repos_allocated_object(struct repos_t* repos, void* obj);
 
 #endif

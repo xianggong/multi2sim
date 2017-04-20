@@ -17,8 +17,8 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include <lib/cpp/Misc.h>
 #include <lib/cpp/Error.h>
+#include <lib/cpp/Misc.h>
 #include <lib/cpp/String.h>
 
 #include <stdio.h>
@@ -27,143 +27,129 @@
 
 #include "Regs.h"
 
-namespace ARM
-{
+namespace ARM {
 
-Regs::Regs() : sl(0), fp(0), ip(0), sp(0), lr(0), pc(0)
-{
-	for(int i = 0; i <= 9; i++)
-	{
-		setRegister(i, 0);
-	}
+Regs::Regs() : sl(0), fp(0), ip(0), sp(0), lr(0), pc(0) {
+  for (int i = 0; i <= 9; i++) {
+    setRegister(i, 0);
+  }
 
-	getCPSR().mode = ARM_MODE_USER;
+  getCPSR().mode = ARM_MODE_USER;
 }
 
+Regs::~Regs() {}
 
-Regs::~Regs()
-{
+unsigned int Regs::getRegister(int n) {
+  // Get the register according to the register number
+  unsigned int ret_reg;
+  switch (n) {
+    case 0:
 
+      ret_reg = r0;
+      break;
+
+    case 1:
+      ret_reg = r1;
+      break;
+
+    case 2:
+      ret_reg = r2;
+      break;
+
+    case 3:
+
+      ret_reg = r3;
+      break;
+
+    case 4:
+
+      ret_reg = r4;
+      break;
+
+    case 5:
+
+      ret_reg = r5;
+      break;
+
+    case 6:
+
+      ret_reg = r6;
+      break;
+
+    case 7:
+
+      ret_reg = r7;
+      break;
+
+    case 8:
+
+      ret_reg = r8;
+      break;
+
+    case 9:
+
+      ret_reg = r9;
+      break;
+
+    default:
+      throw misc::Panic(misc::fmt("the register number is not recognized"));
+  }
+  return ret_reg;
 }
 
+void Regs::setRegister(int n, unsigned int value) {
+  // Set the register according to the register number
+  switch (n) {
+    case 0:
 
-unsigned int Regs::getRegister(int n)
-{
-	// Get the register according to the register number
-	unsigned int ret_reg;
-	switch (n)
-	{
-	case 0:
+      r0 = value;
+      break;
 
-		ret_reg = r0;
-		break;
+    case 1:
+      r1 = value;
+      break;
 
-	case 1:
-		ret_reg = r1;
-		break;
+    case 2:
+      r2 = value;
+      break;
 
-	case 2:
-		ret_reg = r2;
-		break;
+    case 3:
 
-	case 3:
+      r3 = value;
+      break;
 
-		ret_reg = r3;
-		break;
+    case 4:
 
-	case 4:
+      r4 = value;
+      break;
 
-		ret_reg = r4;
-		break;
+    case 5:
 
-	case 5:
+      r5 = value;
+      break;
 
-		ret_reg = r5;
-		break;
+    case 6:
 
-	case 6:
+      r6 = value;
+      break;
 
-		ret_reg = r6;
-		break;
+    case 7:
 
-	case 7:
+      r7 = value;
+      break;
 
-		ret_reg = r7;
-		break;
+    case 8:
 
-	case 8:
+      r8 = value;
+      break;
 
-		ret_reg = r8;
-		break;
+    case 9:
 
-	case 9:
+      r9 = value;
+      break;
 
-		ret_reg = r9;
-		break;
-
-	default:
-		throw misc::Panic(misc::fmt("the register number is not recognized"));
-	}
-	return ret_reg;
+    default:
+      throw misc::Panic(misc::fmt("the register number is not recognized"));
+  }
 }
-
-
-void Regs::setRegister(int n, unsigned int value)
-{
-	// Set the register according to the register number
-	switch (n)
-	{
-	case 0:
-
-		r0 = value;
-		break;
-
-	case 1:
-		r1 = value;
-		break;
-
-	case 2:
-		r2 = value;
-		break;
-
-	case 3:
-
-		r3 = value;
-		break;
-
-	case 4:
-
-		r4 = value;
-		break;
-
-	case 5:
-
-		r5 = value;
-		break;
-
-	case 6:
-
-		r6 = value;
-		break;
-
-	case 7:
-
-		r7 = value;
-		break;
-
-	case 8:
-
-		r8 = value;
-		break;
-
-	case 9:
-
-		r9 = value;
-		break;
-
-	default:
-		throw misc::Panic(misc::fmt("the register number is not recognized"));
-	}
-}
-
 }

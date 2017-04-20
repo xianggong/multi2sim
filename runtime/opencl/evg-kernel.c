@@ -18,5 +18,3 @@
  */
 
 #include "evg-kernel.h"
-
-

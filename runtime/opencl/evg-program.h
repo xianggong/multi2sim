@@ -25,32 +25,22 @@
 /* Forward declarations */
 struct opencl_evg_device_t;
 
-
 /* Program object */
-struct opencl_evg_program_t
-{
-	/* Parent generic program object */
-	struct opencl_program_t *parent;
+struct opencl_evg_program_t {
+  /* Parent generic program object */
+  struct opencl_program_t* parent;
 
-	/* Associated architecture-specific device */
-	struct opencl_evg_device_t *device;
+  /* Associated architecture-specific device */
+  struct opencl_evg_device_t* device;
 };
 
+struct opencl_evg_program_t* opencl_evg_program_create(
+    struct opencl_program_t* parent, struct opencl_evg_device_t* device,
+    void* binary, size_t length);
 
-struct opencl_evg_program_t *opencl_evg_program_create(
-		struct opencl_program_t *parent,
-		struct opencl_evg_device_t *device,
-		void *binary,
-		size_t length);
-
-void opencl_evg_program_free(
-		struct opencl_evg_program_t *program);
+void opencl_evg_program_free(struct opencl_evg_program_t* program);
 
 /* Return true is a binary file is a valid SI program binary. */
-int opencl_evg_program_valid_binary(
-	void *binary,
-	size_t length);
-
+int opencl_evg_program_valid_binary(void* binary, size_t length);
 
 #endif
-

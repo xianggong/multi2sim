@@ -19,10 +19,4 @@
 
 #include "Event.h"
 
-
-namespace esim
-{
-
-
-}  // namespace esim
-
+namespace esim {}  // namespace esim

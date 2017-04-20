@@ -28,48 +28,43 @@
 #include "Function.h"
 #include "Module.h"
 
+namespace Kepler {
 
-namespace Kepler
-{
+Function::Function(int id, Module* module, const std::string& name)
+    : id(id), module(module), name(name) {
+  // Obtain cubin binary from associated module
+  ELFReader::File* elf_file = module->getELFFile();
 
-Function::Function(int id, Module *module, const std::string &name) :
-		id(id),
-		module(module),
-		name(name)
-{
-	// Obtain cubin binary from associated module
-	ELFReader::File *elf_file = module->getELFFile();
+  // Get section named ".text.<name>" from the ELF file
+  std::string text_section_name = ".text." + name;
+  ELFReader::Section* text_section = elf_file->getSection(text_section_name);
+  if (text_section == nullptr)
+    throw Driver::Error(
+        misc::fmt("Cannot find section '%s' in "
+                  "kernel binary",
+                  text_section_name.c_str()));
 
-	// Get section named ".text.<name>" from the ELF file
-	std::string text_section_name = ".text." + name;
-	ELFReader::Section *text_section = elf_file->getSection(
-			text_section_name);
-	if (text_section == nullptr)
-		throw Driver::Error(misc::fmt("Cannot find section '%s' in "
-				"kernel binary", text_section_name.c_str()));
+  // Get instruction binary
+  text_buffer = text_section->getBuffer();
+  text_size = text_section->getSize();
 
-	// Get instruction binary
-	text_buffer = text_section->getBuffer();
-	text_size = text_section->getSize();
+  // Get section named ".nv.info.<name>" from the ELF file
+  std::string info_section_name = ".nv.info." + name;
+  ELFReader::Section* info_section = elf_file->getSection(info_section_name);
+  if (info_section == nullptr)
+    throw Driver::Error(
+        misc::fmt("Cannot find section '%s' in "
+                  "kernel binary",
+                  info_section_name.c_str()));
 
-	// Get section named ".nv.info.<name>" from the ELF file
-	std::string info_section_name = ".nv.info." + name;
-	ELFReader::Section *info_section = elf_file->getSection(
-			info_section_name);
-	if (info_section == nullptr)
-		throw Driver::Error(misc::fmt("Cannot find section '%s' in "
-				"kernel binary", info_section_name.c_str()));
+  // Get the number of arguments
+  const char* info_buffer = info_section->getBuffer();
+  int num_arguments = ((unsigned char*)(info_buffer))[10] / 4;
 
-	// Get the number of arguments
-	const char *info_buffer = info_section->getBuffer();
-	int num_arguments = ((unsigned char *) (info_buffer))[10] / 4;
-
-	// Create arguments
-	for (int i = 0; i < num_arguments; i++)
-	{
-		std::string argument_name = misc::fmt("arg_%d", i);
-		arguments.emplace_back(new Argument(argument_name));
-	}
+  // Create arguments
+  for (int i = 0; i < num_arguments; i++) {
+    std::string argument_name = misc::fmt("arg_%d", i);
+    arguments.emplace_back(new Argument(argument_name));
+  }
 }
-} // namespace Kepler
-
+}  // namespace Kepler

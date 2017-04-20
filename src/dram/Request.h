@@ -22,47 +22,36 @@
 
 #include <memory>
 
-
-namespace dram
-{
+namespace dram {
 
 // Forward declarations
 class Address;
 
+enum RequestType { RequestInvalid = 0, RequestRead, RequestWrite };
 
-enum RequestType
-{
-	RequestInvalid = 0,
-	RequestRead,
-	RequestWrite
-};
+class Request {
+  RequestType type;
+  std::unique_ptr<Address> address;
 
+ public:
+  Request();
 
-class Request
-{
-	RequestType type;
-	std::unique_ptr<Address> address;
+  /// Returns the type of the request.
+  RequestType getType() const { return type; }
 
-public:
+  /// Sets the type of the request.
+  void setType(RequestType new_type) { type = new_type; }
 
-	Request();
+  /// Marks the request as completed, which should happen when the
+  /// associated read or write command finishes.
+  void setFinished();
 
-	/// Returns the type of the request.
-	RequestType getType() const { return type; }
+  /// Returns a pointer to the address object of the request.
+  Address* getAddress() { return address.get(); }
 
-	/// Sets the type of the request.
-	void setType(RequestType new_type) { type = new_type; }
-
-	/// Marks the request as completed, which should happen when the
-	/// associated read or write command finishes.
-	void setFinished();
-
-	/// Returns a pointer to the address object of the request.
-	Address *getAddress() { return address.get(); }
-
-	/// Sets the encoded address of the request, which will also decode
-	/// the address into its components.
-	void setEncodedAddress(long long addr);
+  /// Sets the encoded address of the request, which will also decode
+  /// the address into its components.
+  void setEncodedAddress(long long addr);
 };
 
 }  // namespace dram

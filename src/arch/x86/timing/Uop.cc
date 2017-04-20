@@ -17,101 +17,84 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "Core.h"
 #include "Uop.h"
+#include "Core.h"
 #include "Thread.h"
 
-
-namespace x86
-{
+namespace x86 {
 
 long long Uop::id_counter = 0;
 
+Uop::Uop(Thread* thread, Context* context, std::shared_ptr<Uinst> uinst)
+    : thread(thread), context(context), uinst(uinst) {
+  // Initialize
+  core = thread->getCore();
+  id = ++id_counter;
+  id_in_core = core->getUopId();
 
-Uop::Uop(Thread *thread,
-		Context *context,
-		std::shared_ptr<Uinst> uinst) :
-		thread(thread),
-		context(context),
-		uinst(uinst)
-{
-	// Initialize
-	core = thread->getCore();
-	id = ++id_counter;
-	id_in_core = core->getUopId();
+  // Assign flags from associated micro-instruction
+  flags = uinst->getFlags();
 
-	// Assign flags from associated micro-instruction
-	flags = uinst->getFlags();
-
-	// Populate dependency fields
-	CountDependencies();
+  // Populate dependency fields
+  CountDependencies();
 }
 
+void Uop::CountDependencies() {
+  // Output dependences
+  int int_count = 0;
+  int fp_count = 0;
+  int flag_count = 0;
+  int xmm_count = 0;
+  for (int dep = 0; dep < Uinst::MaxODeps; dep++) {
+    Uinst::Dep loreg = uinst->getODep(dep);
+    if (Uinst::isFlagDependency(loreg))
+      flag_count++;
+    else if (Uinst::isIntegerDependency(loreg))
+      int_count++;
+    else if (Uinst::isFloatingPointDependency(loreg))
+      fp_count++;
+    else if (Uinst::isXmmDependency(loreg))
+      xmm_count++;
+  }
+  num_outputs = flag_count + int_count + fp_count + xmm_count;
+  num_integer_outputs = flag_count && !int_count ? 1 : int_count;
+  num_floating_point_outputs = fp_count;
+  num_xmm_outputs = xmm_count;
 
-void Uop::CountDependencies()
-{
-	// Output dependences
-	int int_count = 0;
-	int fp_count = 0;
-	int flag_count = 0;
-	int xmm_count = 0;
-	for (int dep = 0; dep < Uinst::MaxODeps; dep++)
-	{
-		Uinst::Dep loreg = uinst->getODep(dep);
-		if (Uinst::isFlagDependency(loreg))
-			flag_count++;
-		else if (Uinst::isIntegerDependency(loreg))
-			int_count++;
-		else if (Uinst::isFloatingPointDependency(loreg))
-			fp_count++;
-		else if (Uinst::isXmmDependency(loreg))
-			xmm_count++;
-	}
-	num_outputs = flag_count + int_count + fp_count + xmm_count;
-	num_integer_outputs = flag_count && !int_count ? 1 : int_count;
-	num_floating_point_outputs = fp_count;
-	num_xmm_outputs = xmm_count;
-
-	// Input dependences
-	int_count = 0;
-	fp_count = 0;
-	flag_count = 0;
-	xmm_count = 0;
-	for (int dep = 0; dep < Uinst::MaxIDeps; dep++)
-	{
-		Uinst::Dep loreg = uinst->getIDep(dep);
-		if (Uinst::isFlagDependency(loreg))
-			flag_count++;
-		else if (Uinst::isIntegerDependency(loreg))
-			int_count++;
-		else if (Uinst::isFloatingPointDependency(loreg))
-			fp_count++;
-		else if (Uinst::isXmmDependency(loreg))
-			xmm_count++;
-	}
-	num_inputs = flag_count + int_count + fp_count + xmm_count;
-	num_integer_inputs = flag_count + int_count;
-	num_floating_point_inputs = fp_count;
-	num_xmm_inputs = xmm_count;
+  // Input dependences
+  int_count = 0;
+  fp_count = 0;
+  flag_count = 0;
+  xmm_count = 0;
+  for (int dep = 0; dep < Uinst::MaxIDeps; dep++) {
+    Uinst::Dep loreg = uinst->getIDep(dep);
+    if (Uinst::isFlagDependency(loreg))
+      flag_count++;
+    else if (Uinst::isIntegerDependency(loreg))
+      int_count++;
+    else if (Uinst::isFloatingPointDependency(loreg))
+      fp_count++;
+    else if (Uinst::isXmmDependency(loreg))
+      xmm_count++;
+  }
+  num_inputs = flag_count + int_count + fp_count + xmm_count;
+  num_integer_inputs = flag_count + int_count;
+  num_floating_point_inputs = fp_count;
+  num_xmm_inputs = xmm_count;
 }
 
+void Uop::Dump(std::ostream& os) const {
+  // Fields
+  os << "id = " << id << ", ";
+  os << misc::fmt("eip = 0x%x, ", eip);
+  os << misc::fmt("spec = %c, ", speculative_mode ? 't' : 'f');
+  os << misc::fmt("first_spec = %c, ", first_speculative_mode ? 't' : 'f');
+  os << misc::fmt("trace_cache = %c, ", from_trace_cache ? 't' : 'f');
 
-void Uop::Dump(std::ostream &os) const
-{
-	// Fields
-	os << "id = " << id << ", ";
-	os << misc::fmt("eip = 0x%x, ", eip);
-	os << misc::fmt("spec = %c, ", speculative_mode ? 't' : 'f');
-	os << misc::fmt("first_spec = %c, ", first_speculative_mode ? 't' : 'f');
-	os << misc::fmt("trace_cache = %c, ", from_trace_cache ? 't' : 'f');
+  // Memory access
+  if (memory_access) os << misc::fmt("memory_access = %lld, ", memory_access);
 
-	// Memory access
-	if (memory_access)
-		os << misc::fmt("memory_access = %lld, ", memory_access);
-
-	// Micro-instruction
-	os << "uinst = '" << *uinst << "'";
+  // Micro-instruction
+  os << "uinst = '" << *uinst << "'";
 }
-
-
 }

@@ -27,13 +27,11 @@
 #define MHANDLE_TOSTRING(x) MHANDLE_STRINGIFY(x)
 #define MHANDLE_AT __FILE__ ":" MHANDLE_TOSTRING(__LINE__)
 
-
 #undef strdup
 #define malloc(sz) __ERROR_USE_XMALLOC_INSTEAD__
 #define calloc(nmemb, sz) __ERROR_USE_XCALLOC_INSTEAD__
 #define realloc(x, sz) __ERROR_USE_XREALLOC_INSTEAD__
 #define strdup(x) __ERROR_USE_XSTRDUP_INSTEAD__
-
 
 #ifdef MHANDLE
 
@@ -46,7 +44,8 @@
 #define mhandle_check() __mhandle_check(MHANDLE_AT)
 #define mhandle_done() __mhandle_done()
 #define mhandle_used_memory() __mhandle_used_memory()
-#define mhandle_register_ptr(ptr, size) __mhandle_register_ptr((ptr), (size), MHANDLE_AT)
+#define mhandle_register_ptr(ptr, size) \
+  __mhandle_register_ptr((ptr), (size), MHANDLE_AT)
 
 #else
 
@@ -62,20 +61,18 @@
 
 #endif
 
+void* mhandle_malloc(size_t size, char* at);
+void* mhandle_calloc(size_t nmemb, size_t size, char* at);
+void* mhandle_realloc(void* ptr, size_t size, char* at);
+char* mhandle_strdup(const char* s, char* at);
+void mhandle_free(void* ptr, char* at);
 
+void* __xmalloc(size_t size, char* at);
+void* __xcalloc(size_t nmemb, size_t size, char* at);
+void* __xrealloc(void* ptr, size_t size, char* at);
+void* __xstrdup(const char* s, char* at);
 
-void *mhandle_malloc(size_t size, char *at);
-void *mhandle_calloc(size_t nmemb, size_t size, char *at);
-void *mhandle_realloc(void *ptr, size_t size, char *at);
-char *mhandle_strdup(const char *s, char *at);
-void mhandle_free(void *ptr, char *at);
-
-void *__xmalloc(size_t size, char *at);
-void *__xcalloc(size_t nmemb, size_t size, char *at);
-void *__xrealloc(void *ptr, size_t size, char *at);
-void *__xstrdup(const char *s, char *at);
-
-void __mhandle_check(char *at);
+void __mhandle_check(char* at);
 void __mhandle_done();
 unsigned long __mhandle_used_memory();
 
@@ -83,7 +80,6 @@ unsigned long __mhandle_used_memory();
  * pointer can be registered using 'mhandle_register_ptr' to prevent function
  * 'free' from reporting invalid pointer errors. This pointer will not have the
  * extra corruption bytes. */
-void __mhandle_register_ptr(void *ptr, unsigned long size, char *at);
+void __mhandle_register_ptr(void* ptr, unsigned long size, char* at);
 
 #endif
-

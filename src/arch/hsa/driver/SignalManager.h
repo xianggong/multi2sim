@@ -25,51 +25,44 @@
 
 #include "Signal.h"
 
-namespace HSA
-{
+namespace HSA {
 
-/// SignalManager is the container of signals. It is responsible for 
+/// SignalManager is the container of signals. It is responsible for
 /// creating and destroying signals.
-class SignalManager 
-{
-private:
+class SignalManager {
+ private:
+  // A hash map that maps from the signal handler to the signals
+  std::unordered_map<uint64_t, std::unique_ptr<Signal>> signals;
 
-	// A hash map that maps from the signal handler to the signals
-	std::unordered_map<uint64_t, std::unique_ptr<Signal>> signals;
+  // The handler to allocate next
+  uint64_t handler_to_allocate = 0;
 
-	// The handler to allocate next
-	uint64_t handler_to_allocate = 0;
+ public:
+  /// Constructor
+  SignalManager();
 
-public:
+  /// Destructor
+  ~SignalManager();
 
-	/// Constructor
-	SignalManager();
+  /// Create a signal with an initial value. Return the handler of the
+  /// newly created signal. The signal manager keeps the ownership
+  /// of the signals.
+  uint64_t CreateSignal(int64_t initial_value);
 
-	/// Destructor
-	~SignalManager();
+  /// Destory the signal with a particular handler
+  void DestorySignal(uint64_t handler);
 
-	/// Create a signal with an initial value. Return the handler of the 
-	/// newly created signal. The signal manager keeps the ownership 
-	/// of the signals.
-	uint64_t CreateSignal(int64_t initial_value);
+  /// Change the value of the signal
+  void ChangeValue(uint64_t handler, int64_t value);
 
-	/// Destory the signal with a particular handler
-	void DestorySignal(uint64_t handler);
+  /// Check if the signal handler is valid
+  /// @param handler Signal handler
+  /// @return if the signal handler is valid
+  bool isValidSignalHandler(uint64_t handler);
 
-	/// Change the value of the signal
-	void ChangeValue(uint64_t handler, int64_t value);
-
-	/// Check if the signal handler is valid
-	/// @param handler Signal handler
-	/// @return if the signal handler is valid
-	bool isValidSignalHandler(uint64_t handler);
-
-	/// Get the value of a signal
-	int64_t GetValue(uint64_t handler);
+  /// Get the value of a signal
+  int64_t GetValue(uint64_t handler);
 };
-
 }
 
 #endif  // ARCH_HSA_DRIVER_SIGNALMANAGER_H
-
-

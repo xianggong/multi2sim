@@ -23,47 +23,30 @@
 #include "Rank.h"
 #include "System.h"
 
+namespace dram {
 
-namespace dram
-{
-
-
-Rank::Rank(int id,
-		Channel *parent,
-		int num_banks,
-		int num_rows,
-		int num_columns,
-		int num_bits)
-		:
-		id(id),
-		channel(parent)
-{
-	// Create the banks for this rank.
-	for (int i = 0; i < num_banks; i++)
-		banks.emplace_back(new Bank(i, this, num_rows, num_columns,
-				num_bits));
+Rank::Rank(int id, Channel* parent, int num_banks, int num_rows,
+           int num_columns, int num_bits)
+    : id(id), channel(parent) {
+  // Create the banks for this rank.
+  for (int i = 0; i < num_banks; i++)
+    banks.emplace_back(new Bank(i, this, num_rows, num_columns, num_bits));
 }
 
-
-void Rank::setLastScheduledCommand(CommandType type)
-{
-	last_scheduled_commands[type] = System::frequency_domain->getCycle();
-	last_scheduled_command_type = type;
+void Rank::setLastScheduledCommand(CommandType type) {
+  last_scheduled_commands[type] = System::frequency_domain->getCycle();
+  last_scheduled_command_type = type;
 }
 
+void Rank::dump(std::ostream& os) const {
+  // Print header
+  os << misc::fmt("\t\tDumping Rank %d\n", id);
 
-void Rank::dump(std::ostream &os) const
-{
-	// Print header
-	os << misc::fmt("\t\tDumping Rank %d\n", id);
-
-	// Print banks owned by this rank
-	os << misc::fmt("\t\t%d Banks\n\t\tBank dump:\n", (int) banks.size());
-	for (auto const& bank : banks)
-	{
-		bank->dump(os);
-	}
+  // Print banks owned by this rank
+  os << misc::fmt("\t\t%d Banks\n\t\tBank dump:\n", (int)banks.size());
+  for (auto const& bank : banks) {
+    bank->dump(os);
+  }
 }
-
 
 }  // namespace dram

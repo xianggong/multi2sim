@@ -27,9 +27,7 @@
 
 #include "Memory.h"
 
-
-namespace mem
-{
+namespace mem {
 
 const unsigned Memory::LogPageSize;
 const unsigned Memory::PageSize;
@@ -37,471 +35,383 @@ const unsigned Memory::PageMask;
 
 bool Memory::safe_mode = true;
 
-
-Memory::Page *Memory::getPage(unsigned address)
-{
-	unsigned tag = address & ~(PageSize - 1);
-	auto it = pages.find(tag);
-	return it == pages.end() ? nullptr : it->second.get();
+Memory::Page* Memory::getPage(unsigned address) {
+  unsigned tag = address & ~(PageSize - 1);
+  auto it = pages.find(tag);
+  return it == pages.end() ? nullptr : it->second.get();
 }
 
+Memory::Page* Memory::getNextPage(unsigned address) {
+  // Get tag of the page just following address
+  unsigned tag = (address + PageSize) & ~(PageSize - 1);
+  if (!tag) return nullptr;
 
-Memory::Page *Memory::getNextPage(unsigned address)
-{
-	// Get tag of the page just following address
-	unsigned tag = (address + PageSize) & ~(PageSize - 1);
-	if (!tag)
-		return nullptr;
+  // Look for a page exactly following the given address. If it is found,
+  // return it.
+  auto it = pages.find(tag);
+  if (it != pages.end()) return it->second.get();
 
-	// Look for a page exactly following the given address. If it is found,
-	// return it.
-	auto it = pages.find(tag);
-	if (it != pages.end())
-		return it->second.get();
-	
-	// Page following address is not found, so check all memory pages to
-	// find the one with the lowest tag following address.
-	unsigned min_tag = 0xffffffff;
-	Page *min_page = nullptr;
-	for (auto &pair : pages)
-	{
-		Page *page = pair.second.get();
-		if (page->getTag() > tag && page->getTag() < min_tag)
-		{
-			min_tag = page->getTag();
-			min_page = page;
-		}
-	}
+  // Page following address is not found, so check all memory pages to
+  // find the one with the lowest tag following address.
+  unsigned min_tag = 0xffffffff;
+  Page* min_page = nullptr;
+  for (auto& pair : pages) {
+    Page* page = pair.second.get();
+    if (page->getTag() > tag && page->getTag() < min_tag) {
+      min_tag = page->getTag();
+      min_page = page;
+    }
+  }
 
-	// Return the found page (or nullptr)
-	return min_page;
+  // Return the found page (or nullptr)
+  return min_page;
 }
 
-Memory::Page *Memory::newPage(unsigned address, unsigned perm)
-{
-	// Allocate new page
-	unsigned tag = address & ~(PageSize - 1);
-	auto ret = pages.emplace(tag, misc::new_unique<Page>(tag, perm));
+Memory::Page* Memory::newPage(unsigned address, unsigned perm) {
+  // Allocate new page
+  unsigned tag = address & ~(PageSize - 1);
+  auto ret = pages.emplace(tag, misc::new_unique<Page>(tag, perm));
 
-	// Check tag page was inserted successfully
-	bool success = ret.second;
-	if (!success)
-		throw misc::Panic("Memory page already exists");
+  // Check tag page was inserted successfully
+  bool success = ret.second;
+  if (!success) throw misc::Panic("Memory page already exists");
 
-	// Obtain inserted page
-	auto it = ret.first;
-	Page *page = it->second.get();
+  // Obtain inserted page
+  auto it = ret.first;
+  Page* page = it->second.get();
 
-	// Return it
-	return page;
+  // Return it
+  return page;
 }
 
+void Memory::Copy(unsigned dest, unsigned src, unsigned size) {
+  // Restrictions. No overlapping allowed.
+  assert(!(dest & (PageSize - 1)));
+  assert(!(src & (PageSize - 1)));
+  assert(!(size & (PageSize - 1)));
+  if ((src < dest && src + size > dest) || (dest < src && dest + size > src))
+    misc::panic("%s: cannot copy overlapping regions", __FUNCTION__);
 
-void Memory::Copy(unsigned dest, unsigned src, unsigned size)
-{
-	// Restrictions. No overlapping allowed.
-	assert(!(dest & (PageSize-1)));
-	assert(!(src & (PageSize-1)));
-	assert(!(size & (PageSize-1)));
-	if ((src < dest && src + size > dest) ||
-			(dest < src && dest + size > src))
-		misc::panic("%s: cannot copy overlapping regions", __FUNCTION__);
-	
-	// Copy
-	while (size > 0)
-	{
-		// Get source and destination pages
-		Page *page_dest = getPage(dest);
-		Page *page_src = getPage(src);
-		assert(page_src && page_dest);
-		
-		// Different actions depending on whether source and
-		// destination page data are allocated.
-		if (page_src->getData())
-		{
-			page_dest->AllocateData();
-			memcpy(page_dest->getData(), page_src->getData(),
-					PageSize);
-		}
-		else
-		{
-			if (page_dest->getData())
-				memset(page_dest->getData(), 0, PageSize);
-		}
+  // Copy
+  while (size > 0) {
+    // Get source and destination pages
+    Page* page_dest = getPage(dest);
+    Page* page_src = getPage(src);
+    assert(page_src && page_dest);
 
-		// Advance pointers
-		src += PageSize;
-		dest += PageSize;
-		size -= PageSize;
-	}
+    // Different actions depending on whether source and
+    // destination page data are allocated.
+    if (page_src->getData()) {
+      page_dest->AllocateData();
+      memcpy(page_dest->getData(), page_src->getData(), PageSize);
+    } else {
+      if (page_dest->getData()) memset(page_dest->getData(), 0, PageSize);
+    }
+
+    // Advance pointers
+    src += PageSize;
+    dest += PageSize;
+    size -= PageSize;
+  }
 }
 
+char* Memory::getBuffer(unsigned address, unsigned size, AccessType access) {
+  // Get page offset and check page bounds
+  unsigned offset = address & (PageSize - 1);
+  if (offset + size > PageSize) return nullptr;
 
-char *Memory::getBuffer(unsigned address, unsigned size, AccessType access)
-{
-	// Get page offset and check page bounds
-	unsigned offset = address & (PageSize - 1);
-	if (offset + size > PageSize)
-		return nullptr;
-	
-	// Look for page
-	Page *page = getPage(address);
-	if (!page)
-		return nullptr;
-	
-	// Check page permissions
-	if ((page->getPerm() & access) != access && safe)
-		throw Error(misc::fmt("[0x%x] Permission denied", address));
-	
-	// Return pointer to page data
-	page->AllocateData();
-	return page->getData() + offset;
+  // Look for page
+  Page* page = getPage(address);
+  if (!page) return nullptr;
+
+  // Check page permissions
+  if ((page->getPerm() & access) != access && safe)
+    throw Error(misc::fmt("[0x%x] Permission denied", address));
+
+  // Return pointer to page data
+  page->AllocateData();
+  return page->getData() + offset;
 }
 
+void Memory::AccessAtPageBoundary(unsigned address, unsigned size, char* buffer,
+                                  AccessType access) {
+  // Find memory page and compute offset.
+  Page* page = getPage(address);
+  unsigned offset = address & (PageSize - 1);
+  assert(offset + size <= PageSize);
 
-void Memory::AccessAtPageBoundary(unsigned address, unsigned size,
-		char *buffer, AccessType access)
-{
-	// Find memory page and compute offset.
-	Page *page = getPage(address);
-	unsigned offset = address & (PageSize - 1);
-	assert(offset + size <= PageSize);
+  // On nonexistent page, raise segmentation fault in safe mode,
+  // or create page with full privileges for writes in unsafe mode.
+  if (!page) {
+    if (safe)
+      throw Error(
+          misc::fmt("[0x%x] Segmentation fault in "
+                    "guest program",
+                    address));
+    if (access == AccessRead || access == AccessExec) {
+      memset(buffer, 0, size);
+      return;
+    }
+    if (access == AccessWrite || access == AccessInit) {
+      page =
+          newPage(address, AccessRead | AccessWrite | AccessExec | AccessInit);
+    }
+  }
+  assert(page);
 
-	// On nonexistent page, raise segmentation fault in safe mode,
-	// or create page with full privileges for writes in unsafe mode.
-	if (!page)
-	{
-		if (safe)
-			throw Error(misc::fmt("[0x%x] Segmentation fault in "
-					"guest program", address));
-		if (access == AccessRead || access == AccessExec)
-		{
-			memset(buffer, 0, size);
-			return;
-		}
-		if (access == AccessWrite || access == AccessInit)
-		{
-			page = newPage(address, AccessRead |
-				AccessWrite | AccessExec |
-				AccessInit);
-		}
-	}
-	assert(page);
+  // If it is a write access, set the 'modified' flag in the page
+  // attributes (perm). This is not done for 'initialize' access.
+  if (access == AccessWrite) page->addPerm(AccessModified);
 
-	// If it is a write access, set the 'modified' flag in the page
-	// attributes (perm). This is not done for 'initialize' access.
-	if (access == AccessWrite)
-		page->addPerm(AccessModified);
+  // Check permissions in safe mode
+  if (safe && (page->getPerm() & access) != access)
+    throw Error(misc::fmt("[0x%x] Permission denied", address));
 
-	// Check permissions in safe mode
-	if (safe && (page->getPerm() & access) != access)
-		throw Error(misc::fmt("[0x%x] Permission denied", address));
+  // Read/execute access
+  if (access == AccessRead || access == AccessExec) {
+    if (page->getData())
+      memcpy(buffer, page->getData() + offset, size);
+    else
+      memset(buffer, 0, size);
+    return;
+  }
 
-	// Read/execute access
-	if (access == AccessRead || access == AccessExec)
-	{
-		if (page->getData())
-			memcpy(buffer, page->getData() + offset, size);
-		else
-			memset(buffer, 0, size);
-		return;
-	}
+  // Write/initialize access
+  if (access == AccessWrite || access == AccessInit) {
+    page->AllocateData();
+    memcpy(page->getData() + offset, buffer, size);
+    return;
+  }
 
-	// Write/initialize access
-	if (access == AccessWrite || access == AccessInit)
-	{
-		page->AllocateData();
-		memcpy(page->getData() + offset, buffer, size);
-		return;
-	}
-
-	// Shouldn't get here.
-	abort();
+  // Shouldn't get here.
+  abort();
 }
 
+void Memory::Access(unsigned address, unsigned size, char* buf,
+                    AccessType access) {
+  last_address = address;
+  while (size) {
+    unsigned offset = address & (PageSize - 1);
+    int chunksize = std::min(size, PageSize - offset);
+    AccessAtPageBoundary(address, chunksize, buf, access);
 
-void Memory::Access(unsigned address, unsigned size, char *buf,
-			AccessType access)
-{
-	last_address = address;
-	while (size)
-	{
-		unsigned offset = address & (PageSize - 1);
-		int chunksize = std::min(size, PageSize - offset);
-		AccessAtPageBoundary(address, chunksize, buf, access);
-
-		size -= chunksize;
-		buf += chunksize;
-		address += chunksize;
-	}
+    size -= chunksize;
+    buf += chunksize;
+    address += chunksize;
+  }
 }
 
-
-Memory::Memory()
-{
-	// Initialize
-	safe = safe_mode;
+Memory::Memory() {
+  // Initialize
+  safe = safe_mode;
 }
 
+Memory::Memory(const Memory& memory) {
+  // Copy pages
+  safe = false;
+  for (auto& it : memory.pages) {
+    // Get source page
+    Page* src_page = it.second.get();
 
-Memory::Memory(const Memory &memory)
-{
-	// Copy pages
-	safe = false;
-	for (auto &it : memory.pages)
-	{
-		// Get source page
-		Page *src_page = it.second.get();
+    // Create destination page with same permissions
+    newPage(src_page->getTag(), src_page->getPerm());
 
-		// Create destination page with same permissions
-		newPage(src_page->getTag(), src_page->getPerm());
+    // Copy data if any
+    if (src_page->getData())
+      Access(src_page->getTag(), PageSize, src_page->getData(), AccessInit);
+  }
 
-		// Copy data if any
-		if (src_page->getData())
-			Access(src_page->getTag(), PageSize,
-					src_page->getData(),
-					AccessInit);
-	}
-
-	// Copy other fields
-	safe = memory.safe;
-	heap_break = memory.heap_break;
+  // Copy other fields
+  safe = memory.safe;
+  heap_break = memory.heap_break;
 }
 
+unsigned Memory::MapSpace(unsigned address, unsigned size) {
+  assert(!(address & (PageSize - 1)));
+  assert(!(size & (PageSize - 1)));
+  unsigned tag_start = address;
+  unsigned tag_end = address;
+  for (;;) {
+    // Address space overflow
+    if (!tag_end) return -1;
 
-unsigned Memory::MapSpace(unsigned address, unsigned size)
-{
-	assert(!(address & (PageSize - 1)));
-	assert(!(size & (PageSize - 1)));
-	unsigned tag_start = address;
-	unsigned tag_end = address;
-	for (;;)
-	{
-		// Address space overflow
-		if (!tag_end)
-			return -1;
-		
-		// Not enough free pages in current region
-		if (getPage(tag_end))
-		{
-			tag_end += PageSize;
-			tag_start = tag_end;
-			continue;
-		}
-		
-		// Enough free pages
-		if (tag_end - tag_start + PageSize == size)
-			break;
-		assert(tag_end - tag_start + PageSize < size);
-		
-		// we have a new free page
-		tag_end += PageSize;
-	}
+    // Not enough free pages in current region
+    if (getPage(tag_end)) {
+      tag_end += PageSize;
+      tag_start = tag_end;
+      continue;
+    }
 
-	// Return the start of the free space
-	return tag_start;
+    // Enough free pages
+    if (tag_end - tag_start + PageSize == size) break;
+    assert(tag_end - tag_start + PageSize < size);
+
+    // we have a new free page
+    tag_end += PageSize;
+  }
+
+  // Return the start of the free space
+  return tag_start;
 }
 
+unsigned Memory::MapSpaceDown(unsigned address, unsigned size) {
+  assert(!(address & (PageSize - 1)));
+  assert(!(size & (PageSize - 1)));
+  unsigned tag_start = address;
+  unsigned tag_end = address;
+  for (;;) {
+    // Address space overflow
+    if (!tag_start) return (unsigned)-1;
 
-unsigned Memory::MapSpaceDown(unsigned address, unsigned size)
-{
-	assert(!(address & (PageSize - 1)));
-	assert(!(size & (PageSize - 1)));
-	unsigned tag_start = address;
-	unsigned tag_end = address;
-	for (;;)
-	{
-		// Address space overflow
-		if (!tag_start)
-			return (unsigned) -1;
-		
-		// Not enough free pages in current region
-		if (getPage(tag_start))
-		{
-			tag_start -= PageSize;
-			tag_end = tag_start;
-			continue;
-		}
-		
-		// Enough free pages
-		if (tag_end - tag_start + PageSize == size)
-			break;
-		assert(tag_end - tag_start + PageSize < size);
-		
-		// we have a new free page
-		tag_start -= PageSize;
-	}
+    // Not enough free pages in current region
+    if (getPage(tag_start)) {
+      tag_start -= PageSize;
+      tag_end = tag_start;
+      continue;
+    }
 
-	// Return the start of the free space
-	return tag_start;
+    // Enough free pages
+    if (tag_end - tag_start + PageSize == size) break;
+    assert(tag_end - tag_start + PageSize < size);
+
+    // we have a new free page
+    tag_start -= PageSize;
+  }
+
+  // Return the start of the free space
+  return tag_start;
 }
 
+void Memory::Map(unsigned address, unsigned size, unsigned perm) {
+  // Calculate page boundaries
+  unsigned tag1 = address & ~(PageSize - 1);
+  unsigned tag2 = (address + size - 1) & ~(PageSize - 1);
 
-void Memory::Map(unsigned address, unsigned size, unsigned perm)
-{
-	// Calculate page boundaries
-	unsigned tag1 = address & ~(PageSize-1);
-	unsigned tag2 = (address + size - 1) & ~(PageSize-1);
-
-	// Allocate pages
-	for (unsigned tag = tag1; tag <= tag2; tag += PageSize)
-	{
-		Page *page = getPage(tag);
-		if (!page)
-			page = newPage(tag, perm);
-		page->addPerm(perm);
-	}
+  // Allocate pages
+  for (unsigned tag = tag1; tag <= tag2; tag += PageSize) {
+    Page* page = getPage(tag);
+    if (!page) page = newPage(tag, perm);
+    page->addPerm(perm);
+  }
 }
 
+void Memory::Unmap(unsigned address, unsigned size) {
+  // Calculate page boundaries
+  assert(!(address & (PageSize - 1)));
+  assert(!(size & (PageSize - 1)));
+  unsigned tag1 = address & ~(PageSize - 1);
+  unsigned tag2 = (address + size - 1) & ~(PageSize - 1);
 
-void Memory::Unmap(unsigned address, unsigned size)
-{
-	// Calculate page boundaries
-	assert(!(address & (PageSize - 1)));
-	assert(!(size & (PageSize - 1)));
-	unsigned tag1 = address & ~(PageSize-1);
-	unsigned tag2 = (address + size - 1) & ~(PageSize-1);
-
-	// Deallocate pages
-	for (unsigned tag = tag1; tag <= tag2; tag += PageSize)
-		pages.erase(tag);
+  // Deallocate pages
+  for (unsigned tag = tag1; tag <= tag2; tag += PageSize) pages.erase(tag);
 }
 
+void Memory::Protect(unsigned address, unsigned size, unsigned perm) {
+  // Calculate page boundaries
+  assert(!(address & (PageSize - 1)));
+  assert(!(size & (PageSize - 1)));
+  unsigned tag1 = address & ~(PageSize - 1);
+  unsigned tag2 = (address + size - 1) & ~(PageSize - 1);
 
-void Memory::Protect(unsigned address, unsigned size, unsigned perm)
-{
-	// Calculate page boundaries
-	assert(!(address & (PageSize - 1)));
-	assert(!(size & (PageSize - 1)));
-	unsigned tag1 = address & ~(PageSize-1);
-	unsigned tag2 = (address + size - 1) & ~(PageSize-1);
+  // Assign new permissions
+  for (unsigned tag = tag1; tag <= tag2; tag += PageSize) {
+    Page* page = getPage(tag);
+    if (!page) continue;
 
-	// Assign new permissions
-	for (unsigned tag = tag1; tag <= tag2; tag += PageSize)
-	{
-		Page *page = getPage(tag);
-		if (!page)
-			continue;
-
-		// Set page new protection flags
-		page->setPerm(perm);
-	}
+    // Set page new protection flags
+    page->setPerm(perm);
+  }
 }
 
-
-void Memory::WriteString(unsigned address, const std::string &s)
-{
-	Write(address, s.length() + 1, const_cast<char *>(s.c_str()));
+void Memory::WriteString(unsigned address, const std::string& s) {
+  Write(address, s.length() + 1, const_cast<char*>(s.c_str()));
 }
 
+std::string Memory::ReadString(unsigned address, int max_length) {
+  std::string s;
+  for (int i = 0; i < max_length; i++) {
+    // Read character
+    char c;
+    Read(address + i, 1, &c);
 
-std::string Memory::ReadString(unsigned address, int max_length)
-{
-	std::string s;
-	for (int i = 0; i < max_length; i++)
-	{
-		// Read character
-		char c;
-		Read(address + i, 1, &c);
+    // Done if null terminator found
+    if (!c) return s;
 
-		// Done if null terminator found
-		if (!c)
-			return s;
+    // Add character
+    s += c;
+  }
 
-		// Add character
-		s += c;
-	}
-
-	// If the maximum length was reached and the null character was not
-	// found, throw exception.
-	throw misc::Panic(misc::fmt("String at 0x%x exceeds %d characters",
-			address, max_length));
+  // If the maximum length was reached and the null character was not
+  // found, throw exception.
+  throw misc::Panic(
+      misc::fmt("String at 0x%x exceeds %d characters", address, max_length));
 }
 
-
-void Memory::Zero(unsigned address, unsigned size)
-{
-	char zero = 0;
-	while (size--)
-		Write(address++, 1, &zero);
+void Memory::Zero(unsigned address, unsigned size) {
+  char zero = 0;
+  while (size--) Write(address++, 1, &zero);
 }
 
+void Memory::Save(const std::string& path, unsigned start, unsigned end) {
+  std::ofstream f(path);
+  if (!f) throw Error(misc::fmt("%s: Cannot open file", path.c_str()));
 
-void Memory::Save(const std::string &path, unsigned start, unsigned end)
-{
-	std::ofstream f(path);
-	if (!f)
-		throw Error(misc::fmt("%s: Cannot open file", path.c_str()));
-	
-	// Set unsafe mode and dump
-	bool old_safe = safe;
-	safe = false;
-	while (start < end)
-	{
-		char buf[PageSize];
-		unsigned size = std::min(PageSize, end - start);
-		Read(start, size, buf);
-		f.write(buf, size);
-		start += size;
-	}
+  // Set unsafe mode and dump
+  bool old_safe = safe;
+  safe = false;
+  while (start < end) {
+    char buf[PageSize];
+    unsigned size = std::min(PageSize, end - start);
+    Read(start, size, buf);
+    f.write(buf, size);
+    start += size;
+  }
 
-	// Restore safe mode
-	safe = old_safe;
+  // Restore safe mode
+  safe = old_safe;
 }
 
+void Memory::Load(const std::string& path, unsigned start) {
+  // Open file
+  std::ifstream f(path);
+  if (!f) throw Error(misc::fmt("%s: Cannot open file", path.c_str()));
 
-void Memory::Load(const std::string &path, unsigned start)
-{
-	// Open file
-	std::ifstream f(path);
-	if (!f)
-		throw Error(misc::fmt("%s: Cannot open file", path.c_str()));
-	
-	// Set unsafe mode and load
-	bool old_safe = safe;
-	safe = false;
-	while (f)
-	{
-		char buf[PageSize];
-		f.read(buf, PageSize);
-		unsigned size = f.gcount();
-		Write(start, size, buf);
-		start += size;
-	}
+  // Set unsafe mode and load
+  bool old_safe = safe;
+  safe = false;
+  while (f) {
+    char buf[PageSize];
+    f.read(buf, PageSize);
+    unsigned size = f.gcount();
+    Write(start, size, buf);
+    start += size;
+  }
 
-	// Restore safe mode
-	safe = old_safe;
+  // Restore safe mode
+  safe = old_safe;
 }
 
+void Memory::Clone(const Memory& memory) {
+  // Clear destination memory
+  Clear();
 
-void Memory::Clone(const Memory &memory)
-{
-	// Clear destination memory
-	Clear();
+  // Copy pages
+  safe = false;
+  for (auto& it : memory.pages) {
+    // Get source page
+    Page* src_page = it.second.get();
 
-	// Copy pages
-	safe = false;
-	for (auto &it : memory.pages)
-	{
-		// Get source page
-		Page *src_page = it.second.get();
+    // Create destination page with same permissions
+    newPage(src_page->getTag(), src_page->getPerm());
 
-		// Create destination page with same permissions
-		newPage(src_page->getTag(), src_page->getPerm());
+    // Copy data if any
+    if (src_page->getData())
+      Access(src_page->getTag(), PageSize, src_page->getData(), AccessInit);
+  }
 
-		// Copy data if any
-		if (src_page->getData())
-			Access(src_page->getTag(), PageSize,
-					src_page->getData(),
-					AccessInit);
-	}
-
-
-	// Copy other fields
-	safe = memory.safe;
-	heap_break = memory.heap_break;
+  // Copy other fields
+  safe = memory.safe;
+  heap_break = memory.heap_break;
 }
 
-
-} // namespace mem
-
+}  // namespace mem

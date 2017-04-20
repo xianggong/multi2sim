@@ -19,145 +19,118 @@
 #ifndef ARCH_HSA_EMULATOR_COMPONENT_H
 #define ARCH_HSA_EMULATOR_COMPONENT_H
 
-#include <string>
 #include <list>
 #include <memory>
+#include <string>
 
 #include "../../../../runtime/include/hsa.h"
 #include "Emulator.h"
 #include "Grid.h"
 
-
-namespace HSA
-{
+namespace HSA {
 
 class Grid;
 class AQLQueue;
 
 /// An HSA component is an HSA agent that support HSAIL virtual ISAs
-class Component
-{
-protected:
+class Component {
+ protected:
+  // A data structure holds the information of the agent
+  struct AgentInfo {
+    // The global unique 64-bit device handler
+    unsigned long long handler;
 
-	// A data structure holds the information of the agent
-	struct AgentInfo{
-		// The global unique 64-bit device handler
-		unsigned long long handler;
+    // Determine if the device is a GPU device
+    hsa_device_type_t device_type;
 
-		// Determine if the device is a GPU device
-		hsa_device_type_t device_type;
+    // Name of the device
+    std::string name;
 
-		// Name of the device
-		std::string name;
+    // Name of the vendor
+    std::string vendor_name;
 
-		// Name of the vendor
-		std::string vendor_name;
+    // Number of work items in a wavefront
+    unsigned int wavesize;
+  };
 
-		// Number of work items in a wavefront
-		unsigned int wavesize;
-	};
+  // Information of current device
+  AgentInfo agent_info;
 
-	// Information of current device
-	AgentInfo agent_info;
+  // List of work groups
+  std::list<std::unique_ptr<Grid>> grids;
 
-	// List of work groups
-	std::list<std::unique_ptr<Grid>> grids;
+  // List of queues associated with this component
+  std::list<std::unique_ptr<AQLQueue>> queues;
 
-	// List of queues associated with this component
-	std::list<std::unique_ptr<AQLQueue>> queues;
+ public:
+  /// Constructor
+  Component(unsigned long long handler) { this->agent_info.handler = handler; };
 
-public:
+  /// Create and return a standard virtual CPU device
+  static std::unique_ptr<Component> getDefaultCPUComponent(
+      unsigned long long handler);
 
-	/// Constructor
-	Component(unsigned long long handler)
-	{
-		this->agent_info.handler = handler;
-	};
+  /// Create and return a standard virtual GPU device
+  static std::unique_ptr<Component> getDefaultGPUComponent(
+      unsigned long long handler);
 
-	/// Create and return a standard virtual CPU device
-	static std::unique_ptr<Component> getDefaultCPUComponent(
-			unsigned long long handler);
+  /// Insert a queue into the queue list
+  void addQueue(std::unique_ptr<AQLQueue> queue);
 
-	/// Create and return a standard virtual GPU device
-	static std::unique_ptr<Component> getDefaultGPUComponent(
-			unsigned long long handler);
+  /// Execute instructions on this components
+  ///
+  /// \return
+  ///	Returns false if the component have no ongoing tasks and
+  /// 	no more tasks to be processed. When all components finish
+  ///	their tasks, the emulation finishes.
+  bool Execute();
 
-	/// Insert a queue into the queue list
-	void addQueue(std::unique_ptr<AQLQueue> queue);
+  /// Create a grid from a dispatch packet
+  void LaunchGrid(AQLDispatchPacket* packet);
 
-	/// Execute instructions on this components
-	///
-	/// \return
-	///	Returns false if the component have no ongoing tasks and
-	/// 	no more tasks to be processed. When all components finish
-	///	their tasks, the emulation finishes.
-	bool Execute();
+  /// Dump the information about the agent
+  void Dump(std::ostream& os) const;
 
-	/// Create a grid from a dispatch packet
-	void LaunchGrid(AQLDispatchPacket *packet);
+  /// Operator \c << invoking the function Dump) on an output stream
+  friend std::ostream& operator<<(std::ostream& os,
+                                  const Component& component) {
+    component.Dump(os);
+    return os;
+  }
 
-	/// Dump the information about the agent
-	void Dump(std::ostream &os) const;
+  //
+  // Setters and getters for agent_info
+  //
 
-	/// Operator \c << invoking the function Dump) on an output stream
-	friend std::ostream &operator<<(std::ostream &os,
-			const Component &component)
-	{
-		component.Dump(os);
-		return os;
-	}
+  /// Get handler
+  unsigned long long getHandler() const { return agent_info.handler; }
 
+  /// Set name field in agent_info
+  void setName(const std::string& name) { agent_info.name = name; }
 
+  /// Get name field of agent_info
+  std::string getName() { return agent_info.name; }
 
+  /// Set device type
+  void setDeviceType(hsa_device_type_t type) { agent_info.device_type = type; }
 
+  /// Get device type
+  hsa_device_type_t getDeivceType() const { return agent_info.device_type; }
 
-	//
-	// Setters and getters for agent_info
-	//
+  /// Set vendor_name field of agent_info
+  void setVendorName(const std::string& vendor_name) {
+    agent_info.vendor_name = vendor_name;
+  }
 
-	/// Get handler
-	unsigned long long getHandler() const { return agent_info.handler; }
+  /// Get vendor_name of the device
+  std::string getVendorName() const { return agent_info.vendor_name; }
 
-	/// Set name field in agent_info
-	void setName(const std::string &name) { agent_info.name = name; }
+  /// Set the number of work items in a wavefront
+  void setWavesize(unsigned int wavesize) { agent_info.wavesize = wavesize; }
 
-	/// Get name field of agent_info
-	std::string getName(){ return agent_info.name; }
-
-	/// Set device type
-	void setDeviceType(hsa_device_type_t type)
-	{ 
-		agent_info.device_type = type; 
-	}
-
-	/// Get device type
-	hsa_device_type_t getDeivceType() const
-	{
-		return agent_info.device_type;
-	}
-
-	/// Set vendor_name field of agent_info
-	void setVendorName(const std::string &vendor_name)
-	{
-		agent_info.vendor_name = vendor_name;
-	}
-
-	/// Get vendor_name of the device
-	std::string getVendorName() const { return agent_info.vendor_name; }
-
-	/// Set the number of work items in a wavefront
-	void setWavesize(unsigned int wavesize)
-	{
-		agent_info.wavesize = wavesize;
-	}
-
-	/// Get the number of work items in a wavefront
-	unsigned int getWavesize() const { return agent_info.wavesize; }
-
-
+  /// Get the number of work items in a wavefront
+  unsigned int getWavesize() const { return agent_info.wavesize; }
 };
-
 }
 
 #endif
-

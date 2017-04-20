@@ -22,60 +22,42 @@
 #include "Arch.h"
 #include "Timing.h"
 
+namespace comm {
 
-namespace comm
-{
-
-Timing::Timing(const std::string &name) :
-		name(name)
-{
-	// Register timing simulator in architecture pool
-	ArchPool *arch_pool = ArchPool::getInstance();
-	arch_pool->RegisterTiming(name, this);
+Timing::Timing(const std::string& name) : name(name) {
+  // Register timing simulator in architecture pool
+  ArchPool* arch_pool = ArchPool::getInstance();
+  arch_pool->RegisterTiming(name, this);
 }
 
-
-void Timing::ConfigureFrequencyDomain(int frequency)
-{
-	esim::Engine *engine = esim::Engine::getInstance();
-	assert(!frequency_domain);
-	frequency_domain = engine->RegisterFrequencyDomain(name, frequency);
+void Timing::ConfigureFrequencyDomain(int frequency) {
+  esim::Engine* engine = esim::Engine::getInstance();
+  assert(!frequency_domain);
+  frequency_domain = engine->RegisterFrequencyDomain(name, frequency);
 }
 
-	
-void Timing::WriteMemoryConfiguration(misc::IniFile *ini_file)
-{
-	throw misc::Panic("Architecture does not have a default memory "
-			"configuration");
+void Timing::WriteMemoryConfiguration(misc::IniFile* ini_file) {
+  throw misc::Panic(
+      "Architecture does not have a default memory "
+      "configuration");
 }
 
-
-void Timing::CheckMemoryConfiguration(misc::IniFile *ini_file)
-{
-	throw misc::Panic("Architecture does not have a memory configuration "
-			"checker");
+void Timing::CheckMemoryConfiguration(misc::IniFile* ini_file) {
+  throw misc::Panic(
+      "Architecture does not have a memory configuration "
+      "checker");
 }
 
-
-void Timing::ParseMemoryConfigurationEntry(misc::IniFile *ini_file,
-			const std::string &section)
-{
-	throw misc::Panic("Architeture does not have a parser for the "
-			"[Entry] section of the memory configuration file");
+void Timing::ParseMemoryConfigurationEntry(misc::IniFile* ini_file,
+                                           const std::string& section) {
+  throw misc::Panic(
+      "Architeture does not have a parser for the "
+      "[Entry] section of the memory configuration file");
 }
 
+int Timing::getNumEntryModules() { throw misc::Panic("Not implemented"); }
 
-int Timing::getNumEntryModules()
-{
-	throw misc::Panic("Not implemented");
+mem::Module* Timing::getEntryModule(int index) {
+  throw misc::Panic("Not implemented");
 }
-
-
-mem::Module *Timing::getEntryModule(int index)
-{
-	throw misc::Panic("Not implemented");
 }
-
-
-}
-

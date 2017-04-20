@@ -22,16 +22,13 @@
 
 #include "HsaInstructionWorker.h"
 
-namespace HSA
-{
+namespace HSA {
 
-class MemFenceInstructionWorker: public HsaInstructionWorker
-{
-public:
-	MemFenceInstructionWorker(WorkItem *work_item,
-			StackFrame *stack_frame);
-	virtual ~MemFenceInstructionWorker();
-	void Execute(BrigCodeEntry *instruction) override;
+class MemFenceInstructionWorker : public HsaInstructionWorker {
+ public:
+  MemFenceInstructionWorker(WorkItem* work_item, StackFrame* stack_frame);
+  virtual ~MemFenceInstructionWorker();
+  void Execute(BrigCodeEntry* instruction) override;
 };
 
 }  // namespace HSA

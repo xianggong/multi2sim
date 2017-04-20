@@ -17,40 +17,30 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "Arch.h"
 #include "Emulator.h"
+#include "Arch.h"
 
 #include <lib/cpp/String.h>
 
+namespace comm {
 
-namespace comm
-{
+Emulator::Emulator(const std::string& name) : name(name), timer(name) {
+  // Obtain event-driven simulator engine
+  esim = esim::Engine::getInstance();
 
-Emulator::Emulator(const std::string &name) :
-		name(name),
-		timer(name)
-{
-	// Obtain event-driven simulator engine
-	esim = esim::Engine::getInstance();
-
-	// Register emulatorlator in architecture pool
-	ArchPool *arch_pool = ArchPool::getInstance();
-	arch_pool->RegisterEmulator(name, this);
+  // Register emulatorlator in architecture pool
+  ArchPool* arch_pool = ArchPool::getInstance();
+  arch_pool->RegisterEmulator(name, this);
 }
 
-	
-void Emulator::DumpSummary(std::ostream &os) const
-{
-	double time_in_sec = (double) timer.getValue() / 1.0e6;
-	double inst_per_sec = time_in_sec > 0.0 ?
-			(double) num_instructions / time_in_sec :
-			0.0;
+void Emulator::DumpSummary(std::ostream& os) const {
+  double time_in_sec = (double)timer.getValue() / 1.0e6;
+  double inst_per_sec =
+      time_in_sec > 0.0 ? (double)num_instructions / time_in_sec : 0.0;
 
-	os << misc::fmt("RealTime = %.2f [s]\n", time_in_sec);
-	os << misc::fmt("Instructions = %lld\n", num_instructions);
-	os << misc::fmt("InstructionsPerSecond = %.0f\n", inst_per_sec);
+  os << misc::fmt("RealTime = %.2f [s]\n", time_in_sec);
+  os << misc::fmt("Instructions = %lld\n", num_instructions);
+  os << misc::fmt("InstructionsPerSecond = %.0f\n", inst_per_sec);
 }
-
 
 }  // namespace comm
-

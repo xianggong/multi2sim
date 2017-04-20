@@ -22,19 +22,16 @@
 
 #include "HsaInstructionWorker.h"
 
-namespace HSA
-{
+namespace HSA {
 
-class CmpInstructionWorker: public HsaInstructionWorker
-{
-	template<typename SrcType, typename DstType>
-	void Inst_CMP_Aux(BrigCodeEntry *instruction);
+class CmpInstructionWorker : public HsaInstructionWorker {
+  template <typename SrcType, typename DstType>
+  void Inst_CMP_Aux(BrigCodeEntry* instruction);
 
-public:
-	CmpInstructionWorker(WorkItem *work_item,
-			StackFrame *stack_frame);
-	virtual ~CmpInstructionWorker();
-	void Execute(BrigCodeEntry *instruction) override;
+ public:
+  CmpInstructionWorker(WorkItem* work_item, StackFrame* stack_frame);
+  virtual ~CmpInstructionWorker();
+  void Execute(BrigCodeEntry* instruction) override;
 };
 
 }  // namespace HSA

@@ -22,85 +22,76 @@
 #include "LdInstructionWorker.h"
 #include "WorkItem.h"
 
-namespace HSA
-{
+namespace HSA {
 
-LdInstructionWorker::LdInstructionWorker(WorkItem *work_item,
-		StackFrame *stack_frame) :
-		HsaInstructionWorker(work_item, stack_frame)
-{
+LdInstructionWorker::LdInstructionWorker(WorkItem* work_item,
+                                         StackFrame* stack_frame)
+    : HsaInstructionWorker(work_item, stack_frame) {}
+
+LdInstructionWorker::~LdInstructionWorker() {
+  // TODO Auto-generated destructor stub
 }
 
-LdInstructionWorker::~LdInstructionWorker()
-{
-	// TODO Auto-generated destructor stub
+template <typename T>
+void LdInstructionWorker::Inst_LD_Aux(BrigCodeEntry* instruction) {
+  // Get address according the type of the operand
+  unsigned address;
+  operand_value_retriever->Retrieve(instruction, 1, &address);
+
+  // Translate address to flat address
+  address = work_item->getFlatAddress(instruction->getSegment(), address);
+
+  // Read data
+  unsigned vector_modifier = instruction->getVectorModifier();
+  if (vector_modifier == 0) vector_modifier = 1;
+  auto value = misc::new_unique_array<T>(vector_modifier);
+  Emulator::getInstance()->getMemory()->Read(
+      address, sizeof(T) * vector_modifier, (char*)value.get());
+
+  // Move value from register or immediate into memory
+  operand_value_writer->Write(instruction, 0, value.get());
 }
 
-template<typename T>
-void LdInstructionWorker::Inst_LD_Aux(BrigCodeEntry *instruction)
-{
-	// Get address according the type of the operand
-	unsigned address;
-	operand_value_retriever->Retrieve(instruction, 1, &address);
+void LdInstructionWorker::Execute(BrigCodeEntry* instruction) {
+  switch (instruction->getType()) {
+    case BRIG_TYPE_U32:
 
-	// Translate address to flat address
-	address = work_item->getFlatAddress(instruction->getSegment(), address);
+      Inst_LD_Aux<unsigned int>(instruction);
+      break;
 
-	// Read data
-	unsigned vector_modifier = instruction->getVectorModifier();
-	if (vector_modifier == 0) vector_modifier = 1;
-	auto value = misc::new_unique_array<T>(vector_modifier);
-	Emulator::getInstance()->getMemory()->Read(address,
-			sizeof(T) * vector_modifier,
-			(char *)value.get());
+    case BRIG_TYPE_S32:
 
-	// Move value from register or immediate into memory
-	operand_value_writer->Write(instruction, 0, value.get());
-}
+      Inst_LD_Aux<int>(instruction);
+      break;
 
+    case BRIG_TYPE_F32:
 
-void LdInstructionWorker::Execute(BrigCodeEntry *instruction)
-{
-	switch (instruction->getType())
-	{
-	case BRIG_TYPE_U32:
+      Inst_LD_Aux<float>(instruction);
+      break;
 
-		Inst_LD_Aux<unsigned int>(instruction);
-		break;
+    case BRIG_TYPE_U64:
 
-	case BRIG_TYPE_S32:
+      Inst_LD_Aux<unsigned long long>(instruction);
+      break;
 
-		Inst_LD_Aux<int>(instruction);
-		break;
+    case BRIG_TYPE_S64:
 
-	case BRIG_TYPE_F32:
+      Inst_LD_Aux<long long>(instruction);
+      break;
 
-		Inst_LD_Aux<float>(instruction);
-		break;
+    case BRIG_TYPE_F64:
 
-	case BRIG_TYPE_U64:
+      Inst_LD_Aux<double>(instruction);
+      break;
 
-		Inst_LD_Aux<unsigned long long>(instruction);
-		break;
+    default:
 
-	case BRIG_TYPE_S64:
+      throw misc::Panic("Unimplemented type for Inst LD.");
+      break;
+  }
 
-		Inst_LD_Aux<long long>(instruction);
-		break;
-
-	case BRIG_TYPE_F64:
-
-		Inst_LD_Aux<double>(instruction);
-		break;
-
-	default:
-
-		throw misc::Panic("Unimplemented type for Inst LD.");
-		break;
-	}
-
-	// Move the pc forward
-	work_item->MovePcForwardByOne();
+  // Move the pc forward
+  work_item->MovePcForwardByOne();
 }
 
 }  // namespace HSA

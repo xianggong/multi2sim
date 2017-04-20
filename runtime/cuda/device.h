@@ -20,30 +20,26 @@
 #ifndef RUNTIME_CUDA_DEVICE_H
 #define RUNTIME_CUDA_DEVICE_H
 
-
 #include "api.h"
 
-struct cuda_device_t
-{
-	/* CUdevice is also an ID */
-	CUdevice device;
+struct cuda_device_t {
+  /* CUdevice is also an ID */
+  CUdevice device;
 
-	/* File descriptor, as returned by 'open' system call */
-	int fd;
+  /* File descriptor, as returned by 'open' system call */
+  int fd;
 
-	/* Name */
-	char *name;
+  /* Name */
+  char* name;
 
-	/* Attributes */
-	int attributes[CU_DEVICE_ATTRIBUTE_MAX];
+  /* Attributes */
+  int attributes[CU_DEVICE_ATTRIBUTE_MAX];
 
-	/* Streams associated */
-	struct list_t *stream_list;
+  /* Streams associated */
+  struct list_t* stream_list;
 };
 
-struct cuda_device_t *cuda_device_create();
-void cuda_device_free(struct cuda_device_t *device);
-
+struct cuda_device_t* cuda_device_create();
+void cuda_device_free(struct cuda_device_t* device);
 
 #endif
-

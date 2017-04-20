@@ -22,42 +22,22 @@
 #include "Context.h"
 #include "Emulator.h"
 
-
-namespace comm
-{
+namespace comm {
 
 int Context::id_counter = 1000;
 
+Context::Context(Emulator* emulator) : emulator(emulator) {
+  // Assign ID
+  id = id_counter++;
 
-Context::Context(Emulator *emulator) :
-		emulator(emulator)
-{
-	// Assign ID
-	id = id_counter++;
-
-	// Compute name
-	name = misc::fmt("%s context %d",
-			emulator->getName().c_str(),
-			id);
+  // Compute name
+  name = misc::fmt("%s context %d", emulator->getName().c_str(), id);
 }
 
+void Context::Suspend() { throw misc::Panic("Not implemented"); }
 
-void Context::Suspend()
-{
-	throw misc::Panic("Not implemented");
-}
+void Context::Wakeup() { throw misc::Panic("Not implemented"); }
 
-
-void Context::Wakeup()
-{
-	throw misc::Panic("Not implemented");
-}
-
-
-bool Context::isSuspended()
-{
-	throw misc::Panic("Not implemented");
-}
+bool Context::isSuspended() { throw misc::Panic("Not implemented"); }
 
 }  // namespace comm
-

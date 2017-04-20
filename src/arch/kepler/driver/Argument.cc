@@ -18,9 +18,4 @@
 
 #include "Argument.h"
 
-
-namespace Kepler
-{
-
-} // namespace Kepler
-
+namespace Kepler {}  // namespace Kepler

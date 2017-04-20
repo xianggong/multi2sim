@@ -20,29 +20,22 @@
 #include "CurrentWorkGroupSizeInstructionWorker.h"
 #include "WorkItem.h"
 
-namespace HSA
-{
+namespace HSA {
 
 CurrentWorkGroupSizeInstructionWorker::CurrentWorkGroupSizeInstructionWorker(
-		WorkItem *work_item,
-		StackFrame *stack_frame) :
-		HsaInstructionWorker(work_item, stack_frame)
-{
-}
+    WorkItem* work_item, StackFrame* stack_frame)
+    : HsaInstructionWorker(work_item, stack_frame) {}
 
+CurrentWorkGroupSizeInstructionWorker::
+    ~CurrentWorkGroupSizeInstructionWorker() {}
 
-CurrentWorkGroupSizeInstructionWorker::~CurrentWorkGroupSizeInstructionWorker()
-{
-}
-
-
-void CurrentWorkGroupSizeInstructionWorker::Execute(BrigCodeEntry *instruction)
-{
-	uint32_t dim;
-	operand_value_retriever->Retrieve(instruction, 1, &dim);
-	uint32_t size = work_item->getWorkGroup()->getCurrentWorkGroupSize(dim);
-	operand_value_writer->Write(instruction, 0, &size);
-	work_item->MovePcForwardByOne();
+void CurrentWorkGroupSizeInstructionWorker::Execute(
+    BrigCodeEntry* instruction) {
+  uint32_t dim;
+  operand_value_retriever->Retrieve(instruction, 1, &dim);
+  uint32_t size = work_item->getWorkGroup()->getCurrentWorkGroupSize(dim);
+  operand_value_writer->Write(instruction, 0, &size);
+  work_item->MovePcForwardByOne();
 }
 
 }  // namespace HSA

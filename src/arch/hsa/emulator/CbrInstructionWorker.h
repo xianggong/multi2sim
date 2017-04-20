@@ -22,16 +22,13 @@
 
 #include "HsaInstructionWorker.h"
 
-namespace HSA
-{
+namespace HSA {
 
-class CbrInstructionWorker: public HsaInstructionWorker
-{
-public:
-	CbrInstructionWorker(WorkItem *work_item,
-			StackFrame *stack_frame);
-	virtual ~CbrInstructionWorker();
-	void Execute(BrigCodeEntry *instruction) override;
+class CbrInstructionWorker : public HsaInstructionWorker {
+ public:
+  CbrInstructionWorker(WorkItem* work_item, StackFrame* stack_frame);
+  virtual ~CbrInstructionWorker();
+  void Execute(BrigCodeEntry* instruction) override;
 };
 
 }  // namespace HSA

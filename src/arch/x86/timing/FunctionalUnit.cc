@@ -20,78 +20,65 @@
 #include "FunctionalUnit.h"
 #include "Timing.h"
 
-
-namespace x86
-{
+namespace x86 {
 
 const int FunctionalUnit::MaxInstances;
 
-const misc::StringMap FunctionalUnit::type_map =
-{
-	{ "None", TypeNone },
-	{ "IntAdd", TypeIntAdd },
-	{ "IntMult", TypeIntMult },
-	{ "IntDiv", TypeIntDiv },
-	{ "EffAddr", TypeEffAddr },
-	{ "Logic", TypeLogic },
-	{ "FloatSimple", TypeFloatSimple },
-	{ "FloatAdd", TypeFloatAdd },
-	{ "FloatCompare", TypeFloatCompare },
-	{ "FloatMult", TypeFloatMult },
-	{ "FloatDiv", TypeFloatDiv },
-	{ "FloatComplex", TypeFloatComplex },
-	{ "XmmIntAdd", TypeXmmIntAdd },
-	{ "XmmIntMult", TypeXmmIntMult },
-	{ "XmmIntDiv", TypeXmmIntDiv },
-	{ "XmmLogic", TypeXmmLogic },
-	{ "XmmFloatAdd", TypeXmmFloatAdd },
-	{ "XmmFloatCompare", TypeXmmFloatCompare },
-	{ "XmmFloatMult", TypeXmmFloatMult },
-	{ "XmmFloatDiv", TypeXmmFloatDiv },
-	{ "XmmFloatConv", TypeXmmFloatConv },
-	{ "XmmFloatComplex", TypeXmmFloatComplex }
-};
+const misc::StringMap FunctionalUnit::type_map = {
+    {"None", TypeNone},
+    {"IntAdd", TypeIntAdd},
+    {"IntMult", TypeIntMult},
+    {"IntDiv", TypeIntDiv},
+    {"EffAddr", TypeEffAddr},
+    {"Logic", TypeLogic},
+    {"FloatSimple", TypeFloatSimple},
+    {"FloatAdd", TypeFloatAdd},
+    {"FloatCompare", TypeFloatCompare},
+    {"FloatMult", TypeFloatMult},
+    {"FloatDiv", TypeFloatDiv},
+    {"FloatComplex", TypeFloatComplex},
+    {"XmmIntAdd", TypeXmmIntAdd},
+    {"XmmIntMult", TypeXmmIntMult},
+    {"XmmIntDiv", TypeXmmIntDiv},
+    {"XmmLogic", TypeXmmLogic},
+    {"XmmFloatAdd", TypeXmmFloatAdd},
+    {"XmmFloatCompare", TypeXmmFloatCompare},
+    {"XmmFloatMult", TypeXmmFloatMult},
+    {"XmmFloatDiv", TypeXmmFloatDiv},
+    {"XmmFloatConv", TypeXmmFloatConv},
+    {"XmmFloatComplex", TypeXmmFloatComplex}};
 
+int FunctionalUnit::Reserve(Uop* uop) {
+  // Current cycle
+  Timing* timing = Timing::getInstance();
+  long long cycle = timing->getCycle();
 
-int FunctionalUnit::Reserve(Uop *uop)
-{
-	// Current cycle
-	Timing *timing = Timing::getInstance();
-	long long cycle = timing->getCycle();
+  // Find a free functional unit
+  assert(num_instances <= MaxInstances);
+  for (int i = 0; i < num_instances; i++) {
+    // Skip if instance is busy
+    if (cycle < cycle_free[i]) continue;
 
-	// Find a free functional unit
-	assert(num_instances <= MaxInstances);
-	for (int i = 0; i < num_instances; i++)
-	{
-		// Skip if instance is busy
-		if (cycle < cycle_free[i])
-			continue;
+    // Reserve instance
+    assert(operation_latency > 0);
+    assert(issue_latency > 0);
+    cycle_free[i] = cycle + issue_latency;
 
-		// Reserve instance
-		assert(operation_latency > 0);
-		assert(issue_latency > 0);
-		cycle_free[i] = cycle + issue_latency;
+    // Stats
+    num_accesses++;
+    waiting_time += cycle - uop->first_alu_cycle;
 
-		// Stats
-		num_accesses++;
-		waiting_time += cycle - uop->first_alu_cycle;
+    // Return the total operation latency
+    return operation_latency;
+  }
 
-		// Return the total operation latency
-		return operation_latency;
-	}
-
-	// No free instance found
-	num_denied_accesses++;
-	return 0;
+  // No free instance found
+  num_denied_accesses++;
+  return 0;
 }
 
-
-void FunctionalUnit::Release()
-{
-	assert(num_instances <= MaxInstances);
-	for (int i = 0; i < num_instances; i++)
-		cycle_free[i] = 0;
+void FunctionalUnit::Release() {
+  assert(num_instances <= MaxInstances);
+  for (int i = 0; i < num_instances; i++) cycle_free[i] = 0;
 }
-
 }
-

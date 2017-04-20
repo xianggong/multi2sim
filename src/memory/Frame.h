@@ -29,250 +29,220 @@
 #include "Cache.h"
 #include "Module.h"
 
-
 // Forward declarations
-namespace network
-{
+namespace network {
 class Message;
 }
 
-
-namespace mem
-{
+namespace mem {
 
 // Forward declarations
 class Module;
 
-
 /// Event frame for memory system events.
-class Frame : public esim::Frame
-{
-	// Counter for identifiers
-	static long long id_counter;
+class Frame : public esim::Frame {
+  // Counter for identifiers
+  static long long id_counter;
 
-	// Reference magic number that all live frames should have. When a
-	// frame is freed, its magic number is reset.
-	static const unsigned Magic = 0x36fc9da7;
+  // Reference magic number that all live frames should have. When a
+  // frame is freed, its magic number is reset.
+  static const unsigned Magic = 0x36fc9da7;
 
-	// Frame's magic number
-	unsigned magic = Magic;
+  // Frame's magic number
+  unsigned magic = Magic;
 
-	// Unique identifier, initialized in constructor.
-	long long id;
+  // Unique identifier, initialized in constructor.
+  long long id;
 
-	// Current module, initialized in constructor.
-	Module *module;
+  // Current module, initialized in constructor.
+  Module* module;
 
-	// Physical address, initialized in constructor.
-	unsigned address;
+  // Physical address, initialized in constructor.
+  unsigned address;
 
-public:
+ public:
+  /// Direction of an access
+  enum RequestDirection {
+    RequestDirectionInvalid = 0,
+    RequestDirectionUpDown,
+    RequestDirectionDownUp
+  };
 
-	/// Direction of an access
-	enum RequestDirection
-	{
-		RequestDirectionInvalid = 0,
-		RequestDirectionUpDown,
-		RequestDirectionDownUp
-	};
+  /// Reply message type
+  enum ReplyType { ReplyNone = 0, ReplyAck, ReplyAckData, ReplyAckError };
 
-	/// Reply message type
-	enum ReplyType
-	{
-		ReplyNone = 0,
-		ReplyAck,
-		ReplyAckData,
-		ReplyAckError
-	};
+  /// Message type
+  enum MessageType { MessageNone = 0, MessageClearOwner };
 
-	/// Message type
-	enum MessageType
-	{
-		MessageNone = 0,
-		MessageClearOwner
-	};
+  //
+  // Public fields
+  //
 
+  /// Pointer to integer variable to be incremented when the access is
+  /// over.
+  int* witness = nullptr;
 
+  /// Iterator to the current position of this frame in
+  /// Module::accesses.
+  std::list<Frame*>::iterator accesses_iterator;
 
-	
-	//
-	// Public fields
-	//
+  /// Iterator to the current position of this frame in
+  /// Module::write_accesses
+  std::list<Frame*>::iterator write_accesses_iterator;
 
-	/// Pointer to integer variable to be incremented when the access is
-	/// over.
-	int *witness = nullptr;
+  /// Type of memory access
+  Module::AccessType access_type = Module::AccessInvalid;
 
-	/// Iterator to the current position of this frame in
-	/// Module::accesses.
-	std::list<Frame *>::iterator accesses_iterator;
-	
-	/// Iterator to the current position of this frame in
-	/// Module::write_accesses
-	std::list<Frame *>::iterator write_accesses_iterator;
+  /// If true, this access has been coalesced with another access.
+  bool coalesced = false;
 
-	/// Type of memory access
-	Module::AccessType access_type = Module::AccessInvalid;
+  /// If this access is coalesced, this field refers to the oldest
+  /// access to the same block that this access is coalesced with.
+  Frame* master_frame = nullptr;
 
-	/// If true, this access has been coalesced with another access.
-	bool coalesced = false;
+  /// Queue of suspended dependent frames. When the access represented
+  /// by this frame completes, it will wake up all accesses enqueued
+  /// here.
+  esim::Queue queue;
 
-	/// If this access is coalesced, this field refers to the oldest
-	/// access to the same block that this access is coalesced with.
-	Frame *master_frame = nullptr;
+  /// Direction of an access. Up-down refers to processor-to-memory, while
+  /// down-up refers to memory-to-processor direction.
+  RequestDirection request_direction = RequestDirectionInvalid;
 
-	/// Queue of suspended dependent frames. When the access represented
-	/// by this frame completes, it will wake up all accesses enqueued
-	/// here.
-	esim::Queue queue;
+  /// Port currently being locked by this access, or nullptr if the
+  /// access is not locking a port.
+  Module::Port* port = nullptr;
 
-	/// Direction of an access. Up-down refers to processor-to-memory, while
-	/// down-up refers to memory-to-processor direction.
-	RequestDirection request_direction = RequestDirectionInvalid;
+  /// Flag indicating whether this access has locked a port for the first
+  /// time. It is used to decide whether we're still on time to
+  /// coalesce.
+  bool port_locked = false;
 
-	/// Port currently being locked by this access, or nullptr if the
-	/// access is not locking a port.
-	Module::Port *port = nullptr;
+  /// If true, this access waits in the queue of a port for it to be
+  /// released. If false, it backtracks to give priority to other accesses
+  /// and avoid deadlock.
+  bool blocking = false;
 
-	/// Flag indicating whether this access has locked a port for the first
-	/// time. It is used to decide whether we're still on time to
-	/// coalesce.
-	bool port_locked = false;
+  /// Flag indicating whether this access is a read.
+  bool read = false;
 
-	/// If true, this access waits in the queue of a port for it to be
-	/// released. If false, it backtracks to give priority to other accesses
-	/// and avoid deadlock.
-	bool blocking = false;
+  /// Flag indicating whether this access is a write.
+  bool write = false;
 
-	/// Flag indicating whether this access is a read.
-	bool read = false;
+  /// Flag indicating whether this access is a non-coherent write.
+  bool nc_write = false;
 
-	/// Flag indicating whether this access is a write.
-	bool write = false;
+  /// Flag indicating whether there is a block eviction in the current
+  /// access.
+  bool eviction = false;
 
-	/// Flag indicating whether this access is a non-coherent write.
-	bool nc_write = false;
+  /// If true, this is a retried access.
+  bool retry = false;
 
-	/// Flag indicating whether there is a block eviction in the current
-	/// access.
-	bool eviction = false;
+  /// Return error code from a child event chain.
+  bool error = false;
 
-	/// If true, this is a retried access.
-	bool retry = false;
+  /// Flag indicating whether there was a hit in the cache
+  bool hit = false;
 
-	/// Return error code from a child event chain.
-	bool error = false;
-	
-	/// Flag indicating whether there was a hit in the cache
-	bool hit = false;
+  /// Flag activated when a block was not found in a find-and-lock
+  /// event for a down-up request.
+  bool block_not_found = false;
 
-	/// Flag activated when a block was not found in a find-and-lock
-	/// event for a down-up request.
-	bool block_not_found = false;
+  /// Return value of a read request, indicating whether the transfered
+  /// block is shared among other caches.
+  bool shared = false;
 
-	/// Return value of a read request, indicating whether the transfered
-	/// block is shared among other caches.
-	bool shared = false;
+  /// Tag associated with the access
+  int tag = -1;
 
-	/// Tag associated with the access	
-	int tag = -1;
+  /// Set associated with the access
+  int set = -1;
 
-	/// Set associated with the access
-	int set = -1;
+  /// Way associated with the access
+  int way = -1;
 
-	/// Way associated with the access
-	int way = -1;
+  /// Tag of an evicted block
+  int src_tag = -1;
 
-	/// Tag of an evicted block
-	int src_tag = -1;
+  /// Set of an evicted block
+  int src_set = -1;
 
-	/// Set of an evicted block
-	int src_set = -1;
+  /// Way of an evicted block
+  int src_way = -1;
 
-	/// Way of an evicted block
-	int src_way = -1;
+  /// Block state
+  Cache::BlockState state = Cache::BlockInvalid;
 
-	/// Block state
-	Cache::BlockState state = Cache::BlockInvalid;
+  /// Target module for transfers
+  Module* target_module = nullptr;
 
-	/// Target module for transfers
-	Module *target_module = nullptr;
+  /// Exception module to send invalidations
+  Module* except_module = nullptr;
 
-	/// Exception module to send invalidations
-	Module *except_module = nullptr;
+  /// Number of pending replies
+  int pending = 0;
 
-	/// Number of pending replies
-	int pending = 0;
+  /// Message sent through the network for this access
+  net::Message* message = nullptr;
 
-	/// Message sent through the network for this access
-	net::Message *message = nullptr;
+  /// Type of reply
+  ReplyType reply = ReplyNone;
 
-	/// Type of reply
-	ReplyType reply = ReplyNone;
+  /// Type of message
+  MessageType message_type = MessageNone;
 
-	/// Type of message
-	MessageType message_type = MessageNone;
+  /// Size in bytes of a reply
+  int reply_size = 0;
 
-	/// Size in bytes of a reply
-	int reply_size = 0;
+  /// If true, notify the lower-level directory that it should retain
+  /// the owner.
+  bool retain_owner = false;
 
-	/// If true, notify the lower-level directory that it should retain
-	/// the owner.
-	bool retain_owner = false;
+  // If true, the invalidation just happens to certain sub-blocks
+  // of a block
+  bool partial_invalidation = false;
 
-	// If true, the invalidation just happens to certain sub-blocks
-	// of a block
-	bool partial_invalidation = false;
+  //
+  // Functions
+  //
 
+  /// Return a new unique value for a frame identifier.
+  static long long getNewId() { return ++id_counter; }
 
+  /// Constructor
+  Frame(long long id, Module* module, unsigned address);
 
-	//
-	// Functions
-	//
+  /// Destructor
+  ~Frame() {
+    // Reset magic number, useful to detect memory corruption.
+    magic = 0;
+  }
 
-	/// Return a new unique value for a frame identifier.
-	static long long getNewId() { return ++id_counter; }
+  /// Return a unique identifier for this event frame, assigned
+  /// internally when created.
+  long long getId() const { return id; }
 
-	/// Constructor
-	Frame(long long id, Module *module, unsigned address);
+  /// Return the module associated with this event frame.
+  Module* getModule() const { return module; }
 
-	/// Destructor
-	~Frame()
-	{
-		// Reset magic number, useful to detect memory corruption.
-		magic = 0;
-	}
+  /// Return the memory address associated with this event frame.
+  unsigned getAddress() const { return address; }
 
-	/// Return a unique identifier for this event frame, assigned
-	/// internally when created.
-	long long getId() const { return id; }
+  /// Set the reply type to the given value only if it is a higher reply
+  /// than the one set to far. This is useful to select a reply type from
+  /// several sub-blocks.
+  void setReplyIfHigher(ReplyType reply) {
+    if (reply > this->reply) this->reply = reply;
+  }
 
-	/// Return the module associated with this event frame.
-	Module *getModule() const { return module; }
-
-	/// Return the memory address associated with this event frame.
-	unsigned getAddress() const { return address; }
-
-	/// Set the reply type to the given value only if it is a higher reply
-	/// than the one set to far. This is useful to select a reply type from
-	/// several sub-blocks.
-	void setReplyIfHigher(ReplyType reply)
-	{
-		if (reply > this->reply)
-			this->reply = reply;
-	}
-
-	/// Check for valid magic number. This function can be used for debug
-	/// purposes to detect memory corruption in frame handling.
-	void CheckMagic()
-	{
-		if (magic != Magic)
-			throw misc::Panic("Corrupt memory frame");
-	}
+  /// Check for valid magic number. This function can be used for debug
+  /// purposes to detect memory corruption in frame handling.
+  void CheckMagic() {
+    if (magic != Magic) throw misc::Panic("Corrupt memory frame");
+  }
 };
-
 
 }  // namespace mem
 
 #endif
-

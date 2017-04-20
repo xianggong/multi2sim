@@ -17,24 +17,22 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-
 #include <lib/util/debug.h>
 
 #include "visual.h"
 
-
-void visual_run(const char *file_name)
-{
-	fatal("operation not available.\n"
-		"\tMulti2Sim was compiled without support for GTK applications. When you ran\n"
-		"\tthe './configure' script, no GTK support was detected in your system, so\n"
-		"\tthe simulator compilation did not include the visualization tool. To\n"
-		"\tinstall it, please follow these steps:\n"
-		"\t  1) Install the development packages for GTK 3.0. Under Debian-based\n"
-		"\t     Linux distributions, this package is listed as 'libgtk-3-dev'.\n"
-		"\t  2) Re-run the './configure' script\n"
-		"\t  3) Recompile the simulator: make clean && make\n");
+void visual_run(const char *file_name) {
+  fatal(
+      "operation not available.\n"
+      "\tMulti2Sim was compiled without support for GTK applications. When you "
+      "ran\n"
+      "\tthe './configure' script, no GTK support was detected in your system, "
+      "so\n"
+      "\tthe simulator compilation did not include the visualization tool. To\n"
+      "\tinstall it, please follow these steps:\n"
+      "\t  1) Install the development packages for GTK 3.0. Under "
+      "Debian-based\n"
+      "\t     Linux distributions, this package is listed as 'libgtk-3-dev'.\n"
+      "\t  2) Re-run the './configure' script\n"
+      "\t  3) Recompile the simulator: make clean && make\n");
 }
-
-
-

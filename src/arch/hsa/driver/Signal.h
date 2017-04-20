@@ -22,26 +22,21 @@
 
 #include <cstdint>
 
-namespace HSA
-{
+namespace HSA {
 
-class Signal
-{
+class Signal {
+  // Signal value
+  int64_t value = 0;
 
-	// Signal value
-	int64_t value = 0;
+ public:
+  // Constructor
+  Signal();
 
-public:
+  // Get value
+  int64_t getValue() const { return value; }
 
-	// Constructor
-	Signal();
-
-	// Get value
-	int64_t getValue() const { return value; }
-
-	// Set value
-	void setValue(int64_t value) { this->value = value; }
-
+  // Set value
+  void setValue(int64_t value) { this->value = value; }
 };
 
 }  // namespace net

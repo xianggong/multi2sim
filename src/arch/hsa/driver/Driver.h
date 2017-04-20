@@ -25,131 +25,121 @@
 #include <lib/cpp/Debug.h>
 #include <memory/Memory.h>
 
-#include "SignalManager.h"
 #include "../../../../runtime/include/hsa.h"
 #include "../../../../runtime/include/hsa_ext_finalize.h"
 #include "DriverCallHandler.h"
+#include "SignalManager.h"
 
-namespace HSA
-{
+namespace HSA {
 class StackFrame;
 class Component;
 class WorkItem;
 
-class Driver: public comm::Driver
-{
-	// Debug file name, as set by user
-	static std::string debug_file;
+class Driver : public comm::Driver {
+  // Debug file name, as set by user
+  static std::string debug_file;
 
-	// Maps from the function name in HSAIL to call number
-	static misc::StringMap function_name_to_call_map;
+  // Maps from the function name in HSAIL to call number
+  static misc::StringMap function_name_to_call_map;
 
-	// The container of all signals
-	std::unique_ptr<SignalManager> signal_manager;
+  // The container of all signals
+  std::unique_ptr<SignalManager> signal_manager;
 
-	/// Constructor
-	Driver();
+  /// Constructor
+  Driver();
 
-	// Unique instance of singleton
-	static std::unique_ptr<Driver> instance;
+  // Unique instance of singleton
+  static std::unique_ptr<Driver> instance;
 
-	// Enumeration with all ABI call codes. Each entry of Driver.def will
-	// expand into an assignment. For example, entry
-	//
-	//	DEFCALL(Init, 1, &hsa_init)
-	//
-	// expands to
-	//
-	//	CallCodeInit = 1
-	//
-	// A last element 'CallCodeCount' is equal to one unit higher than the
-	// latest ABI call found in the file.
-	enum
-	{
-		CallInvalid,
+  // Enumeration with all ABI call codes. Each entry of Driver.def will
+  // expand into an assignment. For example, entry
+  //
+  //	DEFCALL(Init, 1, &hsa_init)
+  //
+  // expands to
+  //
+  //	CallCodeInit = 1
+  //
+  // A last element 'CallCodeCount' is equal to one unit higher than the
+  // latest ABI call found in the file.
+  enum {
+    CallInvalid,
 #define DEFCALL(name, code, func) CallCode##name,
 #include "Driver.def"
 #undef DEFCALL
-		CallCodeCount
-	};
+    CallCodeCount
+  };
 
-	// ABI call functions. Each entry in Driver.def will expand into a
-	// function prototype. For example, entry
-	//
-	//	DEFCALL(Init, 1, &hsa_init)
-	//
-	// expands to
-	//
-	//	void CallInit(mem::Memory *memory, unsigned args_ptr);
-	//
-#define DEFCALL(name, code, func) \
-	int Call##name(comm::Context *context, \
-			mem::Memory *memory, \
-			unsigned args_ptr);
+// ABI call functions. Each entry in Driver.def will expand into a
+// function prototype. For example, entry
+//
+//	DEFCALL(Init, 1, &hsa_init)
+//
+// expands to
+//
+//	void CallInit(mem::Memory *memory, unsigned args_ptr);
+//
+#define DEFCALL(name, code, func)                             \
+  int Call##name(comm::Context* context, mem::Memory* memory, \
+                 unsigned args_ptr);
 #include "Driver.def"
 #undef DEFCALL
 
-	// ABI call names
-	static const char *call_name[CallCodeCount];
+  // ABI call names
+  static const char* call_name[CallCodeCount];
 
-	// Prototype of a member function executing an ABI call
-	typedef int (Driver::*CallFn)(comm::Context *context,
-			mem::Memory *memory,
-			unsigned args_ptr);
+  // Prototype of a member function executing an ABI call
+  typedef int (Driver::*CallFn)(comm::Context* context, mem::Memory* memory,
+                                unsigned args_ptr);
 
-	// Table of ABI call execution functions
-	static const CallFn call_fn[CallCodeCount];
+  // Table of ABI call execution functions
+  static const CallFn call_fn[CallCodeCount];
 
-	// Retrieve the value at a certain memory space
-	template <typename T>
-	static T getArgumentValue(int offset, mem::Memory *memory,
-			unsigned args_ptr)
-	{
-		// Read from memory
-		T value;
-		memory->Read(args_ptr + offset, sizeof(T), (char *)&value);
-		return value;
-	}
+  // Retrieve the value at a certain memory space
+  template <typename T>
+  static T getArgumentValue(int offset, mem::Memory* memory,
+                            unsigned args_ptr) {
+    // Read from memory
+    T value;
+    memory->Read(args_ptr + offset, sizeof(T), (char*)&value);
+    return value;
+  }
 
-	// Set the the value at a certain memory space
-	template<typename T>
-	static void setArgumentValue(T value, int offset, mem::Memory *memory,
-			unsigned args_ptr)
-	{
-		memory->Write(args_ptr+offset, sizeof(T), (char *)&value);
-	}
+  // Set the the value at a certain memory space
+  template <typename T>
+  static void setArgumentValue(T value, int offset, mem::Memory* memory,
+                               unsigned args_ptr) {
+    memory->Write(args_ptr + offset, sizeof(T), (char*)&value);
+  }
 
-	// Get driver call handler by call number
-	std::unique_ptr<DriverCallHandler> GetDriverCallHandler(int code);
+  // Get driver call handler by call number
+  std::unique_ptr<DriverCallHandler> GetDriverCallHandler(int code);
 
-public:
+ public:
+  /// Obtain instance of the singleton
+  static Driver* getInstance();
 
-	/// Obtain instance of the singleton
-	static Driver *getInstance();
+  /// Debugger
+  static misc::Debug debug;
 
-	/// Debugger
-	static misc::Debug debug;
+  /// Register command-line options
+  static void RegisterOptions();
 
-	/// Register command-line options
-	static void RegisterOptions();
+  /// Process command-line options
+  static void ProcessOptions();
 
-	/// Process command-line options
-	static void ProcessOptions();
+  /// Invoke an ABI call. See documentation for comm::Driver::Call for
+  /// details on the meaning of the arguments.
+  int Call(comm::Context* context, mem::Memory* memory, int code,
+           unsigned args_ptr);
 
-	/// Invoke an ABI call. See documentation for comm::Driver::Call for
-	/// details on the meaning of the arguments.
-	int Call(comm::Context *context,
-			mem::Memory *memory,
-			int code,
-			unsigned args_ptr);
+  /// Destructor
+  virtual ~Driver();
 
-	/// Destructor
-	virtual ~Driver();
-
-	/// Get the signal manager
-	SignalManager *getSignalManager() const { return signal_manager.get(); }
+  /// Get the signal manager
+  SignalManager* getSignalManager() const { return signal_manager.get(); }
 };
 
 } /* namespace HSA */
 
-#endif 
+#endif

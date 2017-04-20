@@ -27,183 +27,152 @@
 #include <lib/cpp/Misc.h>
 #include <lib/cpp/String.h>
 
-
-namespace comm
-{
+namespace comm {
 
 class Driver;
 
-
 /// File descriptor
-class FileDescriptor
-{
+class FileDescriptor {
+ public:
+  /// File descriptor types
+  enum Type {
+    TypeInvalid = 0,
+    TypeRegular,   /// Regular file
+    TypeStandard,  /// Standard input/output
+    TypePipe,      /// Pipe
+    TypeVirtual,   /// Virtual file with artificial content
+    TypeDevice,    /// Virtual device
+    TypeSocket     /// Network socket
+  };
 
-public:
+  /// String map for Type
+  static const misc::StringMap TypeTypeMap;
 
-	/// File descriptor types
-	enum Type
-	{
-		TypeInvalid = 0,
-		TypeRegular,	/// Regular file
-		TypeStandard,	/// Standard input/output
-		TypePipe,		/// Pipe
-		TypeVirtual,	/// Virtual file with artificial content
-		TypeDevice,	/// Virtual device
-		TypeSocket	/// Network socket
-	};
+ private:
+  // File type
+  Type type;
 
-	/// String map for Type
-	static const misc::StringMap TypeTypeMap;
+  // Guest and host file descriptors
+  int guest_index;
+  int host_index;
 
-private:
+  // O_xxx flags used in 'open' system call
+  int flags;
 
-	// File type
-	Type type;
+  // Associated path, if applicable
+  std::string path;
 
-	// Guest and host file descriptors
-	int guest_index;
-	int host_index;
+  // Associated driver for type FileDescDevice
+  comm::Driver* driver;
 
-	// O_xxx flags used in 'open' system call
-	int flags;
+ public:
+  /// Constructor
+  FileDescriptor(Type type, int guest_index, int host_index, int flags,
+                 const std::string& path)
+      : type(type),
+        guest_index(guest_index),
+        host_index(host_index),
+        flags(flags),
+        path(path) {}
 
-	// Associated path, if applicable
-	std::string path;
+  /// Dump to output stream, or \c std::cout if \a os is omitted
+  void Dump(std::ostream& os = std::cout) const;
 
-	// Associated driver for type FileDescDevice
-	comm::Driver *driver;
+  /// Equivalent to Dump()
+  friend std::ostream& operator<<(std::ostream& os,
+                                  const FileDescriptor& desc) {
+    desc.Dump(os);
+    return os;
+  }
 
-public:
+  /// Return type of file descriptor
+  Type getType() const { return type; }
 
-	/// Constructor
-	FileDescriptor(Type type,
-			int guest_index,
-			int host_index,
-			int flags,
-			const std::string &path)
-			:
-			type(type),
-			guest_index(guest_index),
-			host_index(host_index),
-			flags(flags),
-			path(path) 
-			{ }
-	
-	/// Dump to output stream, or \c std::cout if \a os is omitted
-	void Dump(std::ostream &os = std::cout) const;
+  /// Return guest file descriptor index
+  int getGuestIndex() const { return guest_index; }
 
-	/// Equivalent to Dump()
-	friend std::ostream &operator<<(std::ostream &os,
-			const FileDescriptor &desc)
-	{
-		desc.Dump(os);
-		return os;
-	}
+  /// Return host file descriptor index
+  int getHostIndex() const { return host_index; }
 
-	/// Return type of file descriptor
-	Type getType() const { return type; }
+  /// Return the flags with which this file was opened
+  int getFlags() const { return flags; }
 
-	/// Return guest file descriptor index
-	int getGuestIndex() const { return guest_index; }
+  /// Update the file descriptor flags
+  void setFlags(int flags) { this->flags = flags; }
 
-	/// Return host file descriptor index
-	int getHostIndex() const { return host_index; }
+  /// Return associated path, if any
+  const std::string& getPath() const { return path; }
 
-	/// Return the flags with which this file was opened
-	int getFlags() const { return flags; }
-	
-	/// Update the file descriptor flags
-	void setFlags(int flags) { this->flags = flags; }
+  /// Set a driver associated with the file descriptor. The descriptor
+  /// must be of type FileDescDevice.
+  void setDriver(comm::Driver* driver) {
+    assert(type == TypeDevice);
+    this->driver = driver;
+  }
 
-	/// Return associated path, if any
-	const std::string &getPath() const { return path; }
-
-	/// Set a driver associated with the file descriptor. The descriptor
-	/// must be of type FileDescDevice.
-	void setDriver(comm::Driver *driver)
-	{
-		assert(type == TypeDevice);
-		this->driver = driver;
-	}
-
-	/// Return the driver associated with the file descriptor. The file
-	/// descriptor must be of type TypeDevice.
-	comm::Driver *getDriver() const
-	{
-		assert(type == TypeDevice);
-		return driver;
-	}
+  /// Return the driver associated with the file descriptor. The file
+  /// descriptor must be of type TypeDevice.
+  comm::Driver* getDriver() const {
+    assert(type == TypeDevice);
+    return driver;
+  }
 };
-
 
 /// File descriptor table. The same table can be pointed to by multiple
 /// contexts. The last context pointing to it is responsible for freeing it.
-class FileTable
-{
-	// List of file descriptors
-	std::vector<std::unique_ptr<FileDescriptor>> descriptors;
+class FileTable {
+  // List of file descriptors
+  std::vector<std::unique_ptr<FileDescriptor>> descriptors;
 
-public:
+ public:
+  /// Constructor
+  FileTable();
 
-	/// Constructor
-	FileTable();
-	
-	/// Dump table into output stream, or \c std::cout if none given.
-	void Dump(std::ostream &os = std::cout) const;
+  /// Dump table into output stream, or \c std::cout if none given.
+  void Dump(std::ostream& os = std::cout) const;
 
-	/// Equivalent to Dump()
-	friend std::ostream &operator<<(std::ostream &os,
-			const FileTable &table)
-	{
-		table.Dump(os);
-		return os;
-	}
+  /// Equivalent to Dump()
+  friend std::ostream& operator<<(std::ostream& os, const FileTable& table) {
+    table.Dump(os);
+    return os;
+  }
 
-	/// Return file descriptor \a index, or \c nullptr is no file descriptor
-	/// exists with that identifier.
-	FileDescriptor *getFileDescriptor(int index) const
-	{
-		return misc::inRange(index, 0, (int) descriptors.size() - 1) ?
-				descriptors[index].get() : nullptr;
-	}
+  /// Return file descriptor \a index, or \c nullptr is no file descriptor
+  /// exists with that identifier.
+  FileDescriptor* getFileDescriptor(int index) const {
+    return misc::inRange(index, 0, (int)descriptors.size() - 1)
+               ? descriptors[index].get()
+               : nullptr;
+  }
 
-	/// Create a new file descriptor with a specific guest identifier. If
-	/// the value in \a guest_index is set to -1, the first free guest file
-	/// descriptor will be allocated.
-	FileDescriptor *newFileDescriptor(
-			FileDescriptor::Type type,
-			int guest_index,
-			int host_index,
-			const std::string &path,
-			int flags);
-	
-	/// Create a new file descriptor, assigning the first available guest
-	/// identifier.
-	FileDescriptor *newFileDescriptor(
-			FileDescriptor::Type type,
-			int host_index,
-			const std::string &path,
-			int flags)
-	{
-		return newFileDescriptor(type, -1, host_index, path, flags);
-	}
+  /// Create a new file descriptor with a specific guest identifier. If
+  /// the value in \a guest_index is set to -1, the first free guest file
+  /// descriptor will be allocated.
+  FileDescriptor* newFileDescriptor(FileDescriptor::Type type, int guest_index,
+                                    int host_index, const std::string& path,
+                                    int flags);
 
-	/// Free file descriptor with identifier \a index. If \a index is out of
-	/// range, the call will ignore it silently.
-	void freeFileDescriptor(int index);
+  /// Create a new file descriptor, assigning the first available guest
+  /// identifier.
+  FileDescriptor* newFileDescriptor(FileDescriptor::Type type, int host_index,
+                                    const std::string& path, int flags) {
+    return newFileDescriptor(type, -1, host_index, path, flags);
+  }
 
-	/// Return the host file descriptor associated with the guest file
-	/// descriptor given in \a guest_index, or -1 if \a index is not a
-	/// valid guest descriptor.
-	int getHostIndex(int guest_index) const;
+  /// Free file descriptor with identifier \a index. If \a index is out of
+  /// range, the call will ignore it silently.
+  void freeFileDescriptor(int index);
 
-	/// Return the guest file descriptor associated with a host file
-	/// descriptor given in \a host_index, or -1 if invalid.
-	int getGuestIndex(int host_index) const;
+  /// Return the host file descriptor associated with the guest file
+  /// descriptor given in \a guest_index, or -1 if \a index is not a
+  /// valid guest descriptor.
+  int getHostIndex(int guest_index) const;
+
+  /// Return the guest file descriptor associated with a host file
+  /// descriptor given in \a host_index, or -1 if invalid.
+  int getGuestIndex(int host_index) const;
 };
-
 
 }  // namespace comm
 
 #endif
-

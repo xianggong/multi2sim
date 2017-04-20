@@ -20,67 +20,60 @@
 #ifndef ARCH_X86_TIMING_OBJECT_POOL_H
 #define ARCH_X86_TIMING_OBJECT_POOL_H
 
-#include <lib/cpp/IniFile.h>
 #include <arch/x86/emulator/Emulator.h>
 #include <arch/x86/emulator/Uinst.h>
 #include <arch/x86/timing/Core.h>
 #include <arch/x86/timing/Cpu.h>
 #include <arch/x86/timing/Thread.h>
 #include <arch/x86/timing/Timing.h>
+#include <lib/cpp/IniFile.h>
 
+namespace x86 {
 
-namespace x86
-{
+class ObjectPool {
+  // Timing simulator
+  Timing* timing;
 
-class ObjectPool
-{
-	// Timing simulator
-	Timing *timing;
+  // A context
+  Context* context;
 
-	// A context
-	Context *context;
+  // Unique instance of singleton
+  static std::unique_ptr<ObjectPool> instance;
 
-	// Unique instance of singleton
-	static std::unique_ptr<ObjectPool> instance;
+ public:
+  /// Contructor
+  ObjectPool();
 
-public:
+  static ObjectPool* getInstance() {
+    // Instance already exists
+    if (instance.get()) return instance.get();
 
-	/// Contructor
-	ObjectPool();
+    // Create instance
+    instance = misc::new_unique<ObjectPool>();
+    return instance.get();
+  }
 
-	static ObjectPool *getInstance()
-	{
-		// Instance already exists
-		if (instance.get())
-			return instance.get();
+  /// Destroy all singletons related with x86 simulation, including:
+  ///
+  /// - ObjectPool singleton
+  /// - Timing singleton
+  /// - Emulator singleton
+  /// - ArchPool singleton
+  ///
+  static void Destroy();
 
-		// Create instance
-		instance = misc::new_unique<ObjectPool>();
-		return instance.get();
-	}
+  /// Return the CPU object.
+  Cpu* getCpu() const { return timing->getCpu(); }
 
-	/// Destroy all singletons related with x86 simulation, including:
-	///
-	/// - ObjectPool singleton
-	/// - Timing singleton
-	/// - Emulator singleton
-	/// - ArchPool singleton
-	///
-	static void Destroy();
+  /// Return the core.
+  Core* getCore() const { return getCpu()->getCore(0); }
 
-	/// Return the CPU object.
-	Cpu *getCpu() const { return timing->getCpu(); }
+  /// Return the thread.
+  Thread* getThread() const { return getCore()->getThread(0); }
 
-	/// Return the core.
-	Core *getCore() const { return getCpu()->getCore(0); }
-
-	/// Return the thread.
-	Thread *getThread() const { return getCore()->getThread(0); }
-
-	/// Return the context.
-	Context *getContext() const { return context; }
+  /// Return the context.
+  Context* getContext() const { return context; }
 };
-
 }
 
-#endif // ARCH_X86_TIMING_OBJECT_POOL_H
+#endif  // ARCH_X86_TIMING_OBJECT_POOL_H

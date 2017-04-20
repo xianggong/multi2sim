@@ -24,10 +24,7 @@
 #include <string>
 #include <vector>
 
-
-namespace misc
-{
-
+namespace misc {
 
 /// This singleton class manages environment variables. When initialized, it
 /// gathers the host environment variables. Then it offers the possibility to
@@ -38,69 +35,62 @@ namespace misc
 /// communication between Multi2Sim and the guest runtime libraries. The user
 /// can pass options to the Multi2Sim command line, which are then internally
 /// forwarded as environment variables to the guest program.
-class Environment
-{
-	// List of environment variables
-	std::vector<std::string> variables;
+class Environment {
+  // List of environment variables
+  std::vector<std::string> variables;
 
-	// Singleton instance
-	static std::unique_ptr<Environment> instance;
+  // Singleton instance
+  static std::unique_ptr<Environment> instance;
 
-	// Private constructor for singleton
-	Environment();
+  // Private constructor for singleton
+  Environment();
 
-public:
+ public:
+  /// Get instance of singleton
+  static Environment* getInstance();
 
-	/// Get instance of singleton
-	static Environment *getInstance();
+  /// Add a variable
+  ///
+  /// \param variable
+  ///	The variable name
+  ///
+  /// \param value
+  ///	Content of the variable without quotes
+  void addVariable(const std::string& name, const std::string& value);
 
-	/// Add a variable
-	///
-	/// \param variable
-	///	The variable name
-	///
-	/// \param value
-	///	Content of the variable without quotes
-	void addVariable(const std::string &name, const std::string &value);
-	
-	/// Return array of environment variables. This function is useful for
-	/// automatic traversal in for loops, with the following code:
-	///
-	/// \code
-	///	for (auto variable : environment->getVariables())
-	///		std::cout << variable << "\n";
-	/// \endcode
-	const std::vector<std::string> &getVariables() const
-	{
-		return variables;
-	}
+  /// Return array of environment variables. This function is useful for
+  /// automatic traversal in for loops, with the following code:
+  ///
+  /// \code
+  ///	for (auto variable : environment->getVariables())
+  ///		std::cout << variable << "\n";
+  /// \endcode
+  const std::vector<std::string>& getVariables() const { return variables; }
 
-	/// Parse a string containing a list of environment variables, as given
-	/// by the user in the context configuration file.
-	///
-	/// \param str
-	///	String containing a list of environment variables. For example:
-	///
-	///	\code
-	///	"VAR1=Value1" 'VAR2=Value2' 'VAR3="The 3rd value"'
-	///	\endcode
-	///
-	/// \param list
-	///	A list of strings is returned here containing all environment
-	///	variables parsed from \a str. For the example above, the result
-	///	would be a vector of 3 elements:
-	///
-	///	\code
-	///	VAR1=Value
-	///	VAR2=Value2
-	///	VAR3="The 3rd value"
-	///	\endcode
-	static void getFromString(const std::string &str,
-			std::vector<std::string> &list);
+  /// Parse a string containing a list of environment variables, as given
+  /// by the user in the context configuration file.
+  ///
+  /// \param str
+  ///	String containing a list of environment variables. For example:
+  ///
+  ///	\code
+  ///	"VAR1=Value1" 'VAR2=Value2' 'VAR3="The 3rd value"'
+  ///	\endcode
+  ///
+  /// \param list
+  ///	A list of strings is returned here containing all environment
+  ///	variables parsed from \a str. For the example above, the result
+  ///	would be a vector of 3 elements:
+  ///
+  ///	\code
+  ///	VAR1=Value
+  ///	VAR2=Value2
+  ///	VAR3="The 3rd value"
+  ///	\endcode
+  static void getFromString(const std::string& str,
+                            std::vector<std::string>& list);
 };
 
-
-} // namespace misc
+}  // namespace misc
 
 #endif
-

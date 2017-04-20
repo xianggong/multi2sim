@@ -22,15 +22,14 @@
 
 struct hash_table_t;
 
-struct vi_net_system_t
-{
-	int active;
+struct vi_net_system_t {
+  int active;
 
-	struct hash_table_t *net_table;
-	struct list_t 	    *level_list;
+  struct hash_table_t* net_table;
+  struct list_t* level_list;
 };
 
-extern struct vi_net_system_t *vi_net_system;
+extern struct vi_net_system_t* vi_net_system;
 
 void vi_net_system_init(void);
 void vi_net_system_level_assign(void);

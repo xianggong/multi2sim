@@ -23,31 +23,24 @@
 
 #include "Driver.h"
 
+namespace SI {
 
-namespace SI
-{
+// Forward declarations
+class Disassembler;
 
-// Forward declarations                                                          
-class Disassembler; 
-
-
-const char *Driver::call_name[CallCodeCount] =
-{
-	"Invalid",  // For code 0
+const char* Driver::call_name[CallCodeCount] = {
+    "Invalid",  // For code 0
 #define DEFCALL(name, code) #name,
 #include "Driver.def"
 #undef DEFCALL
 };
 
-
-const Driver::CallFn Driver::call_fn[CallCodeCount] =
-{
-	nullptr,  // For code 0
+const Driver::CallFn Driver::call_fn[CallCodeCount] = {
+    nullptr,  // For code 0
 #define DEFCALL(name, code) &Driver::Call##name,
 #include "Driver.def"
 #undef DEFCALL
 };
-
 
 std::string Driver::debug_file;
 
@@ -55,81 +48,65 @@ std::unique_ptr<Driver> Driver::instance;
 
 misc::Debug Driver::debug;
 
+Driver* Driver::getInstance() {
+  // Instance already exists
+  if (instance.get()) return instance.get();
 
-Driver *Driver::getInstance()
-{
-	// Instance already exists
-	if (instance.get())
-		return instance.get();
-
-	// Create instance
-	instance = misc::new_unique<Driver>();
-	return instance.get();
-}
-	
-
-int Driver::Call(comm::Context *context,
-		mem::Memory *memory,
-		int code,
-		unsigned args_ptr)
-{
-	// Check valid call
-	if (code < 0 || code >= CallCodeCount || !call_fn[code])
-	{
-		debug << misc::fmt("Invalid call code (%d)\n", code);
-		return -1;
-	}
-
-	// Debug
-	debug << misc::fmt("ABI call '%s'\n", call_name[code]);
-
-	// Invoke call
-	CallFn fn = call_fn[code];
-	return (this->*fn)(context, memory, args_ptr);
+  // Create instance
+  instance = misc::new_unique<Driver>();
+  return instance.get();
 }
 
+int Driver::Call(comm::Context* context, mem::Memory* memory, int code,
+                 unsigned args_ptr) {
+  // Check valid call
+  if (code < 0 || code >= CallCodeCount || !call_fn[code]) {
+    debug << misc::fmt("Invalid call code (%d)\n", code);
+    return -1;
+  }
 
-void Driver::RegisterOptions()
-{
-	// Get command line object
-	misc::CommandLine *command_line = misc::CommandLine::getInstance();
+  // Debug
+  debug << misc::fmt("ABI call '%s'\n", call_name[code]);
 
-	// Category
-	command_line->setCategory("Southern Islands");
-
-	// Option '--si-debug-driver <file>'
-	command_line->RegisterString("--si-debug-driver <file>", debug_file,
-			"Dump debug information for the Southern Islands driver, "
-			"including all ABI calls coming from the runtime.");	
+  // Invoke call
+  CallFn fn = call_fn[code];
+  return (this->*fn)(context, memory, args_ptr);
 }
 
+void Driver::RegisterOptions() {
+  // Get command line object
+  misc::CommandLine* command_line = misc::CommandLine::getInstance();
 
-void Driver::ProcessOptions()
-{
-	debug.setPath(debug_file);
-	debug.setPrefix("[Southern Islands driver]");
+  // Category
+  command_line->setCategory("Southern Islands");
+
+  // Option '--si-debug-driver <file>'
+  command_line->RegisterString(
+      "--si-debug-driver <file>", debug_file,
+      "Dump debug information for the Southern Islands driver, "
+      "including all ABI calls coming from the runtime.");
 }
 
-
-Program *Driver::AddProgram(int program_id)
-{
-	// Create new program and insert it to program list
-	programs.emplace_back(misc::new_unique<Program>(program_id));
-
-	// Return
-	return programs.back().get();
+void Driver::ProcessOptions() {
+  debug.setPath(debug_file);
+  debug.setPrefix("[Southern Islands driver]");
 }
 
+Program* Driver::AddProgram(int program_id) {
+  // Create new program and insert it to program list
+  programs.emplace_back(misc::new_unique<Program>(program_id));
 
-Kernel *Driver::AddKernel(int kernel_id, const std::string &func, Program *program)
-{
-	// Create new kernel and insert it to program list
-	kernels.emplace_back(misc::new_unique<Kernel>(kernel_id, func, program));
-
-	// Return
-	return kernels.back().get();
+  // Return
+  return programs.back().get();
 }
 
+Kernel* Driver::AddKernel(int kernel_id, const std::string& func,
+                          Program* program) {
+  // Create new kernel and insert it to program list
+  kernels.emplace_back(misc::new_unique<Kernel>(kernel_id, func, program));
+
+  // Return
+  return kernels.back().get();
+}
 
 }  // namepsace SI
-

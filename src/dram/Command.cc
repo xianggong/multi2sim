@@ -26,79 +26,50 @@
 #include "Rank.h"
 #include "System.h"
 
+namespace dram {
 
-namespace dram
-{
-
-misc::StringMap CommandTypeMap
-{
-	{"Invalid", CommandInvalid},
-	{"Precharge", CommandPrecharge},
-	{"Activate", CommandActivate},
-	{"Read", CommandRead},
-	{"Write", CommandWrite}
-};
+misc::StringMap CommandTypeMap{{"Invalid", CommandInvalid},
+                               {"Precharge", CommandPrecharge},
+                               {"Activate", CommandActivate},
+                               {"Read", CommandRead},
+                               {"Write", CommandWrite}};
 
 std::map<CommandType, std::string> CommandTypeMapToString = {
-	{CommandInvalid, "Invalid"},
-	{CommandPrecharge, "Precharge"},
-	{CommandActivate, "Activate"},
-	{CommandRead, "Read"},
-	{CommandWrite, "Write"}
-};
-
+    {CommandInvalid, "Invalid"},
+    {CommandPrecharge, "Precharge"},
+    {CommandActivate, "Activate"},
+    {CommandRead, "Read"},
+    {CommandWrite, "Write"}};
 
 Command::Command(std::shared_ptr<Request> request, CommandType type,
-		long long cycle_created, Bank *bank)
-		:
-		request(request),
-		type(type),
-		cycle_created(cycle_created),
-		bank(bank)
-{
-	// Set the rank.
-	rank = bank->getRank();
+                 long long cycle_created, Bank* bank)
+    : request(request), type(type), cycle_created(cycle_created), bank(bank) {
+  // Set the rank.
+  rank = bank->getRank();
 
-	// Set the id.
-	System *dram = System::getInstance();
-	id = dram->getNextCommandId();
+  // Set the id.
+  System* dram = System::getInstance();
+  id = dram->getNextCommandId();
 }
 
+int Command::getDuration() const {
+  // Get the controller that this command is under.
+  Controller* controller = bank->getRank()->getChannel()->getController();
 
-int Command::getDuration() const
-{
-	// Get the controller that this command is under.
-	Controller *controller = bank->getRank()->getChannel()->getController();
-
-	// Return the correct duration of this command based on its type.
-	return controller->getCommandDuration(type);
+  // Return the correct duration of this command based on its type.
+  return controller->getCommandDuration(type);
 }
 
+int Command::getBankId() const { return bank->getId(); }
 
-int Command::getBankId() const
-{
-	return bank->getId();
-}
+int Command::getRankId() const { return rank->getId(); }
 
+Address* Command::getAddress() { return request->getAddress(); }
 
-int Command::getRankId() const
-{
-	return rank->getId();
-}
-
-
-Address *Command::getAddress()
-{
-	return request->getAddress();
-}
-
-
-void Command::setFinished()
-{
-	// Mark the associated request as finished, too, if this is the read or
-	// write command for that request.
-	if (type == CommandRead || type == CommandWrite)
-		request->setFinished();
+void Command::setFinished() {
+  // Mark the associated request as finished, too, if this is the read or
+  // write command for that request.
+  if (type == CommandRead || type == CommandWrite) request->setFinished();
 }
 
 }  // namespace dram

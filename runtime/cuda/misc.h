@@ -22,16 +22,10 @@
 
 #include <stdio.h>
 
-
-
 /*
  * File functions
  */
 
-FILE *file_open_for_write(char *fname);
-
-
-
+FILE* file_open_for_write(char* fname);
 
 #endif
-

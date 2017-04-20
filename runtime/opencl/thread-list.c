@@ -24,102 +24,85 @@
 #include "mhandle.h"
 #include "thread-list.h"
 
-
-struct thread_list_node_t
-{
-	struct thread_list_node_t *next;
-	void *data;
+struct thread_list_node_t {
+  struct thread_list_node_t *next;
+  void *data;
 };
 
-
-struct thread_list_t
-{
-	struct thread_list_node_t *head;
-	pthread_rwlock_t lock;
+struct thread_list_t {
+  struct thread_list_node_t *head;
+  pthread_rwlock_t lock;
 };
 
-struct thread_list_t *thread_list_create(void)
-{
-	struct thread_list_t *list = xmalloc(sizeof (struct thread_list_t));
-	list->head = NULL;
-	pthread_rwlock_init(&list->lock, NULL);
+struct thread_list_t *thread_list_create(void) {
+  struct thread_list_t *list = xmalloc(sizeof(struct thread_list_t));
+  list->head = NULL;
+  pthread_rwlock_init(&list->lock, NULL);
 
-	return list;
+  return list;
 }
 
+void thread_list_free(struct thread_list_t *list) {
+  struct thread_list_node_t *prev = NULL;
 
-void thread_list_free(struct thread_list_t *list)
-{
-	struct thread_list_node_t *prev = NULL;
+  pthread_rwlock_destroy(&list->lock);
 
-	pthread_rwlock_destroy(&list->lock);
-	
-	while (list->head)
-	{
-		prev = list->head;
-		list->head = list->head->next;
-		free(prev);
-	}
-	free(list);	
+  while (list->head) {
+    prev = list->head;
+    list->head = list->head->next;
+    free(prev);
+  }
+  free(list);
 }
 
-
-void thread_list_insert(struct thread_list_t *list, void *data)
-{
-	struct thread_list_node_t *node = xmalloc(sizeof (struct thread_list_node_t));
-	node->data = data;
-	/* prepend the current node to the beginning of the list */
-	pthread_rwlock_wrlock(&list->lock);
-	node->next = list->head;
-	list->head = node;
-	pthread_rwlock_unlock(&list->lock);
+void thread_list_insert(struct thread_list_t *list, void *data) {
+  struct thread_list_node_t *node = xmalloc(sizeof(struct thread_list_node_t));
+  node->data = data;
+  /* prepend the current node to the beginning of the list */
+  pthread_rwlock_wrlock(&list->lock);
+  node->next = list->head;
+  list->head = node;
+  pthread_rwlock_unlock(&list->lock);
 }
 
+int thread_list_remove(struct thread_list_t *list, void *data) {
+  int status = 0; /* not found */
+  struct thread_list_node_t *prev = NULL;
+  pthread_rwlock_wrlock(&list->lock);
 
-int thread_list_remove(struct thread_list_t *list, void *data)
-{
-	int status = 0; /* not found */
-	struct thread_list_node_t *prev = NULL;
-	pthread_rwlock_wrlock(&list->lock);
+  struct thread_list_node_t *cur = list->head;
+  while (cur) {
+    if (cur->data == data) {
+      if (prev)
+        prev->next = cur->next;
+      else
+        list->head = cur->next;
 
-	struct thread_list_node_t *cur = list->head;
-	while (cur)
-	{
-		if (cur->data == data)
-		{
-			if (prev)
-				prev->next = cur->next;
-			else
-				list->head = cur->next;
+      free(cur);
+      status = 1;
+      break;
+    }
 
-			free(cur);
-			status = 1;
-			break;
-		}
+    prev = cur;
+    cur = cur->next;
+  }
+  pthread_rwlock_unlock(&list->lock);
 
-		prev = cur;
-		cur = cur->next;
-	}
-	pthread_rwlock_unlock(&list->lock);
-
-	return status;
+  return status;
 }
-
 
 void thread_list_visit(struct thread_list_t *list,
-	thread_list_visit_func_t visit_func, void *user_data)
-{
-	struct thread_list_node_t *node;
+                       thread_list_visit_func_t visit_func, void *user_data) {
+  struct thread_list_node_t *node;
 
-	/* Lock */
-	pthread_rwlock_rdlock(&list->lock);
+  /* Lock */
+  pthread_rwlock_rdlock(&list->lock);
 
-	/* Walk list */
-	node = list->head;
-	assert(visit_func);
-	while (node && visit_func(node->data, user_data))
-		node = node->next;
+  /* Walk list */
+  node = list->head;
+  assert(visit_func);
+  while (node && visit_func(node->data, user_data)) node = node->next;
 
-	/* Unlock */
-	pthread_rwlock_unlock(&list->lock);
+  /* Unlock */
+  pthread_rwlock_unlock(&list->lock);
 }

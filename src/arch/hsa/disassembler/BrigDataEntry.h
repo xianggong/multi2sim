@@ -26,40 +26,30 @@
 #include "Brig.h"
 #include "BrigEntry.h"
 
-namespace HSA
-{
+namespace HSA {
 
 class BrigEntry;
 
 /// A BrigEntry is an entry in the hsa_data section. The major difference is
 /// that is uses 4 bytes for the size of the entry
-class BrigDataEntry : public BrigEntry
-{
-	// The struct that of the data entry
-	struct BrigData *data;
+class BrigDataEntry : public BrigEntry {
+  // The struct that of the data entry
+  struct BrigData* data;
 
-public:
+ public:
+  /// Constructor
+  BrigDataEntry(const char* buf) : BrigEntry(buf) { data = (BrigData*)buf; }
 
-	/// Constructor
-	BrigDataEntry(const char *buf) : 
-			BrigEntry(buf)
-	{
-		data = (BrigData *)buf;
-	}
+  /// Return the data as string
+  const std::string getString() const;
 
-	/// Return the data as string
-	const std::string getString() const;
+  /// Return the byte count of the data entry
+  unsigned int getByteCount() const;
 
-	/// Return the byte count of the data entry
-	unsigned int getByteCount() const;
-
-	/// Return the pointer to the byte field 
-	const unsigned char *getBytes() const;
-
+  /// Return the pointer to the byte field
+  const unsigned char* getBytes() const;
 };
-	
+
 }  // namespace HSA
 
 #endif
-
-

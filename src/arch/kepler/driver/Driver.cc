@@ -22,30 +22,23 @@
 
 #include "Driver.h"
 
-
-namespace Kepler
-{
-
+namespace Kepler {
 
 // Initialize table of ABI call names
-const char *Driver::call_name[CallCodeCount] =
-{
-	"Invalid",  // For code 0
+const char* Driver::call_name[CallCodeCount] = {
+    "Invalid",  // For code 0
 #define DEFCALL(name, code) #name,
 #include "Driver.def"
 #undef DEFCALL
 };
 
-
 // Initialize table of ABI call functions
-const Driver::CallFn Driver::call_fn[CallCodeCount] =
-{
-	nullptr,  // For code 0
+const Driver::CallFn Driver::call_fn[CallCodeCount] = {
+    nullptr,  // For code 0
 #define DEFCALL(name, code) &Driver::Call##name,
 #include "Driver.def"
 #undef DEFCALL
 };
-
 
 // Debug file name, as set by user
 std::string Driver::debug_file;
@@ -56,79 +49,62 @@ std::unique_ptr<Driver> Driver::instance;
 // Debugger
 misc::Debug Driver::debug;
 
+Driver* Driver::getInstance() {
+  // Instance already exists
+  if (instance.get()) return instance.get();
 
-Driver *Driver::getInstance()
-{
-	// Instance already exists
-	if (instance.get())
-		return instance.get();
-
-	// Create instance
-	instance.reset(new Driver());
-	return instance.get();
+  // Create instance
+  instance.reset(new Driver());
+  return instance.get();
 }
 
-
-Driver::Driver() : comm::Driver("Kepler",
-		"/dev/kepler")
-{
-	// Welcome message from driver
-	debug << "Driver initialized\n";
+Driver::Driver() : comm::Driver("Kepler", "/dev/kepler") {
+  // Welcome message from driver
+  debug << "Driver initialized\n";
 }
 
+int Driver::Call(comm::Context* context, mem::Memory* memory, int code,
+                 unsigned args_ptr) {
+  // Check valid call
+  if (code < 0 || code >= CallCodeCount || !call_fn[code]) {
+    debug << misc::fmt("Invalid call code (%d)\n", code);
+    return -1;
+  }
 
-int Driver::Call(comm::Context *context,
-		mem::Memory *memory,
-		int code,
-		unsigned args_ptr)
-{
-	// Check valid call
-	if (code < 0 || code >= CallCodeCount || !call_fn[code])
-	{
-		debug << misc::fmt("Invalid call code (%d)\n", code);
-		return -1;
-	}
+  // Debug
+  debug << misc::fmt("ABI call '%s'\n", call_name[code]);
 
-	// Debug
-	debug << misc::fmt("ABI call '%s'\n", call_name[code]);
-
-	// Invoke call
-	CallFn fn = call_fn[code];
-	return (this->*fn)(context, memory, args_ptr);
+  // Invoke call
+  CallFn fn = call_fn[code];
+  return (this->*fn)(context, memory, args_ptr);
 }
 
+void Driver::RegisterOptions() {
+  // Get command line object
+  misc::CommandLine* command_line = misc::CommandLine::getInstance();
 
-void Driver::RegisterOptions()
-{
-	// Get command line object
-	misc::CommandLine *command_line = misc::CommandLine::getInstance();
+  // Category
+  command_line->setCategory("Kepler");
 
-	// Category
-	command_line->setCategory("Kepler");
-
-	// Debug information for driver
-	command_line->RegisterString("--kpl-debug-driver <file>", debug_file,
-			"Dump debug information for the Kepler driver, "
-			"including all ABI calls coming from the runtime.");
+  // Debug information for driver
+  command_line->RegisterString(
+      "--kpl-debug-driver <file>", debug_file,
+      "Dump debug information for the Kepler driver, "
+      "including all ABI calls coming from the runtime.");
 }
 
-
-void Driver::ProcessOptions()
-{
-	debug.setPath(debug_file);
-	debug.setPrefix("[Kepler driver]");
-}
-	
-	
-Module *Driver::addModule(const std::string &cubin_path)
-{
-	// The module ID is its position in the list
-	int id = modules.size();
-
-	// Create module and add it to the list of modules
-	modules.emplace_back(new Module(id, cubin_path));
-	return modules.back().get();
+void Driver::ProcessOptions() {
+  debug.setPath(debug_file);
+  debug.setPrefix("[Kepler driver]");
 }
 
+Module* Driver::addModule(const std::string& cubin_path) {
+  // The module ID is its position in the list
+  int id = modules.size();
+
+  // Create module and add it to the list of modules
+  modules.emplace_back(new Module(id, cubin_path));
+  return modules.back().get();
+}
 
 }  // namepsace Kepler

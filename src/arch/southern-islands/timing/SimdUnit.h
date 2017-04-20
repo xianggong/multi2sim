@@ -22,102 +22,89 @@
 
 #include "ExecutionUnit.h"
 
-namespace SI
-{
+namespace SI {
 
 // Forward declarations
 class ComputeUnit;
 
-
 /// Class representing the SIMD unit of a compute unit
-class SimdUnit : public ExecutionUnit
-{
-	// Variable number of decoded Uops
-	std::deque<std::unique_ptr<Uop>> decode_buffer;
+class SimdUnit : public ExecutionUnit {
+  // Variable number of decoded Uops
+  std::deque<std::unique_ptr<Uop>> decode_buffer;
 
-	// Variable number of execution instructions
-	std::deque<std::unique_ptr<Uop>> exec_buffer;
+  // Variable number of execution instructions
+  std::deque<std::unique_ptr<Uop>> exec_buffer;
 
-public:
-	//
-	// Static fields
-	//
+ public:
+  //
+  // Static fields
+  //
 
-	/// Maximum number of instructions processed per cycle
-	static int width;
+  /// Maximum number of instructions processed per cycle
+  static int width;
 
-	/// Number of lanes per SIMD.  This must divide the wavefront size
-	/// (64) evenly.
-	static int num_simd_lanes;
+  /// Number of lanes per SIMD.  This must divide the wavefront size
+  /// (64) evenly.
+  static int num_simd_lanes;
 
-	/// Size of the buffer holding issued instructions
-	static int issue_buffer_size;
+  /// Size of the buffer holding issued instructions
+  static int issue_buffer_size;
 
-	/// Latency of the decode stage in number of cycles
-	static int decode_latency;
+  /// Latency of the decode stage in number of cycles
+  static int decode_latency;
 
-	/// Size of the buffer holding decoded instructions
-	static int decode_buffer_size;
+  /// Size of the buffer holding decoded instructions
+  static int decode_buffer_size;
 
-	/// Number of cycles it takes to read operands from the register
-	/// files, execute the SIMD ALU operation, and write the results
-	/// out to the register file for a single subwavefront.  It makes
-	/// sense to combine all three stages since the wavefront is pipelined
-	/// across all of them and can therefore be in different stages
-	/// at the same time
-	static int read_exec_write_latency;
+  /// Number of cycles it takes to read operands from the register
+  /// files, execute the SIMD ALU operation, and write the results
+  /// out to the register file for a single subwavefront.  It makes
+  /// sense to combine all three stages since the wavefront is pipelined
+  /// across all of them and can therefore be in different stages
+  /// at the same time
+  static int read_exec_write_latency;
 
-	/// Size of the execution buffer in instructions
-	static int exec_buffer_size;
+  /// Size of the execution buffer in instructions
+  static int exec_buffer_size;
 
-	/// Size of the buffer holding instructions that have began the
-	/// read-exec-write stages.
-	static int read_exec_write_buffer_size;
+  /// Size of the buffer holding instructions that have began the
+  /// read-exec-write stages.
+  static int read_exec_write_buffer_size;
 
-	// Statistics
-	long long num_instructions;
+  // Statistics
+  long long num_instructions;
 
+  //
+  // Class members
+  //
 
+  /// Constructor
+  SimdUnit(ComputeUnit* compute_unit) : ExecutionUnit(compute_unit) {}
 
+  /// Run the actions occurring in one cycle
+  void Run();
 
-	//
-	// Class members
-	//
+  /// Return whether there is room in the issue buffer of the SIMD
+  /// unit to absorb a new instruction.
+  bool canIssue() const override {
+    return getIssueBufferOccupancy() < issue_buffer_size;
+  }
 
+  /// Return whether the given uop is a SIMD instruction.
+  bool isValidUop(Uop* uop) const override;
 
-	/// Constructor
-	SimdUnit(ComputeUnit *compute_unit) : ExecutionUnit(compute_unit)
-	{
-	}
+  /// Issue the given instruction into the SIMD unit.
+  void Issue(std::unique_ptr<Uop> uop) override;
 
-	/// Run the actions occurring in one cycle
-	void Run();
+  /// Complete the instruction
+  void Complete();
 
-	/// Return whether there is room in the issue buffer of the SIMD
-	/// unit to absorb a new instruction.
-	bool canIssue() const override
-	{
-		return getIssueBufferOccupancy() < issue_buffer_size;
-	}
+  /// Execute stage of the execution pipeline
+  void Execute();
 
-	/// Return whether the given uop is a SIMD instruction.
-	bool isValidUop(Uop *uop) const override;
-
-	/// Issue the given instruction into the SIMD unit.
-	void Issue(std::unique_ptr<Uop> uop) override;
-
-	/// Complete the instruction
-	void Complete();
-
-	/// Execute stage of the execution pipeline
-	void Execute();
-
-	/// Decode stage of the execution pipeline
-	void Decode();
-
+  /// Decode stage of the execution pipeline
+  void Decode();
 };
-
 }
 
 #endif
-

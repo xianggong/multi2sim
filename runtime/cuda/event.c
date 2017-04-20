@@ -24,38 +24,31 @@
 #include "list.h"
 #include "mhandle.h"
 
-
 /* Create an event */
-CUevent cuda_event_create(unsigned flags)
-{
-	CUevent event;
+CUevent cuda_event_create(unsigned flags) {
+  CUevent event;
 
-	/* Allocate event */
-	event = xcalloc(1, sizeof(struct CUevent_st));
+  /* Allocate event */
+  event = xcalloc(1, sizeof(struct CUevent_st));
 
-	/* Initialize */
-	event->id = list_count(event_list);
-	event->to_be_recorded = 0;
-	event->recorded = 0;
-	event->flags = flags;
+  /* Initialize */
+  event->id = list_count(event_list);
+  event->to_be_recorded = 0;
+  event->recorded = 0;
+  event->flags = flags;
 
-	/* Add to event list */
-	list_add(event_list, event);
+  /* Add to event list */
+  list_add(event_list, event);
 
-	return event;
+  return event;
 }
 
 /* Free event */
-void cuda_event_free(CUevent event)
-{
-	list_remove(event_list, event);
+void cuda_event_free(CUevent event) {
+  list_remove(event_list, event);
 
-	free(event);
+  free(event);
 }
 
 /* Record an event */
-void cuda_event_record(CUevent event)
-{
-	event->t = clock();
-}
-
+void cuda_event_record(CUevent event) { event->t = clock(); }

@@ -24,72 +24,46 @@
 #include "mhandle.h"
 #include "sampler.h"
 
-
-
 /*
  * Public Functions
  */
 
-struct opencl_sampler_t *opencl_sampler_create(void)
-{
-	struct opencl_sampler_t *sampler;
+struct opencl_sampler_t *opencl_sampler_create(void) {
+  struct opencl_sampler_t *sampler;
 
-	/* Initialize */
-	sampler = xcalloc(1, sizeof(struct opencl_sampler_t));
+  /* Initialize */
+  sampler = xcalloc(1, sizeof(struct opencl_sampler_t));
 
-	/* Return */
-	return sampler;
+  /* Return */
+  return sampler;
 }
 
-
-void opencl_sampler_free(struct opencl_sampler_t *sampler)
-{
-	free(sampler);
-}
-
-
-
+void opencl_sampler_free(struct opencl_sampler_t *sampler) { free(sampler); }
 
 /*
  * OpenCL API Functions
  */
 
-cl_sampler clCreateSampler(
-	cl_context context,
-	cl_bool normalized_coords,
-	cl_addressing_mode addressing_mode,
-	cl_filter_mode filter_mode,
-	cl_int *errcode_ret)
-{
-	__OPENCL_NOT_IMPL__
-	return 0;
+cl_sampler clCreateSampler(cl_context context, cl_bool normalized_coords,
+                           cl_addressing_mode addressing_mode,
+                           cl_filter_mode filter_mode, cl_int *errcode_ret) {
+  __OPENCL_NOT_IMPL__
+  return 0;
 }
 
-
-cl_int clRetainSampler(
-	cl_sampler sampler)
-{
-	__OPENCL_NOT_IMPL__
-	return 0;
+cl_int clRetainSampler(cl_sampler sampler) {
+  __OPENCL_NOT_IMPL__
+  return 0;
 }
 
-
-cl_int clReleaseSampler(
-	cl_sampler sampler)
-{
-	__OPENCL_NOT_IMPL__
-	return 0;
+cl_int clReleaseSampler(cl_sampler sampler) {
+  __OPENCL_NOT_IMPL__
+  return 0;
 }
 
-
-cl_int clGetSamplerInfo(
-	cl_sampler sampler,
-	cl_sampler_info param_name,
-	size_t param_value_size,
-	void *param_value,
-	size_t *param_value_size_ret)
-{
-	__OPENCL_NOT_IMPL__
-	return 0;
+cl_int clGetSamplerInfo(cl_sampler sampler, cl_sampler_info param_name,
+                        size_t param_value_size, void *param_value,
+                        size_t *param_value_size_ret) {
+  __OPENCL_NOT_IMPL__
+  return 0;
 }
-

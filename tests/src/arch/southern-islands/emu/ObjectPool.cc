@@ -17,42 +17,36 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include <lib/cpp/Misc.h>
 #include <gtest/gtest.h>
+#include <lib/cpp/Misc.h>
 
 #include "ObjectPool.h"
 
-namespace SI
-{
+namespace SI {
 
-ObjectPool::ObjectPool()
-{
-	// Get disassembler and emulator singletons
-	as = Disassembler::getInstance();
-	emulator = Emulator::getInstance();
+ObjectPool::ObjectPool() {
+  // Get disassembler and emulator singletons
+  as = Disassembler::getInstance();
+  emulator = Emulator::getInstance();
 
-	// Allocate NDRange
-	ndrange = misc::new_unique<NDRange>();
-	
-	// Set local size, global size, and work dimension
-	int work_dim = 1;
-	unsigned global_size[1] = {1};
-	unsigned local_size[1] = {1};
-	ndrange->SetupSize((unsigned *) &global_size, 
-			(unsigned * ) &local_size, work_dim);
+  // Allocate NDRange
+  ndrange = misc::new_unique<NDRange>();
 
-	// Allocate Work Group, Wavefront, and Work Item
-	work_group = misc::new_unique<WorkGroup>(ndrange.get(), 0);
-	wavefront = misc::new_unique<Wavefront>(work_group.get(), 0);
-	work_item = misc::new_unique<WorkItem>(wavefront.get(), 0);
-	
-	// Assign work item to a work group
-	work_item->setWorkGroup(work_group.get());
+  // Set local size, global size, and work dimension
+  int work_dim = 1;
+  unsigned global_size[1] = {1};
+  unsigned local_size[1] = {1};
+  ndrange->SetupSize((unsigned*)&global_size, (unsigned*)&local_size, work_dim);
 
-	// Create a new Instruction
-	inst = misc::new_unique<Instruction>();
+  // Allocate Work Group, Wavefront, and Work Item
+  work_group = misc::new_unique<WorkGroup>(ndrange.get(), 0);
+  wavefront = misc::new_unique<Wavefront>(work_group.get(), 0);
+  work_item = misc::new_unique<WorkItem>(wavefront.get(), 0);
+
+  // Assign work item to a work group
+  work_item->setWorkGroup(work_group.get());
+
+  // Create a new Instruction
+  inst = misc::new_unique<Instruction>();
 }
-
-
 }
-

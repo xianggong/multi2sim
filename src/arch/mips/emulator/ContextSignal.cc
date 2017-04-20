@@ -26,91 +26,76 @@
 #include "Emulator.h"
 #include "Signal.h"
 
+namespace MIPS {
 
-namespace MIPS
-{
+void Context::RunSignalHandler(int sig) {
+  // Debug
+  assert(misc::inRange(sig, 1, 64));
+  // Emu::syscall_debug << "context " << pid << " executes signal "
+  //"handler for signal " << sig << '\n';
 
+  // Signal SIGCHLD ignored if no signal handler installed
+  SignalHandler* signal_handler = signal_handler_table->getSignalHandler(sig);
+  if (sig == SIGCHLD && !signal_handler->getHandler()) return;
 
-void Context::RunSignalHandler(int sig)
-{
-	// Debug
-	assert(misc::inRange(sig, 1, 64));
-	//Emu::syscall_debug << "context " << pid << " executes signal "
-			//"handler for signal " << sig << '\n';
-
-	// Signal SIGCHLD ignored if no signal handler installed
-	SignalHandler *signal_handler = signal_handler_table->
-			getSignalHandler(sig);
-	if (sig == SIGCHLD && !signal_handler->getHandler())
-		return;
-
-	// Save a copy of the register file
-	signal_mask_table.setRegs(regs);
-
-
+  // Save a copy of the register file
+  signal_mask_table.setRegs(regs);
 }
 
-void Context::CheckSignalHandlerIntr()
-{
-	// Context cannot be running a signal handler. A signal must be pending
-	// and unblocked.
-	assert(!getState(ContextHandler));
-	assert((signal_mask_table.getPending().getBitmap() &
-			~signal_mask_table.getBlocked().getBitmap()).Any());
+void Context::CheckSignalHandlerIntr() {
+  // Context cannot be running a signal handler. A signal must be pending
+  // and unblocked.
+  assert(!getState(ContextHandler));
+  assert((signal_mask_table.getPending().getBitmap() &
+          ~signal_mask_table.getBlocked().getBitmap())
+             .Any());
 
-	// Get signal number
-	int sig;
-	for (sig = 1; sig <= 64; sig++)
-		if (signal_mask_table.getPending().isMember(sig) &&
-				!signal_mask_table.getBlocked().isMember(sig))
-			break;
-	assert(sig <= 64);
+  // Get signal number
+  int sig;
+  for (sig = 1; sig <= 64; sig++)
+    if (signal_mask_table.getPending().isMember(sig) &&
+        !signal_mask_table.getBlocked().isMember(sig))
+      break;
+  assert(sig <= 64);
 
-	// If signal handling uses 'SA_RESTART' flag, set return address to
-	// system call.
-	SignalHandler *signal_handler = signal_handler_table->
-			getSignalHandler(sig);
-	if (signal_handler->getFlags() & 0x10000000u)
-	{
-		unsigned char buf[2];
-		regs.decPC(2);
-		memory->Read(regs.getPC(), 2, (char *) buf);
-		assert(buf[0] == 0xcd && buf[1] == 0x80);  // 'int 0x80'
-	}
-	else
-	{
-		// Otherwise, return -EINTR
-		regs.setGPR(2, -EINTR);
-	}
+  // If signal handling uses 'SA_RESTART' flag, set return address to
+  // system call.
+  SignalHandler* signal_handler = signal_handler_table->getSignalHandler(sig);
+  if (signal_handler->getFlags() & 0x10000000u) {
+    unsigned char buf[2];
+    regs.decPC(2);
+    memory->Read(regs.getPC(), 2, (char*)buf);
+    assert(buf[0] == 0xcd && buf[1] == 0x80);  // 'int 0x80'
+  } else {
+    // Otherwise, return -EINTR
+    regs.setGPR(2, -EINTR);
+  }
 
-	// Run the signal handler
-	RunSignalHandler(sig);
-	signal_mask_table.getPending().Delete(sig);
+  // Run the signal handler
+  RunSignalHandler(sig);
+  signal_mask_table.getPending().Delete(sig);
 }
 
-void Context::CheckSignalHandler()
-{
-	// If context is already running a signal handler, do nothing.
-	if (getState(ContextHandler))
-		return;
+void Context::CheckSignalHandler() {
+  // If context is already running a signal handler, do nothing.
+  if (getState(ContextHandler)) return;
 
-	// If there is no pending unblocked signal, do nothing.
-	if ((signal_mask_table.getPending().getBitmap() &
-			~signal_mask_table.getBlocked().getBitmap()).None())
-		return;
+  // If there is no pending unblocked signal, do nothing.
+  if ((signal_mask_table.getPending().getBitmap() &
+       ~signal_mask_table.getBlocked().getBitmap())
+          .None())
+    return;
 
-	/* There is some unblocked pending signal, prepare signal handler to
-	 * be executed. */
-	for (int sig = 1; sig <= 64; sig++)
-	{
-		if (signal_mask_table.getPending().isMember(sig) &&
-				!signal_mask_table.getBlocked().isMember(sig))
-		{
-			RunSignalHandler(sig);
-			signal_mask_table.getPending().Delete(sig);
-			break;
-		}
-	}
+  /* There is some unblocked pending signal, prepare signal handler to
+   * be executed. */
+  for (int sig = 1; sig <= 64; sig++) {
+    if (signal_mask_table.getPending().isMember(sig) &&
+        !signal_mask_table.getBlocked().isMember(sig)) {
+      RunSignalHandler(sig);
+      signal_mask_table.getPending().Delete(sig);
+      break;
+    }
+  }
 }
 
-} // namespace MIPS
+}  // namespace MIPS

@@ -28,22 +28,19 @@
 
 #include "Request.h"
 
-
-namespace dram
-{
+namespace dram {
 
 // Forward declarations
 struct Address;
 class Bank;
 class Rank;
 
-enum CommandType
-{
-	CommandInvalid = 0,
-	CommandPrecharge,
-	CommandActivate,
-	CommandRead,
-	CommandWrite
+enum CommandType {
+  CommandInvalid = 0,
+  CommandPrecharge,
+  CommandActivate,
+  CommandRead,
+  CommandWrite
 };
 
 // String map for SchedulerType
@@ -52,63 +49,58 @@ extern misc::StringMap CommandTypeMap;
 /// Map that converts the CommandType enum to a string.
 extern std::map<CommandType, std::string> CommandTypeMapToString;
 
+class Command {
+  int id;
 
-class Command
-{
-	int id;
+  // The request associated with this command
+  std::shared_ptr<Request> request;
 
-	// The request associated with this command
-	std::shared_ptr<Request> request;
+  // The type of command
+  CommandType type;
 
-	// The type of command
-	CommandType type;
+  // Creation cycle of the command
+  long long cycle_created;
 
-	// Creation cycle of the command
-	long long cycle_created;
+  // Location information
+  Bank* bank;
+  Rank* rank;
 
-	// Location information
-	Bank *bank;
-	Rank *rank;
+ public:
+  Command(std::shared_ptr<Request> request, CommandType type,
+          long long cycle_created, Bank* bank);
 
-public:
-	Command(std::shared_ptr<Request> request, CommandType type,
-			long long cycle_created, Bank *bank);
+  /// Returns the id of this command, which is unique in the
+  /// memory system.
+  int getId() const { return id; }
 
-	/// Returns the id of this command, which is unique in the
-	/// memory system.
-	int getId() const { return id; }
+  /// Returns the type of the command.
+  CommandType getType() const { return type; }
 
-	/// Returns the type of the command.
-	CommandType getType() const { return type; }
+  /// Returns the type of the command as a string.
+  std::string getTypeString() const { return CommandTypeMapToString[type]; }
 
-	/// Returns the type of the command as a string.
-	std::string getTypeString() const
-	{
-		return CommandTypeMapToString[type];
-	}
+  /// Returns how long the command will take to execute once it is
+  /// scheduled.
+  int getDuration() const;
 
-	/// Returns how long the command will take to execute once it is
-	/// scheduled.
-	int getDuration() const;
+  /// Returns the cycle when the command was created.
+  long long getCycleCreated() { return cycle_created; }
 
-	/// Returns the cycle when the command was created.
-	long long getCycleCreated() { return cycle_created; }
+  /// Returns the bank that the command was created in.
+  Bank* getBank() { return bank; }
 
-	/// Returns the bank that the command was created in.
-	Bank *getBank() { return bank; }
+  /// Returns the rank that the command's bank belonds to.
+  Rank* getRank() { return rank; }
 
-	/// Returns the rank that the command's bank belonds to.
-	Rank *getRank() { return rank; }
+  int getBankId() const;
+  int getRankId() const;
 
-	int getBankId() const;
-	int getRankId() const;
+  /// Returns a pointer to the address object of the command.
+  Address* getAddress();
 
-	/// Returns a pointer to the address object of the command.
-	Address *getAddress();
-
-	/// Marks the command as finished and decrements the number of in
-	/// flight commands for associated request.
-	void setFinished();
+  /// Marks the command as finished and decrements the number of in
+  /// flight commands for associated request.
+  void setFinished();
 };
 
 }  // namespace dram

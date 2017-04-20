@@ -19,7 +19,4 @@
 
 #include "WorkItemIdInstructionWorker.h"
 
-namespace HSA
-{
-
-}  // namespace HSA
+namespace HSA {}  // namespace HSA

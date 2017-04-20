@@ -23,42 +23,38 @@
 #include <gtk/gtk.h>
 
 /* Network Detailed View */
-struct vi_net_window_t
-{
-	/* Main detail Window */
-	GtkWidget *widget;
+struct vi_net_window_t {
+  /* Main detail Window */
+  GtkWidget* widget;
 
-	/* Network that window show */
-	struct vi_net_t *net;
+  /* Network that window show */
+  struct vi_net_t* net;
 
-	/* Toggle button that causes activation of window */
-	GtkWidget *parent_toggle_button;
+  /* Toggle button that causes activation of window */
+  GtkWidget* parent_toggle_button;
 
-	/* Network widget */
-	struct vi_net_widget_t *net_widget;
-
+  /* Network widget */
+  struct vi_net_widget_t* net_widget;
 };
 
-struct vi_net_board_t
-{
-	/* Main widget */
-	GtkWidget *widget;
+struct vi_net_board_t {
+  /* Main widget */
+  GtkWidget* widget;
 
-	/* Pop-up window showing detail */
-	struct vi_net_window_t *net_window;
+  /* Pop-up window showing detail */
+  struct vi_net_window_t* net_window;
 
-	/* Toggle button to activate pop-up window */
-	GtkWidget *toggle_button;
+  /* Toggle button to activate pop-up window */
+  GtkWidget* toggle_button;
 
-	/* Associated Network */
-	struct vi_net_t *net;
+  /* Associated Network */
+  struct vi_net_t* net;
 
-	/* Message list */
-	struct vi_list_t *message_list;
+  /* Message list */
+  struct vi_list_t* message_list;
 };
 
-
-struct vi_net_board_t *vi_net_board_create(struct vi_net_t *net);
-void 		       vi_net_board_refresh(struct vi_net_board_t *board);
+struct vi_net_board_t* vi_net_board_create(struct vi_net_t* net);
+void vi_net_board_refresh(struct vi_net_board_t* board);
 
 #endif

@@ -22,19 +22,16 @@
 
 #include "HsaInstructionWorker.h"
 
-namespace HSA
-{
+namespace HSA {
 
-class LdaInstructionWorker: public HsaInstructionWorker
-{
-	template<typename T>
-	void Inst_LDA_Aux(BrigCodeEntry *instruction);
+class LdaInstructionWorker : public HsaInstructionWorker {
+  template <typename T>
+  void Inst_LDA_Aux(BrigCodeEntry* instruction);
 
-public:
-	LdaInstructionWorker(WorkItem *work_item,
-			StackFrame *stack_frame);
-	virtual ~LdaInstructionWorker();
-	void Execute(BrigCodeEntry *instruction) override;
+ public:
+  LdaInstructionWorker(WorkItem* work_item, StackFrame* stack_frame);
+  virtual ~LdaInstructionWorker();
+  void Execute(BrigCodeEntry* instruction) override;
 };
 
 }  // namespace HSA

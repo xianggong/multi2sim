@@ -17,15 +17,13 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include "Disassembler.h"
 #include "Brig.h"
+#include "BrigCodeEntry.h"
 #include "BrigFile.h"
 #include "BrigSection.h"
-#include "BrigCodeEntry.h"
-#include "Disassembler.h"
 
-
-namespace HSA
-{
+namespace HSA {
 
 // File to disassembler, set by user
 std::string Disassembler::path;
@@ -33,63 +31,52 @@ std::string Disassembler::path;
 // Singleton instance
 std::unique_ptr<Disassembler> Disassembler::instance;
 
+void Disassembler::RegisterOptions() {
+  // Get command line object
+  misc::CommandLine* command_line = misc::CommandLine::getInstance();
 
-void Disassembler::RegisterOptions()
-{
-	// Get command line object
-	misc::CommandLine *command_line = misc::CommandLine::getInstance();
+  // Category
+  command_line->setCategory("HSA");
 
-	// Category
-	command_line->setCategory("HSA");
+  // Option --hsa-disasm <file>
+  command_line->RegisterString(
+      "--hsa-disasm <file>", path,
+      "Disassemble the HSA BRIG ELF file provided in <arg>. "
+      "This option is incompatible with any other option.");
 
-	// Option --hsa-disasm <file>
-	command_line->RegisterString("--hsa-disasm <file>", path,
-			"Disassemble the HSA BRIG ELF file provided in <arg>. "	
-			"This option is incompatible with any other option.");
-
-	// Option incompatibility
-	command_line->setIncompatible("--hsa-disasm");
+  // Option incompatibility
+  command_line->setIncompatible("--hsa-disasm");
 }
 
-
-void Disassembler::ProcessOptions()
-{
-	// Run hsa disassembler
-	if (!path.empty())
-	{
-		Disassembler *disassembler = Disassembler::getInstance();
-		disassembler->DisassembleBinary(path);
-		exit(0);
-	}
+void Disassembler::ProcessOptions() {
+  // Run hsa disassembler
+  if (!path.empty()) {
+    Disassembler* disassembler = Disassembler::getInstance();
+    disassembler->DisassembleBinary(path);
+    exit(0);
+  }
 }
 
+Disassembler* Disassembler::getInstance() {
+  // Instance already exists
+  if (instance.get()) return instance.get();
 
-Disassembler *Disassembler::getInstance()
-{
-	// Instance already exists
-	if (instance.get())
-		return instance.get();
-
-	// Create instance
-	instance.reset(new Disassembler());
-	return instance.get();
+  // Create instance
+  instance.reset(new Disassembler());
+  return instance.get();
 }
 
+void Disassembler::DisassembleBinary(const std::string& path) const {
+  BrigFile brig_file;
+  brig_file.LoadFileByPath(path);
+  BrigSection* brig_section = brig_file.getBrigSection(BRIG_SECTION_INDEX_CODE);
 
-void Disassembler::DisassembleBinary(const std::string &path) const
-{
-	BrigFile brig_file;
-	brig_file.LoadFileByPath(path);
-	BrigSection *brig_section = 
-			brig_file.getBrigSection(BRIG_SECTION_INDEX_CODE);
-
-	// Iterate all entries in code section
-	auto entry = brig_section->getFirstEntry<BrigCodeEntry>();
-	while(entry.get())
-	{
-		entry->Dump(std::cout);
-		entry = entry->NextTopLevelEntry();
-	}
+  // Iterate all entries in code section
+  auto entry = brig_section->getFirstEntry<BrigCodeEntry>();
+  while (entry.get()) {
+    entry->Dump(std::cout);
+    entry = entry->NextTopLevelEntry();
+  }
 }
 
 }  // namespace HSA

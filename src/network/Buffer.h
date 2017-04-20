@@ -26,175 +26,151 @@
 
 #include "System.h"
 
-namespace net
-{
+namespace net {
 class Connection;
 class Node;
 class Packet;
 
-class Buffer
-{
+class Buffer {
+  // Node that the buffer belongs to
+  Node* node;
 
-	// Node that the buffer belongs to
-	Node *node;
+  // Buffer Name
+  std::string name;
 
-	// Buffer Name
-	std::string name;
+  // Buffer index
+  int index;
 
-	// Buffer index
-	int index;
+  // Buffer size
+  int size;
 
-	// Buffer size
-	int size;
+  // Occupied buffer entries
+  int count = 0;
 
-	// Occupied buffer entries
-	int count = 0;
+  // A queue of events suspended due to the buffer
+  esim::Queue event_queue;
 
-	// A queue of events suspended due to the buffer 
-	esim::Queue event_queue;
+  // Connection that the buffer is connected to
+  Connection* connection;
 
-	// Connection that the buffer is connected to
-	Connection *connection;
+  // The scheduled cycle is for an arbiter to keep track of when
+  // a decision is made on this buffer. An init value of -1 means
+  // no previous decision has been made.
+  long long scheduled_cycle = -1;
 
-	// The scheduled cycle is for an arbiter to keep track of when 
-	// a decision is made on this buffer. An init value of -1 means
-	// no previous decision has been made.
-	long long scheduled_cycle = -1;
+  // The scheduled buffer is the buffer that is linked within a switch
+  // or a bus.
+  Buffer* scheduled_buffer = nullptr;
 
-	// The scheduled buffer is the buffer that is linked within a switch
-	// or a bus.
-	Buffer *scheduled_buffer = nullptr;
+  // A list of packets in the buffer
+  std::list<Packet*> packets;
 
-	// A list of packets in the buffer
-	std::list<Packet *> packets;
+  //
+  // Statistics
+  //
 
+  // Current byte occupancy of the buffer
+  int occupancy_in_bytes = 0;
 
+  // current packet occupancy of the buffer
+  int occupancy_in_packets = 0;
 
-	//
-	// Statistics
-	//
+  // Last time buffer occupancy was measured
+  long long occupancy_measured_cycle = 0;
 
-	// Current byte occupancy of the buffer
-	int occupancy_in_bytes = 0;
+  // Accumulated bytes that occupied the buffer
+  long long accumulated_occupancy_in_bytes = 0;
 
-	// current packet occupancy of the buffer
-	int occupancy_in_packets = 0;
+  // Accumulated packets that occupied the buffer
+  long long accumulated_occupancy_in_packets = 0;
 
-	// Last time buffer occupancy was measured
-	long long occupancy_measured_cycle = 0;
+ public:
+  /// Constructor
+  Buffer(const std::string& name, int size, int index, Node* node,
+         Connection* connection);
 
-	// Accumulated bytes that occupied the buffer
-	long long accumulated_occupancy_in_bytes = 0;
+  /// Get the name of the link.
+  std::string getName() const { return name; }
 
-	// Accumulated packets that occupied the buffer
-	long long accumulated_occupancy_in_packets = 0;
+  /// Get buffer size
+  int getSize() const { return size; }
 
-public:
+  /// Get index.
+  int getIndex() const { return index; }
 
-	/// Constructor
-	Buffer(const std::string &name,
-			int size, int index,
-			Node *node, Connection *connection);
+  /// Get buffer's node.
+  Node* getNode() const { return this->node; }
 
-	/// Get the name of the link.
-	std::string getName() const { return name; }
+  /// Get count
+  int getCount() const { return count; }
 
-	/// Get buffer size
-	int getSize() const { return size; }
+  /// Get buffer's connection.
+  Connection* getConnection() const { return this->connection; }
 
-	/// Get index.
-	int getIndex() const { return index; }
+  /// Get the scheduled cycle
+  long long getScheduledCycle() const { return scheduled_cycle; }
 
-	/// Get buffer's node.
-	Node *getNode() const { return this->node; }
+  /// Set the scheduled cycle
+  void setScheduledCycle(long long scheduled_cycle) {
+    this->scheduled_cycle = scheduled_cycle;
+  }
 
-	/// Get count
-	int getCount() const { return count; }
+  /// Get the scheduled buffer
+  Buffer* getScheduledBuffer() const { return scheduled_buffer; }
 
-	/// Get buffer's connection.
-	Connection *getConnection() const { return this->connection; }
+  /// Get the buffer's occupancy
+  int getOccupancyInBytes() const { return occupancy_in_bytes; }
 
-	/// Get the scheduled cycle
-	long long getScheduledCycle() const { return scheduled_cycle; }
+  /// Set the scheduled buffer
+  void setScheduledBuffer(Buffer* scheduled_buffer) {
+    this->scheduled_buffer = scheduled_buffer;
+  }
 
-	/// Set the scheduled cycle
-	void setScheduledCycle(long long scheduled_cycle) 
-	{
-		this->scheduled_cycle = scheduled_cycle;
-	}
+  /// Suspend the current event chain in the event queue associated with
+  /// the buffer. This function must be invoked within an event handler.
+  void Wait(esim::Event* event) { event_queue.Wait(event); }
 
-	/// Get the scheduled buffer
-	Buffer *getScheduledBuffer() const { return scheduled_buffer; }
+  /// Wake up all events in the queue
+  void Wakeup() { event_queue.WakeupAll(); }
 
-	/// Get the buffer's occupancy
-	int getOccupancyInBytes() const { return occupancy_in_bytes; }
+  /// Insert a packet to the buffer. A pointer is used because the
+  /// message keeps the ownership of the packet
+  void InsertPacket(Packet* packet);
 
-	/// Set the scheduled buffer
-	void setScheduledBuffer(Buffer *scheduled_buffer)
-	{
-		this->scheduled_buffer = scheduled_buffer;
-	}
+  /// Pop the packet at the head of the buffer. The packet is not
+  /// destoryed. The message still keeps the ownership of the packet.
+  /// When the message is destroyed, the packet is destroyed together.
+  void ExtractPacket();
 
-	/// Suspend the current event chain in the event queue associated with
-	/// the buffer. This function must be invoked within an event handler.
-	void Wait(esim::Event *event)
-	{
-		event_queue.Wait(event);
-	}
+  /// Get number of packets in the buffer
+  int getNumPacket() { return packets.size(); }
 
-	/// Wake up all events in the queue
-	void Wakeup()
-	{
-		event_queue.WakeupAll();
-	}
+  /// Get the first packet in the buffer
+  Packet* getBufferHead() {
+    if (packets.empty()) return nullptr;
+    return packets.front();
+  }
 
-	/// Insert a packet to the buffer. A pointer is used because the 
-	/// message keeps the ownership of the packet
-	void InsertPacket(Packet *packet);
+  /// Remove a certain packet from the buffer
+  void RemovePacket(Packet* packet);
 
-	/// Pop the packet at the head of the buffer. The packet is not 
-	/// destoryed. The message still keeps the ownership of the packet.
-	/// When the message is destroyed, the packet is destroyed together.
-	void ExtractPacket();
+  /// Updating the buffer statistics
+  void UpdateOccupancyInformation();
 
-	/// Get number of packets in the buffer
-	int getNumPacket()
-	{
-		return packets.size();
-	}
+  /// Dump the buffer information
+  void Dump(std::ostream& os = std::cout);
 
-	/// Get the first packet in the buffer
-	Packet *getBufferHead() 
-	{
-		if (packets.empty())
-			return nullptr;
-		return packets.front();
-	}
+  //
+  // Public fields
+  //
 
-	/// Remove a certain packet from the buffer
-	void RemovePacket(Packet *packet);
+  // Cycle until a read operation on buffer lasts
+  long long read_busy = -1;
 
-	/// Updating the buffer statistics
-	void UpdateOccupancyInformation();
-
-	/// Dump the buffer information
-	void Dump(std::ostream &os = std::cout);
-
-
-
-	//
-	// Public fields
-	//
-
-	// Cycle until a read operation on buffer lasts
-	long long read_busy = -1;
-
-	// Cycle until a write operation on buffer lasts
-	long long write_busy = -1;
-
+  // Cycle until a write operation on buffer lasts
+  long long write_busy = -1;
 };
 
 }  // namespace net
 
 #endif
-

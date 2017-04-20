@@ -21,15 +21,10 @@
 
 #include "FetchBuffer.h"
 
+namespace SI {
 
-namespace SI
-{
-
-void FetchBuffer::Remove(std::list<std::unique_ptr<Uop>>::iterator it)
-{
-	assert(it != buffer.end());
-	buffer.erase(it);
+void FetchBuffer::Remove(std::list<std::unique_ptr<Uop>>::iterator it) {
+  assert(it != buffer.end());
+  buffer.erase(it);
 }
-
 }
-

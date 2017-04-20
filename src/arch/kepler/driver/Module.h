@@ -26,58 +26,48 @@
 
 #include "Function.h"
 
-
-namespace Kepler
-{
+namespace Kepler {
 
 class Function;
 
-class Module
-{
-	// Unique identifier for the module
-	int id;
+class Module {
+  // Unique identifier for the module
+  int id;
 
-	// Kernel binary
-	ELFReader::File elf_file;
+  // Kernel binary
+  ELFReader::File elf_file;
 
-	// List of CUDA functions created by the guest application
-	std::vector<std::unique_ptr<Function>> functions;
+  // List of CUDA functions created by the guest application
+  std::vector<std::unique_ptr<Function>> functions;
 
+ public:
+  /// Constructor
+  Module(int id, const std::string& cubin_path);
 
+  /// Get the module's unique identifier
+  unsigned getId() const { return id; }
 
-public:
+  /// Get kernel binary
+  ELFReader::File* getELFFile() { return &elf_file; }
 
-	/// Constructor
-	Module(int id, const std::string &cubin_path);
+  /// Return the number of available functions
+  int getNumFunctions() { return functions.size(); }
 
-	/// Get the module's unique identifier
-	unsigned getId() const { return id; }
+  /// Return the function with the given identifier, or `nullptr` if the
+  /// identifier does not correspond to a valid function.
+  Function* getFunction(int index) {
+    return misc::inRange((unsigned)index, 0, functions.size())
+               ? functions[index].get()
+               : nullptr;
+  }
 
-	/// Get kernel binary
-	ELFReader::File *getELFFile() { return &elf_file; }
+  /// Create a new CUDA function and return a pointer to it.
+  Function* addFunction(Module* module, const std::string& name);
 
-	/// Return the number of available functions
-	int getNumFunctions() { return functions.size(); }
-
-	/// Return the function with the given identifier, or `nullptr` if the
-	/// identifier does not correspond to a valid function.
-	Function *getFunction(int index)
-	{
-		return misc::inRange((unsigned) index, 0, functions.size()) ?
-				functions[index].get() :
-				nullptr;
-	}
-
-	/// Create a new CUDA function and return a pointer to it.
-	Function *addFunction(Module *module, const std::string &name);
-
-	/// Get function name
-	std::string getFunctionName(int index)
-	{
-		return functions[index]->getName();
-	}
+  /// Get function name
+  std::string getFunctionName(int index) { return functions[index]->getName(); }
 };
 
-} // namespace Kepler
+}  // namespace Kepler
 
 #endif

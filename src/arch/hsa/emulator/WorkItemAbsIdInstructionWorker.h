@@ -22,29 +22,24 @@
 
 #include "HsaInstructionWorker.h"
 
-namespace HSA 
-{
+namespace HSA {
 
-class WorkItemAbsIdInstructionWorker : public HsaInstructionWorker 
-{
-	unsigned int dimension = 0;
-	unsigned int absolute_id = 0;
-	BrigCodeEntry *instruction = nullptr;
+class WorkItemAbsIdInstructionWorker : public HsaInstructionWorker {
+  unsigned int dimension = 0;
+  unsigned int absolute_id = 0;
+  BrigCodeEntry* instruction = nullptr;
 
-	void RetrieveOperandValue();
-	void RetrieveAbsoluteId();
-	void WriteResultBack();
+  void RetrieveOperandValue();
+  void RetrieveAbsoluteId();
+  void WriteResultBack();
 
-public:
+ public:
+  /// Constructor
+  WorkItemAbsIdInstructionWorker(WorkItem* work_item, StackFrame* stack_frame);
 
-	/// Constructor	
-	WorkItemAbsIdInstructionWorker(WorkItem *work_item, 
-			StackFrame *stack_frame);
-
-	/// Execute
-	void Execute(BrigCodeEntry *instruction) override;
+  /// Execute
+  void Execute(BrigCodeEntry* instruction) override;
 };
-
 }
 
 #endif  // ARCH_HSA_EMULATOR_WORJITEMABSIDINSTRUCTIONWORKER_H

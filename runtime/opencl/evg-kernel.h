@@ -22,49 +22,36 @@
 
 #include "opencl.h"
 
-
 /* Forward declarations */
 struct opencl_evg_device_t;
 struct opencl_evg_program_t;
 
-
 /* Subclass of 'opencl_kernel_t' containing Evergreen specific
  * information of the OpenCL kernel. */
-struct opencl_evg_kernel_t
-{
-	/* Kernel object acting as parent object. */
-	struct opencl_kernel_t *parent;
+struct opencl_evg_kernel_t {
+  /* Kernel object acting as parent object. */
+  struct opencl_kernel_t* parent;
 
-	/* Architecture-specific program and device associated */
-	struct opencl_evg_program_t *program;
-	struct opencl_evg_device_t *device;
+  /* Architecture-specific program and device associated */
+  struct opencl_evg_program_t* program;
+  struct opencl_evg_device_t* device;
 };
 
+struct opencl_evg_kernel_t* opencl_evg_kernel_create(
+    struct opencl_kernel_t* parent, struct opencl_evg_program_t* program,
+    char* func_name);
 
-struct opencl_evg_kernel_t *opencl_evg_kernel_create(
-		struct opencl_kernel_t *parent,
-		struct opencl_evg_program_t *program,
-		char *func_name);
+void opencl_evg_kernel_free(struct opencl_evg_kernel_t* kernel);
 
-void opencl_evg_kernel_free(
-		struct opencl_evg_kernel_t *kernel);
+cl_int opencl_evg_kernel_check(struct opencl_evg_kernel_t* kernel);
 
-cl_int opencl_evg_kernel_check(
-		struct opencl_evg_kernel_t *kernel);
+cl_int opencl_evg_kernel_set_arg(struct opencl_evg_kernel_t* kernel,
+                                 cl_uint arg_index, size_t arg_size,
+                                 const void* arg_value);
 
-cl_int opencl_evg_kernel_set_arg(
-		struct opencl_evg_kernel_t *kernel,
-		cl_uint arg_index,
-		size_t arg_size,
-		const void *arg_value);
-
-void opencl_evg_kernel_run(
-		struct opencl_evg_kernel_t *kernel,
-		cl_uint work_dim,
-		const size_t *global_work_offset,
-		const size_t *global_work_size,
-		const size_t *local_work_size);
-
+void opencl_evg_kernel_run(struct opencl_evg_kernel_t* kernel, cl_uint work_dim,
+                           const size_t* global_work_offset,
+                           const size_t* global_work_size,
+                           const size_t* local_work_size);
 
 #endif
-

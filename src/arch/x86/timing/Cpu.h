@@ -24,608 +24,547 @@
 #include <list>
 #include <vector>
 
-#include <memory/Mmu.h>
-#include <memory/Module.h>
 #include <arch/x86/emulator/Emulator.h>
 #include <arch/x86/emulator/Uinst.h>
+#include <memory/Mmu.h>
+#include <memory/Module.h>
 
 #include "Core.h"
 #include "Thread.h"
 #include "Uop.h"
 
-
-namespace x86
-{
+namespace x86 {
 
 // Forward declaration
 class Timing;
 
 // Class Cpu
-class Cpu
-{
-public:
-
-	/// Recover kind
-	enum RecoverKind
-	{
-		RecoverKindInvalid = 0,
-		RecoverKindWriteback,
-		RecoverKindCommit
-	};
-
-	/// Recover kind string map
-	static misc::StringMap recover_kind_map;
-
-	/// Fetch stage kind
-	enum FetchKind
-	{
-		FetchKindInvalid = 0,
-		FetchKindShared,
-		FetchKindTimeslice
-	};
-
-	/// Fetch kind string map
-	static misc::StringMap fetch_kind_map;
-
-	/// Dispatch stage kind
-	enum DispatchKind
-	{
-		DispatchKindInvalid = 0,
-		DispatchKindShared,
-		DispatchKindTimeslice,
-	};
-
-	/// Dispatch kind string map
-	static misc::StringMap dispatch_kind_map;
-
-	/// Issue stage kind
-	enum IssueKind
-	{
-		IssueKindInvalid = 0,
-		IssueKindShared,
-		IssueKindTimeslice,
-	};
+class Cpu {
+ public:
+  /// Recover kind
+  enum RecoverKind {
+    RecoverKindInvalid = 0,
+    RecoverKindWriteback,
+    RecoverKindCommit
+  };
+
+  /// Recover kind string map
+  static misc::StringMap recover_kind_map;
+
+  /// Fetch stage kind
+  enum FetchKind { FetchKindInvalid = 0, FetchKindShared, FetchKindTimeslice };
+
+  /// Fetch kind string map
+  static misc::StringMap fetch_kind_map;
+
+  /// Dispatch stage kind
+  enum DispatchKind {
+    DispatchKindInvalid = 0,
+    DispatchKindShared,
+    DispatchKindTimeslice,
+  };
+
+  /// Dispatch kind string map
+  static misc::StringMap dispatch_kind_map;
+
+  /// Issue stage kind
+  enum IssueKind {
+    IssueKindInvalid = 0,
+    IssueKindShared,
+    IssueKindTimeslice,
+  };
+
+  /// Issue kind string map
+  static misc::StringMap issue_kind_map;
+
+  /// Commit stage kind
+  enum CommitKind {
+    CommitKindInvalid = 0,
+    CommitKindShared,
+    CommitKindTimeslice
+  };
 
-	/// Issue kind string map
-	static misc::StringMap issue_kind_map;
+  /// Commit kind string map
+  static misc::StringMap commit_kind_map;
 
-	/// Commit stage kind
-	enum CommitKind
-	{
-		CommitKindInvalid = 0,
-		CommitKindShared,
-		CommitKindTimeslice
-	};
+  /// Reorder buffer kind
+  enum ReorderBufferKind {
+    ReorderBufferKindInvalid = 0,
+    ReorderBufferKindPrivate,
+    ReorderBufferKindShared
+  };
 
-	/// Commit kind string map
-	static misc::StringMap commit_kind_map;
+  /// Reorder buffer kind string map
+  static misc::StringMap reorder_buffer_kind_map;
 
-	/// Reorder buffer kind
-	enum ReorderBufferKind
-	{
-		ReorderBufferKindInvalid = 0,
-		ReorderBufferKindPrivate,
-		ReorderBufferKindShared
-	};
+  /// Instruction queue kind
+  enum InstructionQueueKind {
+    InstructionQueueKindInvalid = 0,
+    InstructionQueueKindShared,
+    InstructionQueueKindPrivate
+  };
 
-	/// Reorder buffer kind string map
-	static misc::StringMap reorder_buffer_kind_map;
+  /// Instruction queue kind string map
+  static misc::StringMap instruction_queue_kind_map;
 
-	/// Instruction queue kind
-	enum InstructionQueueKind
-	{
-		InstructionQueueKindInvalid = 0,
-		InstructionQueueKindShared,
-		InstructionQueueKindPrivate
-	};
+  /// Load/Store queue kind
+  enum LoadStoreQueueKind {
+    LoadStoreQueueKindInvalid = 0,
+    LoadStoreQueueKindShared,
+    LoadStoreQueueKindPrivate
+  };
 
-	/// Instruction queue kind string map
-	static misc::StringMap instruction_queue_kind_map;
+  /// Load/Store queue kind string map
+  static misc::StringMap load_store_queue_kind_map;
 
-	/// Load/Store queue kind
-	enum LoadStoreQueueKind
-	{
-		LoadStoreQueueKindInvalid = 0,
-		LoadStoreQueueKindShared,
-		LoadStoreQueueKindPrivate
-	};
+  // Maximum number of cycles to simulate
+  static long long max_cycles;
 
-	/// Load/Store queue kind string map
-	static misc::StringMap load_store_queue_kind_map;
+ private:
+  //
+  // Static fields
+  //
 
-	// Maximum number of cycles to simulate
-	static long long max_cycles;
+  // Number of cores
+  static int num_cores;
 
+  // Number of threads
+  static int num_threads;
 
-private:
+  // Context quantum
+  static int context_quantum;
 
-	//
-	// Static fields
-	//
+  // Thread quantum
+  static int thread_quantum;
 
-	// Number of cores
-	static int num_cores;
+  // Thread swtich penalty
+  static int thread_switch_penalty;
 
-	// Number of threads
-	static int num_threads;
+  // Number of fast forward instructions
+  static long long num_fast_forward_instructions;
 
-	// Context quantum
-	static int context_quantum;
+  //
+  // Class members
+  //
 
-	// Thread quantum
-	static int thread_quantum;
+  // Associated emulator
+  Emulator* emulator;
 
-	// Thread swtich penalty
-	static int thread_switch_penalty;
+  // Associated timing simulator, initialized in constructor
+  Timing* timing;
 
-	// Number of fast forward instructions
-	static long long num_fast_forward_instructions;
+  // Array of cores
+  std::vector<std::unique_ptr<Core>> cores;
 
+  // MMU used by this CPU
+  std::shared_ptr<mem::Mmu> mmu;
 
+  // Name of currently simulated stage
+  std::string stage;
 
-	//
-	// Class members
-	//
+  // List containing uops that need to report an 'end_inst' trace event
+  std::list<std::shared_ptr<Uop>> trace_list;
 
-	// Associated emulator 
-	Emulator *emulator;
+  //
+  // Statistics
+  //
 
-	// Associated timing simulator, initialized in constructor
-	Timing *timing;
+  // Number of fectched micro-instructions
+  long long num_fetched_uinsts = 0;
 
-	// Array of cores 
-	std::vector<std::unique_ptr<Core>> cores;
+  // Number of dispatched micro-instructions for every opcode
+  long long num_dispatched_uinst_array[Uinst::OpcodeCount] = {};
 
-	// MMU used by this CPU
-	std::shared_ptr<mem::Mmu> mmu;
+  // Number of issued micro-instructions for every opcode
+  long long num_issued_uinst_array[Uinst::OpcodeCount] = {};
 
-	// Name of currently simulated stage 
-	std::string stage;
+  // Number of committed micro-instructions for every opcode
+  long long num_committed_uinst_array[Uinst::OpcodeCount] = {};
 
-	// List containing uops that need to report an 'end_inst' trace event 
-	std::list<std::shared_ptr<Uop>> trace_list;
+  // Number of dispatched micro-instructions
+  long long num_dispatched_uinsts = 0;
 
+  // Number of issued micro-instructions
+  long long num_issued_uinsts = 0;
 
+  // Number of committed micro-instructions
+  long long num_committed_uinsts = 0;
 
+  // Committed macro-instructions
+  long long num_committed_instructions = 0;
 
-	//
-	// Statistics 
-	//
+  // Number of squashed micro-instructions
+  long long num_squashed_uinsts = 0;
 
-	// Number of fectched micro-instructions
-	long long num_fetched_uinsts = 0;
+  // Number of branch micro-instructions
+  long long num_branches = 0;
 
-	// Number of dispatched micro-instructions for every opcode
-	long long num_dispatched_uinst_array[Uinst::OpcodeCount] = { };
+  // Number of mis-predicted branch micro-instructions
+  long long num_mispredicted_branches = 0;
 
-	// Number of issued micro-instructions for every opcode
-	long long num_issued_uinst_array[Uinst::OpcodeCount] = { };
+  //
+  // For dumping
+  //
 
-	// Number of committed micro-instructions for every opcode
-	long long num_committed_uinst_array[Uinst::OpcodeCount] = { };
+  // Cycle of last dump
+  long long last_committed = 0;
 
-	// Number of dispatched micro-instructions
-	long long num_dispatched_uinsts = 0;
+  // IPC since last dump
+  long long last_dump = 0;
 
-	// Number of issued micro-instructions
-	long long num_issued_uinsts = 0;
+  //
+  // Memory accesses
+  //
 
-	// Number of committed micro-instructions
-	long long num_committed_uinsts = 0;
+  // Frame for memory access events
+  struct MemoryAccessFrame : public esim::Frame {
+    // Module to access
+    mem::Module* module = nullptr;
 
+    // Access type
+    mem::Module::AccessType access_type = mem::Module::AccessInvalid;
 
-	// Committed macro-instructions
-	long long num_committed_instructions = 0;
+    // Physical address to access
+    unsigned address = -1;
 
-	// Number of squashed micro-instructions
-	long long num_squashed_uinsts = 0;
+    // Uop associated with the memory access
+    std::shared_ptr<Uop> uop;
+  };
 
-	// Number of branch micro-instructions
-	long long num_branches = 0;
+  // Event scheduled to start a memory access
+  static esim::Event* event_memory_access_start;
 
-	// Number of mis-predicted branch micro-instructions
-	long long num_mispredicted_branches = 0;
+  // Event scheduled when a memory access finishes
+  static esim::Event* event_memory_access_end;
 
+  // Event handler for memory accesses
+  static void MemoryAccessHandler(esim::Event* event, esim::Frame* frame);
 
+  //
+  // CPU parameters
+  //
 
+  // Recover penalty
+  static int recover_penalty;
 
-	//
-	// For dumping 
-	//
+  // Recover penalty kind
+  static RecoverKind recover_kind;
 
-	// Cycle of last dump
-	long long last_committed = 0;
+  // Cpu fetch parameter
+  static FetchKind fetch_kind;
 
-	// IPC since last dump
-	long long last_dump = 0;
+  // Cpu decode stage parameter
+  static int decode_width;
 
+  // Dispatch width
+  static int dispatch_width;
 
+  // Dispatch kind
+  static DispatchKind dispatch_kind;
 
+  // Issue width
+  static int issue_width;
 
-	//
-	// Memory accesses
-	//
+  // Issue kind
+  static IssueKind issue_kind;
 
-	// Frame for memory access events
-	struct MemoryAccessFrame : public esim::Frame
-	{
-		// Module to access
-		mem::Module *module = nullptr;
+  // Commit width
+  static int commit_width;
 
-		// Access type
-		mem::Module::AccessType access_type = mem::Module::AccessInvalid;
+  // Commit kind
+  static CommitKind commit_kind;
 
-		// Physical address to access
-		unsigned address = -1;
+  // Flag that indicates Cpu to calculate structures occupancy statistics
+  static bool occupancy_stats;
 
-		// Uop associated with the memory access
-		std::shared_ptr<Uop> uop;
-	};
+  //
+  // Queue/Buffer parameters
+  //
 
-	// Event scheduled to start a memory access
-	static esim::Event *event_memory_access_start;
+  // reorder buffer size
+  static int reorder_buffer_size;
 
-	// Event scheduled when a memory access finishes
-	static esim::Event *event_memory_access_end;
+  // reorder buffer kind
+  static ReorderBufferKind reorder_buffer_kind;
 
-	// Event handler for memory accesses
-	static void MemoryAccessHandler(esim::Event *event, esim::Frame *frame);
+  // Fetch queue size in bytes
+  static int fetch_queue_size;
 
+  // Instruction queue kind
+  static InstructionQueueKind instruction_queue_kind;
 
+  // Instruction queue size
+  static int instruction_queue_size;
 
+  // Load/Store queue kind
+  static LoadStoreQueueKind load_store_queue_kind;
 
-	//
-	// CPU parameters
-	//
+  // Load/Store queue size
+  static int load_store_queue_size;
 
-	// Recover penalty
-	static int recover_penalty;
+  // Uop queue size
+  static int uop_queue_size;
 
-	// Recover penalty kind
-	static RecoverKind recover_kind;
+  //
+  // Scheduler
+  //
 
-	// Cpu fetch parameter
-	static FetchKind fetch_kind;
+  // From all contexts currently allocated to hardware threads, minimum
+  // value of their field 'allocate_cycle', used to decide whether the
+  // scheduler should be called at all to check for any context whose
+  // execution quantum has expired. This value is updated with a call to
+  // UpdateContextAllocationCycle().
+  long long min_context_allocate_cycle = 0;
 
-	// Cpu decode stage parameter
-	static int decode_width;
+ public:
+  //
+  // Static functions
+  //
 
-	// Dispatch width
-	static int dispatch_width;
+  /// Get number of cores
+  static int getNumCores() { return num_cores; }
 
-	// Dispatch kind
-	static DispatchKind dispatch_kind;
+  /// Get number of threads
+  static int getNumThreads() { return num_threads; }
 
-	// Issue width
-	static int issue_width;
+  /// Get context quantum
+  static int getContextQuantum() { return context_quantum; }
 
-	// Issue kind
-	static IssueKind issue_kind;
+  /// Get thread quantum
+  static int getThreadQuantum() { return thread_quantum; }
 
-	// Commit width
-	static int commit_width;
+  /// Get thread switch penalty
+  static int getThreadSwitchPenalty() { return thread_switch_penalty; }
 
-	// Commit kind
-	static CommitKind commit_kind;
+  /// Get reorder buffer size
+  static int getReorderBufferSize() { return reorder_buffer_size; }
 
-	// Flag that indicates Cpu to calculate structures occupancy statistics
-	static bool occupancy_stats;
+  /// Get reorder buffer kind
+  static ReorderBufferKind getReorderBufferKind() {
+    return reorder_buffer_kind;
+  }
 
+  /// Return the size of the fetch queue in bytes
+  static int getFetchQueueSize() { return fetch_queue_size; }
 
+  /// Get instruction queue kind
+  static InstructionQueueKind getInstructionQueueKind() {
+    return instruction_queue_kind;
+  }
 
+  /// Get instruction queue size
+  static int getInstructionQueueSize() { return instruction_queue_size; }
 
-	//
-	// Queue/Buffer parameters
-	//
+  /// Get load/store queue kind
+  static LoadStoreQueueKind getLoadStoreQueueKind() {
+    return load_store_queue_kind;
+  }
 
-	// reorder buffer size
-	static int reorder_buffer_size;
+  /// Get load/store queue size
+  static int getLoadStoreQueueSize() { return load_store_queue_size; }
 
-	// reorder buffer kind
-	static ReorderBufferKind reorder_buffer_kind;
+  /// Return the size of the uop queue, as configured by the user
+  static int getUopQueueSize() { return uop_queue_size; }
 
-	// Fetch queue size in bytes
-	static int fetch_queue_size;
+  /// Return the type of instruction fetch, as configured by the user
+  static FetchKind getFetchKind() { return fetch_kind; }
 
-	// Instruction queue kind
-	static InstructionQueueKind instruction_queue_kind;
+  /// Return the decode width, as configured by the user
+  static int getDecodeWidth() { return decode_width; }
 
-	// Instruction queue size
-	static int instruction_queue_size;
+  /// Return the type of instruction dispatch, as configured by the user
+  static DispatchKind getDispatchKind() { return dispatch_kind; }
 
-	// Load/Store queue kind
-	static LoadStoreQueueKind load_store_queue_kind;
+  /// Return the dispatch width, as configured by the user
+  static int getDispatchWidth() { return dispatch_width; }
 
-	// Load/Store queue size
-	static int load_store_queue_size;
+  /// Return the type of instruction issue, as configured by the user
+  static IssueKind getIssueKind() { return issue_kind; }
 
-	// Uop queue size
-	static int uop_queue_size;
+  /// Return the issue width, as configured by the user
+  static int getIssueWidth() { return issue_width; }
 
-	
-	
+  /// Return the kind of recovery upon mispeculation
+  static RecoverKind getRecoverKind() { return recover_kind; }
 
-	//
-	// Scheduler
-	//
+  /// Return the penalty of recovery upon mispeculation
+  static int getRecoverPenalty() { return recover_penalty; }
 
-	// From all contexts currently allocated to hardware threads, minimum
-	// value of their field 'allocate_cycle', used to decide whether the
-	// scheduler should be called at all to check for any context whose
-	// execution quantum has expired. This value is updated with a call to
-	// UpdateContextAllocationCycle().
-	long long min_context_allocate_cycle = 0;
+  /// Return the type of instruction commit, as configured by the user
+  static CommitKind getCommitKind() { return commit_kind; }
 
-public:
+  /// Return the commit width, as configured by the user
+  static int getCommitWidth() { return commit_width; }
 
-	//
-	// Static functions
-	//
+  /// Return the number of fast foward instructions, as configured by
+  /// the user.
+  static long long getNumFastForwardInstructions() {
+    return num_fast_forward_instructions;
+  }
 
-	/// Get number of cores
-	static int getNumCores() { return num_cores; }
+  /// Return the maximum number of cycles to simulate, as configured by
+  /// the user
+  static long long getMaxCycles() { return max_cycles; }
 
-	/// Get number of threads
-	static int getNumThreads() { return num_threads; }
+  /// Read branch predictor configuration from configuration file
+  static void ParseConfiguration(misc::IniFile* ini_file);
 
-	/// Get context quantum
-	static int getContextQuantum() { return context_quantum; }
+  //
+  // Class members
+  //
 
-	/// Get thread quantum
-	static int getThreadQuantum() { return thread_quantum; }
+  /// Constructor
+  Cpu(Timing* timing);
 
-	/// Get thread switch penalty
-	static int getThreadSwitchPenalty() { return thread_switch_penalty; }
+  /// Return the core with the given index
+  Core* getCore(int index) const {
+    assert(index >= 0 && index < (int)cores.size());
+    return cores[index].get();
+  }
 
-	/// Get reorder buffer size
-	static int getReorderBufferSize() { return reorder_buffer_size; }
+  /// Given a core and thread index, return the associated thread object
+  Thread* getThread(int core_index, int thread_index) const {
+    Core* core = getCore(core_index);
+    return core->getThread(thread_index);
+  }
 
-	/// Get reorder buffer kind
-	static ReorderBufferKind getReorderBufferKind() { return reorder_buffer_kind; }
+  /// Get the MMU
+  mem::Mmu* getMmu() { return mmu.get(); }
 
-	/// Return the size of the fetch queue in bytes
-	static int getFetchQueueSize() { return fetch_queue_size; }
+  /// Return the current cycle in the CPU's frequency domain. We cannot
+  /// make this function inline to avoid the cross-dependency between
+  /// classes Cpu and Timing.
+  long long getCycle() const;
 
-	/// Get instruction queue kind
-	static InstructionQueueKind getInstructionQueueKind() { return instruction_queue_kind; }
+  /// Insert an uop into a list of uops that still need to dump an
+  /// 'end_inst' trace event. This will happen when the trace list is
+  /// emptied with a call to EmptyUopTraceList().
+  void InsertInTraceList(std::shared_ptr<Uop> uop);
 
-	/// Get instruction queue size
-	static int getInstructionQueueSize() { return instruction_queue_size; }
+  /// Empty the uop trace list and make every uop contained in it dump
+  /// its last 'end_inst' trace event.
+  void EmptyTraceList();
 
-	/// Get load/store queue kind
-	static LoadStoreQueueKind getLoadStoreQueueKind() { return load_store_queue_kind; }
+  /// Simulate one cycle of the CPU for all its cores and threads.
+  void Run();
 
-	/// Get load/store queue size
-	static int getLoadStoreQueueSize() { return load_store_queue_size; }
+  /// Update structure occupancy statistics
+  void UpdateOccupancyStats();
 
-	/// Return the size of the uop queue, as configured by the user
-	static int getUopQueueSize() { return uop_queue_size; }
+  /// Get occupancy statistics flag
+  static bool getOccupancyStats() { return occupancy_stats; }
 
-	/// Return the type of instruction fetch, as configured by the user
-	static FetchKind getFetchKind() { return fetch_kind; }
+  /// Perform a memory access on the given module for the given address.
+  /// When the access completes, the \a uop is inserted in the event
+  /// queue of the corresponding core.
+  void MemoryAccess(mem::Module* module, mem::Module::AccessType access_type,
+                    unsigned address, std::shared_ptr<Uop> uop);
 
-	/// Return the decode width, as configured by the user
-	static int getDecodeWidth() { return decode_width; }
+  //
+  // Scheduler (CpuScheduler.cc)
+  //
 
-	/// Return the type of instruction dispatch, as configured by the user
-	static DispatchKind getDispatchKind() { return dispatch_kind; }
+  /// Allocate (effectively start running) a context that is already
+  /// mapped to a hardware thread.
+  void AllocateContext(Context* context);
 
-	/// Return the dispatch width, as configured by the user
-	static int getDispatchWidth() { return dispatch_width; }
+  /// Map a context to a thread. The thread is chosen with the minimum
+  /// number contexts currently mapped to it.
+  void MapContext(Context* context);
 
-	/// Return the type of instruction issue, as configured by the user
-	static IssueKind getIssueKind() { return issue_kind; }
+  /// Recalculate the oldest allocation cycle from all allocated contexts
+  /// (i.e., contexts currently occupying the nodes' pipelines). Discard
+  /// from the calculation those contexts that have received an eviction
+  /// signal (pipelines are being flushed for impending eviction. By
+  /// looking at this variable later, we can know right away whether there
+  /// is any allocated context that has exceeded its quantum.
+  void UpdateContextAllocationCycle();
 
-	/// Return the issue width, as configured by the user
-	static int getIssueWidth() { return issue_width; }
+  /// Main scheduler function. This function should be called every timing
+  /// simulation cycle. If no scheduling is required, the function will
+  /// exit with practically no cost.
+  void Schedule();
 
-	/// Return the kind of recovery upon mispeculation
-	static RecoverKind getRecoverKind() { return recover_kind; }
+  //
+  // Stats
+  //
 
-	/// Return the penalty of recovery upon mispeculation
-	static int getRecoverPenalty() { return recover_penalty; }
+  /// Increment the number of fetched micro-instructions
+  void incNumFetchedUinsts() { num_fetched_uinsts++; }
 
-	/// Return the type of instruction commit, as configured by the user
-	static CommitKind getCommitKind() { return commit_kind; }
+  /// Increment the number of dispatched micro-instructions of a kind
+  void incNumDispatchedUinsts(Uinst::Opcode opcode) {
+    assert(opcode < Uinst::OpcodeCount);
+    num_dispatched_uinst_array[opcode]++;
+    num_dispatched_uinsts++;
+  }
 
-	/// Return the commit width, as configured by the user
-	static int getCommitWidth() { return commit_width; }
+  /// Return the array of dispatched micro-instructions
+  const long long* getNumDispatchedUinstArray() const {
+    return num_dispatched_uinst_array;
+  }
 
-	/// Return the number of fast foward instructions, as configured by
-	/// the user.
-	static long long getNumFastForwardInstructions()
-	{
-		return num_fast_forward_instructions;
-	}
+  /// Return the number of dispatched micro-instructions
+  long long getNumDispatchedUinsts() const { return num_dispatched_uinsts; }
 
-	/// Return the maximum number of cycles to simulate, as configured by
-	/// the user
-	static long long getMaxCycles() { return max_cycles; }
-	
-	/// Read branch predictor configuration from configuration file
-	static void ParseConfiguration(misc::IniFile *ini_file);
+  /// Increment the number of issued micro-instructions of a kind
+  void incNumIssuedUinsts(Uinst::Opcode opcode) {
+    assert(opcode < Uinst::OpcodeCount);
+    num_issued_uinst_array[opcode]++;
+    num_issued_uinsts++;
+  }
 
+  /// Return the array of issued micro-instructions
+  const long long* getNumIssuedUinstArray() const {
+    return num_issued_uinst_array;
+  }
 
+  /// Return the number of issued micro-instructions
+  long long getNumIssuedUinsts() const { return num_issued_uinsts; }
 
+  /// Increment the number of committed micro-instructions of a type
+  void incNumCommittedUinsts(Uinst::Opcode opcode) {
+    assert(opcode < Uinst::OpcodeCount);
+    num_committed_uinst_array[opcode]++;
+    num_committed_uinsts++;
+  }
 
-	//
-	// Class members
-	//
+  /// Return the array of committed micro-instructions
+  const long long* getNumCommittedUinstArray() const {
+    return num_committed_uinst_array;
+  }
 
-	/// Constructor
-	Cpu(Timing *timing);
+  /// Return the number of committed micro-instructions
+  long long getNumCommittedUinsts() const { return num_committed_uinsts; }
 
-	/// Return the core with the given index
-	Core *getCore(int index) const
-	{
-		assert(index >= 0 && index < (int) cores.size());
-		return cores[index].get();
-	}
+  /// Increment the number of squashed micro-instructions
+  void incNumSquashedUinsts() { num_squashed_uinsts++; }
 
-	/// Given a core and thread index, return the associated thread object
-	Thread *getThread(int core_index, int thread_index) const
-	{
-		Core *core = getCore(core_index);
-		return core->getThread(thread_index);
-	}
+  /// Return the number of squashed micro-instructions
+  long long getNumSquashedUinsts() const { return num_squashed_uinsts; }
 
-	/// Get the MMU
-	mem::Mmu *getMmu() { return mmu.get(); }
+  /// Increment the number of committed instructions
+  void incNumCommittedInstructions() { num_committed_instructions++; }
 
-	/// Return the current cycle in the CPU's frequency domain. We cannot
-	/// make this function inline to avoid the cross-dependency between
-	/// classes Cpu and Timing.
-	long long getCycle() const;
+  /// Return the number of committed macro-instructions
+  long long getNumCommittedInstructions() const {
+    return num_committed_instructions;
+  }
 
-	/// Insert an uop into a list of uops that still need to dump an
-	/// 'end_inst' trace event. This will happen when the trace list is
-	/// emptied with a call to EmptyUopTraceList().
-	void InsertInTraceList(std::shared_ptr<Uop> uop);
+  /// Increment the number of branches
+  void incNumBranches() { num_branches++; }
 
-	/// Empty the uop trace list and make every uop contained in it dump
-	/// its last 'end_inst' trace event.
-	void EmptyTraceList();
+  /// Return the number of committed branches
+  long long getNumBranches() const { return num_branches; }
 
-	/// Simulate one cycle of the CPU for all its cores and threads.
-	void Run();
+  /// Increment the number of mispredicted branches
+  void incNumMispredictedBranches() { num_mispredicted_branches++; }
 
-	/// Update structure occupancy statistics
-	void UpdateOccupancyStats();
-
-	/// Get occupancy statistics flag
-	static bool getOccupancyStats() { return occupancy_stats; }
-
-	/// Perform a memory access on the given module for the given address.
-	/// When the access completes, the \a uop is inserted in the event
-	/// queue of the corresponding core.
-	void MemoryAccess(mem::Module *module,
-			mem::Module::AccessType access_type,
-			unsigned address,
-			std::shared_ptr<Uop> uop);
-
-
-
-
-	//
-	// Scheduler (CpuScheduler.cc)
-	//
-
-	/// Allocate (effectively start running) a context that is already
-	/// mapped to a hardware thread.
-	void AllocateContext(Context *context);
-
-	/// Map a context to a thread. The thread is chosen with the minimum
-	/// number contexts currently mapped to it.
-	void MapContext(Context *context);
-
-	/// Recalculate the oldest allocation cycle from all allocated contexts
-	/// (i.e., contexts currently occupying the nodes' pipelines). Discard
-	/// from the calculation those contexts that have received an eviction
-	/// signal (pipelines are being flushed for impending eviction. By
-	/// looking at this variable later, we can know right away whether there
-	/// is any allocated context that has exceeded its quantum.
-	void UpdateContextAllocationCycle();
-
-	/// Main scheduler function. This function should be called every timing
-	/// simulation cycle. If no scheduling is required, the function will
-	/// exit with practically no cost.
-	void Schedule();
-
-
-
-
-	//
-	// Stats
-	//
-
-	/// Increment the number of fetched micro-instructions
-	void incNumFetchedUinsts() { num_fetched_uinsts++; }
-
-	/// Increment the number of dispatched micro-instructions of a kind
-	void incNumDispatchedUinsts(Uinst::Opcode opcode)
-	{
-		assert(opcode < Uinst::OpcodeCount);
-		num_dispatched_uinst_array[opcode]++;
-		num_dispatched_uinsts++;
-	}
-
-	/// Return the array of dispatched micro-instructions
-	const long long *getNumDispatchedUinstArray() const
-	{
-		return num_dispatched_uinst_array;
-	}
-
-	/// Return the number of dispatched micro-instructions
-	long long getNumDispatchedUinsts() const
-	{
-		return num_dispatched_uinsts;
-	}
-
-	/// Increment the number of issued micro-instructions of a kind
-	void incNumIssuedUinsts(Uinst::Opcode opcode)
-	{
-		assert(opcode < Uinst::OpcodeCount);
-		num_issued_uinst_array[opcode]++;
-		num_issued_uinsts++;
-	}
-
-	/// Return the array of issued micro-instructions
-	const long long *getNumIssuedUinstArray() const
-	{
-		return num_issued_uinst_array;
-	}
-
-	/// Return the number of issued micro-instructions
-	long long getNumIssuedUinsts() const
-	{
-		return num_issued_uinsts;
-	}
-
-	/// Increment the number of committed micro-instructions of a type
-	void incNumCommittedUinsts(Uinst::Opcode opcode)
-	{
-		assert(opcode < Uinst::OpcodeCount);
-		num_committed_uinst_array[opcode]++;
-		num_committed_uinsts++;
-	}
-
-	/// Return the array of committed micro-instructions
-	const long long *getNumCommittedUinstArray() const
-	{
-		return num_committed_uinst_array;
-	}
-
-	/// Return the number of committed micro-instructions
-	long long getNumCommittedUinsts() const
-	{
-		return num_committed_uinsts;
-	}
-
-	/// Increment the number of squashed micro-instructions
-	void incNumSquashedUinsts() { num_squashed_uinsts++; }
-
-	/// Return the number of squashed micro-instructions
-	long long getNumSquashedUinsts() const { return num_squashed_uinsts; }
-
-	/// Increment the number of committed instructions
-	void incNumCommittedInstructions() { num_committed_instructions++; }
-	
-	/// Return the number of committed macro-instructions
-	long long getNumCommittedInstructions() const { return num_committed_instructions; }
-
-	/// Increment the number of branches
-	void incNumBranches() { num_branches++; }
-
-	/// Return the number of committed branches
-	long long getNumBranches() const { return num_branches; }
-
-	/// Increment the number of mispredicted branches
-	void incNumMispredictedBranches() { num_mispredicted_branches++; }
-
-	/// Return the number of mispredicted branches
-	long long getNumMispredictedBranches() const { return num_mispredicted_branches; }
+  /// Return the number of mispredicted branches
+  long long getNumMispredictedBranches() const {
+    return num_mispredicted_branches;
+  }
 };
-
 }
 
-#endif // ARCH_X86_TIMING_CPU_H
+#endif  // ARCH_X86_TIMING_CPU_H

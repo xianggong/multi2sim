@@ -22,18 +22,16 @@
 
 #include "HsaInstructionWorker.h"
 
-namespace HSA
-{
+namespace HSA {
 
-class AddInstructionWorker: public HsaInstructionWorker
-{
-	template<typename T>
-	void Inst_ADD_Aux(BrigCodeEntry *instruction);
-public:
-	AddInstructionWorker(WorkItem *work_item,
-			StackFrame *stack_frame);
-	virtual ~AddInstructionWorker();
-	void Execute(BrigCodeEntry *instruction) override;
+class AddInstructionWorker : public HsaInstructionWorker {
+  template <typename T>
+  void Inst_ADD_Aux(BrigCodeEntry* instruction);
+
+ public:
+  AddInstructionWorker(WorkItem* work_item, StackFrame* stack_frame);
+  virtual ~AddInstructionWorker();
+  void Execute(BrigCodeEntry* instruction) override;
 };
 
 }  // namespace HSA

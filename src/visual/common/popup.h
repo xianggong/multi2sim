@@ -20,14 +20,11 @@
 #ifndef VISUAL_COMMON_POPUP_H
 #define VISUAL_COMMON_POPUP_H
 
-
 struct vi_popup_t;
 
-struct vi_popup_t *vi_popup_create(char *text);
-void vi_popup_free(struct vi_popup_t *popup);
+struct vi_popup_t* vi_popup_create(char* text);
+void vi_popup_free(struct vi_popup_t* popup);
 
-void vi_popup_show(char *text);
-
+void vi_popup_show(char* text);
 
 #endif
-

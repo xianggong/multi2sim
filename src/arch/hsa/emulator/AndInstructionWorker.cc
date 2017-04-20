@@ -17,70 +17,59 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include <lib/cpp/String.h>
-#include <lib/cpp/Error.h>
 #include <arch/hsa/disassembler/AsmService.h>
 #include <arch/hsa/disassembler/Brig.h>
 #include <arch/hsa/disassembler/BrigCodeEntry.h>
+#include <lib/cpp/Error.h>
+#include <lib/cpp/String.h>
 
 #include "AndInstructionWorker.h"
 #include "WorkItem.h"
 
-namespace HSA
-{
+namespace HSA {
 
-AndInstructionWorker::AndInstructionWorker(WorkItem *work_item,
-		StackFrame *stack_frame) :
-		HsaInstructionWorker(work_item, stack_frame)
-{
+AndInstructionWorker::AndInstructionWorker(WorkItem* work_item,
+                                           StackFrame* stack_frame)
+    : HsaInstructionWorker(work_item, stack_frame) {}
+
+AndInstructionWorker::~AndInstructionWorker() {}
+
+template <typename T>
+void AndInstructionWorker::Inst_AND_Aux(BrigCodeEntry* instruction) {
+  // Perform action
+  T src0;
+  T src1;
+  operand_value_retriever->Retrieve(instruction, 1, &src0);
+  operand_value_retriever->Retrieve(instruction, 2, &src1);
+  T des = src0 & src1;
+  operand_value_writer->Write(instruction, 0, &des);
 }
 
+void AndInstructionWorker::Execute(BrigCodeEntry* instruction) {
+  // Do different action according to the kind of the inst
+  switch (instruction->getType()) {
+    case BRIG_TYPE_B1:
 
-AndInstructionWorker::~AndInstructionWorker()
-{
-}
+      throw misc::Panic("Unimplemented Inst AND, type B1.");
+      break;
 
+    case BRIG_TYPE_B32:
 
-template<typename T>
-void AndInstructionWorker::Inst_AND_Aux(BrigCodeEntry *instruction)
-{
-	// Perform action
-	T src0;
-	T src1;
-	operand_value_retriever->Retrieve(instruction, 1, &src0);
-	operand_value_retriever->Retrieve(instruction, 2, &src1);
-	T des = src0 & src1;
-	operand_value_writer->Write(instruction, 0, &des);
-}
+      Inst_AND_Aux<uint32_t>(instruction);
+      break;
 
+    case BRIG_TYPE_B64:
 
-void AndInstructionWorker::Execute(BrigCodeEntry *instruction)
-{
-	// Do different action according to the kind of the inst
-	switch (instruction->getType())
-	{
-	case BRIG_TYPE_B1:
+      Inst_AND_Aux<uint64_t>(instruction);
+      break;
 
-		throw misc::Panic("Unimplemented Inst AND, type B1.");
-		break;
+    default:
 
-	case BRIG_TYPE_B32:
+      throw Error("Illegal type.");
+  }
 
-		Inst_AND_Aux<uint32_t>(instruction);
-		break;
-
-	case BRIG_TYPE_B64:
-
-		Inst_AND_Aux<uint64_t>(instruction);
-		break;
-
-	default:
-
-		throw Error("Illegal type.");
-	}
-
-	// Move the pc forward
-	work_item->MovePcForwardByOne();
+  // Move the pc forward
+  work_item->MovePcForwardByOne();
 }
 
 }  // namespace HSA

@@ -22,61 +22,50 @@
 #include "OrInstructionWorker.h"
 #include "WorkItem.h"
 
-namespace HSA
-{
+namespace HSA {
 
-OrInstructionWorker::OrInstructionWorker(WorkItem *work_item,
-		StackFrame *stack_frame) :
-		HsaInstructionWorker(work_item, stack_frame)
-{
+OrInstructionWorker::OrInstructionWorker(WorkItem* work_item,
+                                         StackFrame* stack_frame)
+    : HsaInstructionWorker(work_item, stack_frame) {}
+
+OrInstructionWorker::~OrInstructionWorker() {}
+
+template <typename T>
+void OrInstructionWorker::Inst_OR_Aux(BrigCodeEntry* instruction) {
+  // Perform action
+  T src0;
+  T src1;
+  operand_value_retriever->Retrieve(instruction, 1, &src0);
+  operand_value_retriever->Retrieve(instruction, 2, &src1);
+  T des = src0 | src1;
+  operand_value_writer->Write(instruction, 0, &des);
 }
 
+void OrInstructionWorker::Execute(BrigCodeEntry* instruction) {
+  // Do different action according to the kind of the inst
+  switch (instruction->getType()) {
+    case BRIG_TYPE_B1:
 
-OrInstructionWorker::~OrInstructionWorker()
-{
-}
+      Inst_OR_Aux<uint8_t>(instruction);
+      break;
 
+    case BRIG_TYPE_B32:
 
-template<typename T>
-void OrInstructionWorker::Inst_OR_Aux(BrigCodeEntry *instruction)
-{
-	// Perform action
-	T src0;
-	T src1;
-	operand_value_retriever->Retrieve(instruction, 1, &src0);
-	operand_value_retriever->Retrieve(instruction, 2, &src1);
-	T des = src0 | src1;
-	operand_value_writer->Write(instruction, 0, &des);
-}
+      Inst_OR_Aux<unsigned int>(instruction);
+      break;
 
+    case BRIG_TYPE_B64:
 
-void OrInstructionWorker::Execute(BrigCodeEntry *instruction)
-{
-	// Do different action according to the kind of the inst
-	switch (instruction->getType())
-	{
-	case BRIG_TYPE_B1:
+      Inst_OR_Aux<unsigned long long>(instruction);
+      break;
 
-		Inst_OR_Aux<uint8_t>(instruction);
-		break;
+    default:
 
-	case BRIG_TYPE_B32:
+      throw Error("Illegal type.");
+  }
 
-		Inst_OR_Aux<unsigned int>(instruction);
-		break;
-
-	case BRIG_TYPE_B64:
-
-		Inst_OR_Aux<unsigned long long>(instruction);
-		break;
-
-	default:
-
-		throw Error("Illegal type.");
-	}
-
-	// Move the pc forward
-	work_item->MovePcForwardByOne();
+  // Move the pc forward
+  work_item->MovePcForwardByOne();
 }
 
 }  // namespace HSA

@@ -24,77 +24,62 @@
 #include "StackFrame.h"
 #include "WorkItem.h"
 
-namespace HSA
-{
+namespace HSA {
 
-OperandValueWriter::OperandValueWriter(WorkItem *work_item,
-		StackFrame *stack_frame) :
-		work_item(work_item),
-		stack_frame(stack_frame)
-{
+OperandValueWriter::OperandValueWriter(WorkItem* work_item,
+                                       StackFrame* stack_frame)
+    : work_item(work_item), stack_frame(stack_frame) {}
+
+OperandValueWriter::~OperandValueWriter() {}
+
+void OperandValueWriter::Write(BrigCodeEntry* instruction, unsigned int index,
+                               void* buffer) {
+  // Get the operand entry
+  auto operand = instruction->getOperand(index);
+
+  // Do corresponding action according to the type of operand
+  switch (operand->getKind()) {
+    case BRIG_KIND_OPERAND_REGISTER:
+
+    {
+      std::string register_name = operand->getRegisterName();
+      stack_frame->setRegisterValue(register_name, buffer);
+      break;
+    }
+
+    case BRIG_KIND_OPERAND_OPERAND_LIST:
+
+    {
+      // Get the vector modifier
+      unsigned vector_size = instruction->getVectorModifier();
+      for (unsigned int i = 0; i < vector_size; i++) {
+        auto op_item = operand->getOperandElement(i);
+        switch (op_item->getKind()) {
+          case BRIG_KIND_OPERAND_REGISTER:
+
+          {
+            std::string register_name = op_item->getRegisterName();
+            unsigned size =
+                AsmService::getSizeInByteByRegisterName(register_name);
+            stack_frame->setRegisterValue(register_name,
+                                          (unsigned char*)buffer + i * size);
+            break;
+          }
+
+          default:
+            throw misc::Panic(
+                misc::fmt("Unsupported operand "
+                          "type in operand list"));
+        }
+      }
+      break;
+    }
+
+    default:
+
+      throw misc::Panic(
+          "Unsupported operand type "
+          "for storeOperandValue");
+  }
 }
-
-OperandValueWriter::~OperandValueWriter()
-{
 }
-
-void OperandValueWriter::Write(BrigCodeEntry *instruction,
-		unsigned int index, void *buffer)
-{
-	// Get the operand entry
-	auto operand = instruction->getOperand(index);
-
-	// Do corresponding action according to the type of operand
-	switch (operand->getKind())
-	{
-	case BRIG_KIND_OPERAND_REGISTER:
-
-	{
-		std::string register_name = operand->getRegisterName();
-		stack_frame->setRegisterValue(register_name, buffer);
-		break;
-	}
-
-	case BRIG_KIND_OPERAND_OPERAND_LIST:
-
-	{
-		// Get the vector modifier
-		unsigned vector_size = instruction->getVectorModifier();
-		for (unsigned int i = 0; i < vector_size; i++)
-		{
-			auto op_item = operand->getOperandElement(i);
-			switch (op_item->getKind())
-			{
-			case BRIG_KIND_OPERAND_REGISTER:
-
-			{
-				std::string register_name =
-						op_item->
-						getRegisterName();
-				unsigned size = AsmService::getSizeInByteByRegisterName(
-						register_name);
-				stack_frame->setRegisterValue
-						(register_name,
-						 (unsigned char *)buffer + i * size);
-				break;
-			}
-
-			default:
-				throw misc::Panic(misc::fmt(
-						"Unsupported operand "
-						"type in operand list")
-						);
-			}
-		}
-		break;
-	}
-
-	default:
-
-		throw misc::Panic("Unsupported operand type "
-				"for storeOperandValue");
-	}
-}
-
-}
-

@@ -27,200 +27,183 @@
 
 #include "Brig.h"
 
-namespace HSA
-{
+namespace HSA {
 
 /// AsmService provide static functions for assembly service
-class AsmService
-{
-protected:
-	
-	// Map opcode to opcode string
-	static misc::StringMap opcode_to_str_map;
+class AsmService {
+ protected:
+  // Map opcode to opcode string
+  static misc::StringMap opcode_to_str_map;
 
-	// Map type to type string
-	static misc::StringMap type_to_str_map;
+  // Map type to type string
+  static misc::StringMap type_to_str_map;
 
-	// Map linkage to linkage string
-	static misc::StringMap linkage_to_str_map;
+  // Map linkage to linkage string
+  static misc::StringMap linkage_to_str_map;
 
-	// Map segment to segment string
-	static misc::StringMap segment_to_str_map;
+  // Map segment to segment string
+  static misc::StringMap segment_to_str_map;
 
-	// Map alignment to alignment string
-	static misc::StringMap align_to_str_map;
+  // Map alignment to alignment string
+  static misc::StringMap align_to_str_map;
 
-	// Map register kind to string
-	static misc::StringMap register_kind_to_str_map;
+  // Map register kind to string
+  static misc::StringMap register_kind_to_str_map;
 
-	// Map width to string
-	static misc::StringMap width_to_str_map;
+  // Map width to string
+  static misc::StringMap width_to_str_map;
 
-	// Map compare operation to string
-	static misc::StringMap compare_operation_to_str_map;
+  // Map compare operation to string
+  static misc::StringMap compare_operation_to_str_map;
 
-	// Map rounding to string
-	static misc::StringMap rounding_to_str_map;
+  // Map rounding to string
+  static misc::StringMap rounding_to_str_map;
 
-	// Map pack to string
-	static misc::StringMap pack_to_str_map;
+  // Map pack to string
+  static misc::StringMap pack_to_str_map;
 
-	// Map kind to string
-	static misc::StringMap kind_to_str_map;
+  // Map kind to string
+  static misc::StringMap kind_to_str_map;
 
-	// Map atomic operation to string
-	static misc::StringMap atomic_operation_to_str_map;
+  // Map atomic operation to string
+  static misc::StringMap atomic_operation_to_str_map;
 
-	// Map memory order to string
-	static misc::StringMap memory_order_to_str_map;
+  // Map memory order to string
+  static misc::StringMap memory_order_to_str_map;
 
-	// Map memory scope to string
-	static misc::StringMap memory_scope_to_str_map;
+  // Map memory scope to string
+  static misc::StringMap memory_scope_to_str_map;
 
-	// Map image geometry to string
-	static misc::StringMap image_geometry_to_str_map;
+  // Map image geometry to string
+  static misc::StringMap image_geometry_to_str_map;
 
-	// Map image query to string
-	static misc::StringMap image_query_to_str_map;
+  // Map image query to string
+  static misc::StringMap image_query_to_str_map;
 
-	// Map type to number of bytes of its size
-	static std::map<int, unsigned> type_to_size_map;
+  // Map type to number of bytes of its size
+  static std::map<int, unsigned> type_to_size_map;
 
-public:
+ public:
+  /// Check if type is an integer
+  static bool isInteger(BrigType type);
 
-	/// Check if type is an integer
-	static bool isInteger(BrigType type);
+  /// Check if type is float
+  static bool isFloat(BrigType type);
 
-	/// Check if type is float
-	static bool isFloat(BrigType type);
+  /// Check if type is packed
+  static bool isPacked(BrigType type);
 
-	/// Check if type is packed
-	static bool isPacked(BrigType type);
+  /// Check if type is array
+  static bool isArray(BrigType type);
 
-	/// Check if type is array
-	static bool isArray(BrigType type);
+  //
+  // String translation functions
+  //
 
+  /// Convert opcode to opcode string
+  static std::string OpcodeToString(BrigOpcode opcode);
 
+  /// Convert type to type string
+  static std::string TypeToString(BrigType type);
 
+  /// Convert profile to profile string
+  static std::string ProfileToString(BrigProfile profile);
 
-	//
-	// String translation functions
-	//
+  /// Convert machine model to machine model string
+  static std::string MachineModelToString(BrigMachineModel machine);
 
-	/// Convert opcode to opcode string
-	static std::string OpcodeToString(BrigOpcode opcode);
+  /// Convert declaration to string
+  static std::string DeclToString(bool decl);
 
-	/// Convert type to type string
-	static std::string TypeToString(BrigType type);
+  /// Convert linkage to linkage string
+  static std::string LinkageToString(unsigned char linkage);
 
-	/// Convert profile to profile string
-	static std::string ProfileToString(BrigProfile profile);
+  /// Convert allocation to allocation string
+  static std::string AllocationToString(BrigAllocation allocation,
+                                        BrigSegment segment);
 
-	/// Convert machine model to machine model string
-	static std::string MachineModelToString(BrigMachineModel machine);
+  /// Convert segment to segment string
+  static std::string SegmentToString(unsigned char segment);
 
-	/// Convert declaration to string
-	static std::string DeclToString(bool decl);
+  /// Convert alignment to alignment string
+  static std::string AlignToString(BrigAlignment align);
 
-	/// Convert linkage to linkage string
-	static std::string LinkageToString(unsigned char linkage);
+  /// Convert const to const string
+  static std::string ConstToString(bool isConst);
 
-	/// Convert allocation to allocation string
-	static std::string AllocationToString(BrigAllocation allocation, 
-			BrigSegment segment);
+  /// Convert register kind to string
+  static std::string RegisterKindToString(BrigRegisterKind register_kind);
 
-	/// Convert segment to segment string
-	static std::string SegmentToString(unsigned char segment);
+  /// Conver register to string
+  static std::string RegisterToString(BrigRegisterKind register_kind,
+                                      unsigned short register_number);
 
-	/// Convert alignment to alignment string
-	static std::string AlignToString(BrigAlignment align);
+  /// Convert width to string
+  static std::string WidthToString(BrigWidth width);
 
-	/// Convert const to const string
-	static std::string ConstToString(bool isConst);
+  /// Convert compare operation to string
+  static std::string CompareOperationToString(BrigCompareOperation compare);
 
-	/// Convert register kind to string
-	static std::string RegisterKindToString(BrigRegisterKind register_kind);
+  /// Convert alu modifier to string
+  static std::string AluModifierToString(BrigAluModifier modifier);
 
-	/// Conver register to string
-	static std::string RegisterToString(BrigRegisterKind register_kind,
-			unsigned short register_number);
+  /// Convert rounding to string
+  static std::string RoundingToString(BrigRound rounding);
 
-	/// Convert width to string
-	static std::string WidthToString(BrigWidth width);
+  /// Convert pack to string
+  static std::string PackToString(BrigPack pack);
 
-	/// Convert compare operation to string
-	static std::string CompareOperationToString(BrigCompareOperation compare);
+  /// Convert vector modifier to string
+  static std::string VectorModifierToString(unsigned vectorModifier);
 
-	/// Convert alu modifier to string
-	static std::string AluModifierToString(BrigAluModifier modifier);
+  /// Convert kind to string
+  static std::string KindToString(BrigKind kind);
 
-	/// Convert rounding to string
-	static std::string RoundingToString(BrigRound rounding);
+  /// Convert nonull to string
+  static std::string NoNullToString(bool is_no_null);
 
-	/// Convert pack to string
-	static std::string PackToString(BrigPack pack);
+  /// Convert equivalance class to string
+  static std::string EquivClassToString(unsigned char equiv_class);
 
-	/// Convert vector modifier to string
-	static std::string VectorModifierToString(unsigned vectorModifier);
+  /// Convert atomic operation to string
+  static std::string AtomicOperationToString(
+      BrigAtomicOperation atomic_operation);
 
-	/// Convert kind to string
-	static std::string KindToString(BrigKind kind);
+  /// Convert memory order to string
+  static std::string MemoryOrderToString(BrigMemoryOrder memory_order);
 
-	/// Convert nonull to string
-	static std::string NoNullToString(bool is_no_null);
+  /// Convert memory scope to string
+  static std::string MemoryScopeToString(BrigMemoryScope memory_scope);
 
-	/// Convert equivalance class to string
-	static std::string EquivClassToString(unsigned char equiv_class);
+  /// Convert image geometry to string
+  static std::string ImageGeometryToString(BrigImageGeometry geometry);
 
-	/// Convert atomic operation to string
-	static std::string AtomicOperationToString(BrigAtomicOperation 
-			atomic_operation);
+  /// Convert image query to string
+  static std::string ImageQueryToString(BrigImageQuery query);
 
-	/// Convert memory order to string
-	static std::string MemoryOrderToString(BrigMemoryOrder memory_order);
+  /// Convert sampler query to string
+  static std::string SamplerQueryToString(BrigSamplerQuery query);
 
-	/// Convert memory scope to string
-	static std::string MemoryScopeToString(BrigMemoryScope memory_scope);
-	
-	/// Convert image geometry to string
-	static std::string ImageGeometryToString(BrigImageGeometry geometry);
+  /// Convert type to its size
+  static unsigned TypeToSize(BrigType type);
 
-	/// Convert image query to string
-	static std::string ImageQueryToString(BrigImageQuery query);
+  /// Get register size in bytes by its name
+  static unsigned getSizeInByteByRegisterName(const std::string& name);
 
-	/// Convert sampler query to string
-	static std::string SamplerQueryToString(BrigSamplerQuery query);
+  //
+  // Dumping auxilliary functions
+  //
 
-	/// Convert type to its size
-	static unsigned TypeToSize(BrigType type);
+  /// Dump a string with a leading underscore if the string is not empty
+  static void DumpUnderscore(const std::string& string, std::ostream& os);
 
-	/// Get register size in bytes by its name
-	static unsigned getSizeInByteByRegisterName(const std::string &name);
+  /// Dump a string with quotes and escaped charator
+  static void DumpStringLiteral(const std::string& string, std::ostream& os);
 
-
-
-
-	//
-	// Dumping auxilliary functions
-	//
-
-	/// Dump a string with a leading underscore if the string is not empty
-	static void DumpUnderscore(const std::string &string, 
-			std::ostream &os);
-
-	/// Dump a string with quotes and escaped charator
-	static void DumpStringLiteral(const std::string &string, 
-			std::ostream &os);
-
-	/// Dump a string with an empty space after it, if the sting is not 
-	/// empty
-	static void DumpWithSpace(const std::string &string,
-			std::ostream &os);
-
+  /// Dump a string with an empty space after it, if the sting is not
+  /// empty
+  static void DumpWithSpace(const std::string& string, std::ostream& os);
 };
-
 }
 
 #endif
-
-

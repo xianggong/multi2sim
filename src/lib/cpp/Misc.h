@@ -25,85 +25,57 @@
 #include <memory>
 #include <vector>
 
-
-namespace misc
-{
-
+namespace misc {
 
 //
 // Bitwise Functions
 //
-inline unsigned short getBits16(unsigned short x, int high, int low)
-{
-	return (x >> low) & ((1u << (high - low + 1)) - 1);
+inline unsigned short getBits16(unsigned short x, int high, int low) {
+  return (x >> low) & ((1u << (high - low + 1)) - 1);
 }
 
-inline unsigned getBits32(unsigned x, int high, int low)
-{
-	return (x >> low) & ((1u << (high - low + 1)) - 1);
+inline unsigned getBits32(unsigned x, int high, int low) {
+  return (x >> low) & ((1u << (high - low + 1)) - 1);
 }
 
-inline bool getBit32(unsigned x, int bit)
-{
-	return x & (1u << bit);
+inline bool getBit32(unsigned x, int bit) { return x & (1u << bit); }
+
+inline unsigned long long getBits64(unsigned long long x, int high, int low) {
+  return (x >> low) & ((1ull << (high - low + 1)) - 1);
 }
 
-inline unsigned long long getBits64(unsigned long long x, int high, int low)
-{
-	return (x >> low) & ((1ull << (high - low + 1)) - 1);
+inline bool getBit64(unsigned long long x, int bit) {
+  return x & (1ull << bit);
 }
 
-inline bool getBit64(unsigned long long x, int bit)
-{
-	return x & (1ull << bit);
+inline unsigned clearBits32(unsigned x, int high, int low) {
+  return x & (((1ull << low) - 1) | ~((1ull << (high + 1)) - 1));
 }
 
-inline unsigned clearBits32(unsigned x, int high, int low)
-{
-	return x & (((1ull << low) - 1) | ~((1ull << (high + 1)) - 1));
+inline unsigned truncBits32(unsigned x, int num) {
+  return x & ((1ull << num) - 1);
 }
 
-inline unsigned truncBits32(unsigned x, int num)
-{
-	return x & ((1ull << num) - 1);
+inline unsigned setBits32(unsigned x, int high, int low, unsigned value) {
+  return clearBits32(x, high, low) |
+         (truncBits32(value, high - low + 1) << low);
 }
 
-inline unsigned setBits32(unsigned x, int high, int low,
-		unsigned value)
-{
-	return clearBits32(x, high, low) | (truncBits32(value, high
-			- low + 1) << low);
+inline unsigned setBit32(unsigned x, int bit) { return x | (1u << bit); }
+
+inline unsigned clearBit32(unsigned x, int bit) { return x & ~(1u << bit); }
+
+inline unsigned setBit32(unsigned x, int bit, bool value) {
+  return value ? setBit32(x, bit) : clearBit32(x, bit);
 }
 
-inline unsigned setBit32(unsigned x, int bit)
-{
-	return x | (1u << bit);
+inline unsigned SignExtend32(unsigned x, unsigned b) {
+  return x & (1u << (b - 1)) ? x | ~((1u << b) - 1) : x & ((1u << b) - 1);
 }
 
-inline unsigned clearBit32(unsigned x, int bit)
-{
-	return x & ~(1u << bit);
+inline unsigned long long SignExtend64(unsigned long long x, unsigned b) {
+  return x & (1ull << (b - 1)) ? x | ~((1ull << b) - 1) : x & ((1ull << b) - 1);
 }
-
-inline unsigned setBit32(unsigned x, int bit, bool value)
-{
-	return value ? setBit32(x, bit) : clearBit32(x, bit);
-}
-
-inline unsigned SignExtend32(unsigned x, unsigned b)
-{
-	return x & (1u << (b - 1)) ? x | ~((1u << b) - 1) :
-			x & ((1u << b) - 1);
-}
-
-inline unsigned long long SignExtend64(unsigned long long x,
-		unsigned b)
-{
-	return x & (1ull << (b - 1)) ? x | ~((1ull << b) - 1) :
-			x & ((1ull << b) - 1);
-}
-
-
 
 //
 // Numeric Functions
@@ -117,25 +89,20 @@ inline unsigned long long SignExtend64(unsigned long long x,
 ///	or is not a valid power of 2.
 unsigned LogBase2(unsigned value);
 
-
-
-
 //
 // Output messages
 //
 
 /// Warning message
-void Warning(const char *fmt, ...) __attribute__ ((format (printf, 1, 2)));
+void Warning(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
 
 /// Error message terminating the program as a result of an invalid user input
 /// or runtime error.
-void fatal(const char *fmt, ...) __attribute__ ((format (printf, 1, 2)));
+void fatal(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
 
 /// Error message aborting the program as a result of a logic error in the
 /// program execution.
-void panic(const char *fmt, ...) __attribute__ ((format (printf, 1, 2)));
-
-
+void panic(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
 
 //
 // File system
@@ -158,76 +125,59 @@ std::string getCwd();
 ///
 /// \return
 ///	Absolute path, or empty string if \a path is empty.
-std::string getFullPath(const std::string &path, const std::string &cwd = "");
-
+std::string getFullPath(const std::string& path, const std::string& cwd = "");
 
 /// Returns the extension of a file name.
-/// 
+///
 /// \param path
-///	The file name with the extension 
+///	The file name with the extension
 ///
 /// \return
-/// 	The extension of the filename, or empty if \a path does not have 
+/// 	The extension of the filename, or empty if \a path does not have
 /// 	an extension
-std::string getExtension(const std::string &path);
-
+std::string getExtension(const std::string& path);
 
 /// Obtain a file name without its extension. If the file name has not
 /// extension, the same name is returned.
 ///
 /// \param path
 ///	The file name with an extension.
-std::string getBaseName(const std::string &path);
-
-
-
+std::string getBaseName(const std::string& path);
 
 //
 // Miscellaneous
 //
 
-
-inline bool inRange(int value, int min, int max)
-{
-	return value >= min && value <= max;
+inline bool inRange(int value, int min, int max) {
+  return value >= min && value <= max;
 }
 
-
-inline unsigned RoundUp(unsigned n, unsigned align)
-{
-	assert(!(align & (align - 1)));
-	return (n + (align - 1)) & ~(align - 1);
+inline unsigned RoundUp(unsigned n, unsigned align) {
+  assert(!(align & (align - 1)));
+  return (n + (align - 1)) & ~(align - 1);
 }
 
-
-inline unsigned RoundDown(unsigned n, unsigned align)
-{
-	assert(!(align & (align - 1)));
-	return n & ~(align - 1);
+inline unsigned RoundDown(unsigned n, unsigned align) {
+  assert(!(align & (align - 1)));
+  return n & ~(align - 1);
 }
 
-
-template<class X, class Y> inline X cast(const Y &val)
-{
-	X result = dynamic_cast<X>(val);
-	assert(result && "cast<Ty>() argument of incompatible type");
-	return result;
+template <class X, class Y>
+inline X cast(const Y& val) {
+  X result = dynamic_cast<X>(val);
+  assert(result && "cast<Ty>() argument of incompatible type");
+  return result;
 }
 
-
-template<typename T, typename... Args> std::shared_ptr<T>
-		new_shared(Args&&... args)
-{
-	return std::shared_ptr<T>(new T(std::forward<Args>(args)...));
+template <typename T, typename... Args>
+std::shared_ptr<T> new_shared(Args&&... args) {
+  return std::shared_ptr<T>(new T(std::forward<Args>(args)...));
 }
 
-
-template<typename T, typename... Args> std::unique_ptr<T>
-		new_unique(Args&&... args)
-{
-	return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+template <typename T, typename... Args>
+std::unique_ptr<T> new_unique(Args&&... args) {
+  return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
 }
-
 
 /// Create a unique pointer to an array of elements of type T. The elements of
 /// the array will be initialized to zero. The following example allocates a
@@ -236,16 +186,11 @@ template<typename T, typename... Args> std::unique_ptr<T>
 ///    std::unique_ptr<int[]> A;
 ///    A = misc::new_unique_array<int>(10);
 ///
-template<typename T> std::unique_ptr<T[]>new_unique_array(int size)
-{
-	return std::unique_ptr<T[]>(new T[size]());
+template <typename T>
+std::unique_ptr<T[]> new_unique_array(int size) {
+  return std::unique_ptr<T[]>(new T[size]());
 }
 
-
-
-
-
-} // namespace misc
+}  // namespace misc
 
 #endif
-

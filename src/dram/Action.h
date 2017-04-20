@@ -28,124 +28,97 @@
 
 #include "Command.h"
 
-
-namespace dram
-{
+namespace dram {
 
 // Forward declarations
 class Request;
 
-
 /// A class to act as a record for a command being scheduled, keeping track of
 /// the command's type and the cycle it was scheduled in.
-class CommandInfo
-{
-	CommandType type;
-	long long cycle;
+class CommandInfo {
+  CommandType type;
+  long long cycle;
 
-public:
+ public:
+  CommandInfo(CommandType type, long long cycle) : type(type), cycle(cycle) {}
 
-	CommandInfo(CommandType type, long long cycle)
-			:
-			type(type),
-			cycle(cycle)
-	{
-	}
+  /// Returns the type of the command.
+  CommandType getType() const { return type; }
 
-	/// Returns the type of the command.
-	CommandType getType() const { return type; }
+  /// Returns the type of the command as a string.
+  std::string getTypeString() const { return CommandTypeMapToString[type]; }
 
-	/// Returns the type of the command as a string.
-	std::string getTypeString() const
-	{
-		return CommandTypeMapToString[type];
-	}
+  /// Returns the cycle the command was started in.
+  long long getCycle() const { return cycle; }
 
-	/// Returns the cycle the command was started in.
-	long long getCycle() const { return cycle; }
+  /// Dump the object to an output stream.
+  void dump(std::ostream& os = std::cout) const;
 
-	/// Dump the object to an output stream.
-	void dump(std::ostream &os = std::cout) const;
-
-	/// Dump object with the << operator
-	friend std::ostream &operator<<(std::ostream &os,
-			const CommandInfo &object)
-	{
-		object.dump(os);
-		return os;
-	}
+  /// Dump object with the << operator
+  friend std::ostream& operator<<(std::ostream& os, const CommandInfo& object) {
+    object.dump(os);
+    return os;
+  }
 };
 
+class Actions {
+  // Unique instance of this class
+  static std::unique_ptr<Actions> instance;
 
-class Actions
-{
-	// Unique instance of this class
-	static std::unique_ptr<Actions> instance;
+  // Private constructor, used internally to instantiate a singleton. Use
+  // a call to getInstance() instead.
+  Actions();
 
-	// Private constructor, used internally to instantiate a singleton. Use
-	// a call to getInstance() instead.
-	Actions();
+  /// Debugger
+  static misc::Debug debug;
 
-	/// Debugger
-	static misc::Debug debug;
+  // Vector of commands that should be scheduled
+  std::vector<CommandInfo> checks;
 
-	// Vector of commands that should be scheduled
-	std::vector<CommandInfo> checks;
+  // Vector of commands that have been scheduled
+  std::vector<CommandInfo> commands;
 
-	// Vector of commands that have been scheduled
-	std::vector<CommandInfo> commands;
+  // Private methods to help with configuration parsing.
+  void ParseAction(const std::string& line);
+  void ParseActionRequest(const std::vector<std::string>& tokens);
+  void ParseActionDecode(const std::vector<std::string>& tokens);
+  void ParseActionCheck(const std::vector<std::string>& tokens);
 
-	// Private methods to help with configuration parsing.
-	void ParseAction(const std::string &line);
-	void ParseActionRequest(const std::vector<std::string> &tokens);
-	void ParseActionDecode(const std::vector<std::string> &tokens);
-	void ParseActionCheck(const std::vector<std::string> &tokens);
+ public:
+  /// Obtain the instance of the Actions singleton.
+  static Actions* getInstance();
 
-public:
+  void ParseConfiguration(misc::IniFile& config);
 
-	/// Obtain the instance of the Actions singleton.
-	static Actions *getInstance();
+  /// Event handler that adds a request to the DRAM system.
+  static void ActionRequestHandler(esim::Event*, esim::Frame*);
 
-	void ParseConfiguration(misc::IniFile &config);
+  /// Adds a check for a command type at a cycle to the list of checks to
+  /// be made at the end of simulation.
+  void addCheck(CommandType type, long long cycle);
 
-	/// Event handler that adds a request to the DRAM system.
-	static void ActionRequestHandler(esim::Event *, esim::Frame *);
+  /// Adds a command to the list of commands created during simulation.
+  void addCommand(Command* command, long long cycle);
 
-	/// Adds a check for a command type at a cycle to the list of checks to
-	/// be made at the end of simulation.
-	void addCheck(CommandType type, long long cycle);
+  /// Check that commands happened when they should have been.  This
+  /// should be called after simulation is done.
+  void DoChecks();
 
-	/// Adds a command to the list of commands created during simulation.
-	void addCommand(Command *command, long long cycle);
+  /// Dump the object to an output stream.
+  void dump(std::ostream& os = std::cout) const;
 
-	/// Check that commands happened when they should have been.  This
-	/// should be called after simulation is done.
-	void DoChecks();
-
-	/// Dump the object to an output stream.
-	void dump(std::ostream &os = std::cout) const;
-
-	/// Dump object with the << operator
-	friend std::ostream &operator<<(std::ostream &os,
-			const Actions &object)
-	{
-		object.dump(os);
-		return os;
-	}
+  /// Dump object with the << operator
+  friend std::ostream& operator<<(std::ostream& os, const Actions& object) {
+    object.dump(os);
+    return os;
+  }
 };
 
+class ActionRequestFrame : public esim::Frame {
+ public:
+  ActionRequestFrame(std::shared_ptr<Request> request) : request(request) {}
 
-class ActionRequestFrame : public esim::Frame
-{
-
-public:
-	ActionRequestFrame(std::shared_ptr<Request> request)
-			:
-			request(request)
-	{
-	}
-
-	std::shared_ptr<Request> request;
+  std::shared_ptr<Request> request;
 };
 
 }  // namespace dram

@@ -29,63 +29,56 @@ d *  Multi2Sim
 #include "Argument.h"
 //#include "Module.h"
 
-
-namespace Kepler
-{
+namespace Kepler {
 
 class Module;
 
-class Function
-{
-	// Function unique identifier
-	int id;
+class Function {
+  // Function unique identifier
+  int id;
 
-	// Module that the function belongs to
-	Module *module;
+  // Module that the function belongs to
+  Module* module;
 
-	// Name
-	std::string name;
+  // Name
+  std::string name;
 
-	// Pointer to a region of the ELF file in the associated module
-	// containing the ISA section for the function. FIXME
-	const char *text_buffer;
-	
-	// Size of the ISA section in bytes FIXME
-	int text_size;
+  // Pointer to a region of the ELF file in the associated module
+  // containing the ISA section for the function. FIXME
+  const char* text_buffer;
 
-	// Arguments
-	std::vector<std::unique_ptr<Argument>> arguments;
+  // Size of the ISA section in bytes FIXME
+  int text_size;
 
-public:
+  // Arguments
+  std::vector<std::unique_ptr<Argument>> arguments;
 
-	/// Constructor
-	Function(int id, Module *module, const std::string &name);
+ public:
+  /// Constructor
+  Function(int id, Module* module, const std::string& name);
 
-	/// Get function id
-	int getId() const { return id; }
+  /// Get function id
+  int getId() const { return id; }
 
-	/// Get the size of the ISA section in the associated ELF binary
-	int getTextSize() const { return text_size; }
+  /// Get the size of the ISA section in the associated ELF binary
+  int getTextSize() const { return text_size; }
 
-	/// Get a buffer pointing to the ISA section in the associated ELF file
-	const char *getTextBuffer() const { return text_buffer; }
+  /// Get a buffer pointing to the ISA section in the associated ELF file
+  const char* getTextBuffer() const { return text_buffer; }
 
-	/// Get number of arguments
-	int getNumArguments() const { return arguments.size(); }
+  /// Get number of arguments
+  int getNumArguments() const { return arguments.size(); }
 
-	/// Get the arguments with the given index
-	Argument *getArgument(int index)
-	{
-		assert(misc::inRange((unsigned) index, 0,
-				arguments.size() - 1));
-		return arguments[index].get();
-	}
+  /// Get the arguments with the given index
+  Argument* getArgument(int index) {
+    assert(misc::inRange((unsigned)index, 0, arguments.size() - 1));
+    return arguments[index].get();
+  }
 
-	/// Get function name
-	std::string getName() const { return name; }
+  /// Get function name
+  std::string getName() const { return name; }
 };
 
-
-} // namespace Kepler
+}  // namespace Kepler
 
 #endif

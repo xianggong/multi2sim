@@ -25,99 +25,89 @@
 
 #include "Driver.h"
 
-namespace SI
-{
+namespace SI {
 
 /// ConstantBuffer Class
-class ConstantBuffer
-{
-	// Constant buffer ID (2-24)
-	int id = 0;
+class ConstantBuffer {
+  // Constant buffer ID (2-24)
+  int id = 0;
 
-	// Size of buffer
-	unsigned size = 0;
+  // Size of buffer
+  unsigned size = 0;
 
-	// Buffer data
-	std::unique_ptr<char[]> data;
+  // Buffer data
+  std::unique_ptr<char[]> data;
 
-public:
+ public:
+  /// Constructor
+  ConstantBuffer(int id, unsigned size);
 
-	/// Constructor
-	ConstantBuffer(int id, unsigned size);
+  //
+  // Class Members
+  //
 
-	//
-	// Class Members
-	//
+  // Pointer in memory to constant buffer
+  unsigned device_address = 0;
 
-	// Pointer in memory to constant buffer
-	unsigned device_address = 0;
+  //
+  // Getters
+  //
 
+  /// Returns the size of the constant buffer
+  unsigned getSize() const { return size; }
 
-
-
-	//
-	// Getters
-	//
-
-	/// Returns the size of the constant buffer
-	unsigned getSize() const { return size; }
-	
-	/// Returns a pointer to the constant buffer data
-	char *getData() const { return data.get(); }
+  /// Returns a pointer to the constant buffer data
+  char* getData() const { return data.get(); }
 };
 
 /// Program Class
-class Program
-{
-	int id = 0;
+class Program {
+  int id = 0;
 
-	// ELF binary
-	std::unique_ptr<ELFReader::File> elf_file;
+  // ELF binary
+  std::unique_ptr<ELFReader::File> elf_file;
 
-	// List of constant buffers
-	std::vector<std::unique_ptr<ConstantBuffer>> constant_buffers;
+  // List of constant buffers
+  std::vector<std::unique_ptr<ConstantBuffer>> constant_buffers;
 
-	// Initialize constant buffers from ELF binary 
-	void InitializeConstantBuffers();
+  // Initialize constant buffers from ELF binary
+  void InitializeConstantBuffers();
 
-public:
+ public:
+  /// Constructor
+  Program(int id);
 
-	/// Constructor
-	Program(int id);
+  /// Load ELF binary into program object
+  ///
+  /// \param buf
+  ///	Buffer containing OpenCL ELF program binary
+  ///
+  /// \param size
+  ///	Size of buffer
+  void setBinary(const char* buf, unsigned int size);
 
-	/// Load ELF binary into program object
-	///
-	/// \param buf
-	///	Buffer containing OpenCL ELF program binary
-	///
-	/// \param size
-	///	Size of buffer
-	void setBinary(const char *buf, unsigned int size);
+  /// Get the symbol in the Program ELF file by symbol name
+  ///
+  /// \param name
+  ///	Name of the symbol
+  ELFReader::Symbol* getSymbol(const std::string& name) const {
+    return elf_file->getSymbol(name);
+  }
 
-	/// Get the symbol in the Program ELF file by symbol name
-	///
-	/// \param name
-	///	Name of the symbol
-	ELFReader::Symbol *getSymbol(const std::string &name) const 
-	{
-		return elf_file->getSymbol(name); 
-	}
+  /// Get the id of the program
+  int getId() const { return id; }
 
-	/// Get the id of the program
-	int getId() const { return id; }
+  /// Add a constant buffer object to the program
+  ConstantBuffer* addConstantBuffer(int id, unsigned size);
 
-	/// Add a constant buffer object to the program
-	ConstantBuffer *addConstantBuffer(int id, unsigned size);
-	
-	/// Get pointer to constant buffer by index. If index is out of bounds,
-	/// the function will return a nullptr. This allows the user to keep 
-	/// retrieving successive constant buffers. They will receive the
-	/// nullptr when they have reached the end of the implemented constant
-	/// buffers.
-	ConstantBuffer *getConstantBufferByIndex(int index) const;
+  /// Get pointer to constant buffer by index. If index is out of bounds,
+  /// the function will return a nullptr. This allows the user to keep
+  /// retrieving successive constant buffers. They will receive the
+  /// nullptr when they have reached the end of the implemented constant
+  /// buffers.
+  ConstantBuffer* getConstantBufferByIndex(int index) const;
 };
 
-
-} // namespace SI
+}  // namespace SI
 
 #endif /* ARCH_SI_PROGRAM_H */

@@ -22,27 +22,23 @@
 
 #include "HsaInstructionWorker.h"
 
-namespace mem
-{
+namespace mem {
 class Memory;
 }
 
-namespace HSA
-{
+namespace HSA {
 
-class AtomicNoRetInstructionWorker: public HsaInstructionWorker
-{
-	mem::Memory * memory;
+class AtomicNoRetInstructionWorker : public HsaInstructionWorker {
+  mem::Memory* memory;
 
-	template<typename T>
-	void Inst_AtomicNoRet_Aux(BrigCodeEntry *instruction);
+  template <typename T>
+  void Inst_AtomicNoRet_Aux(BrigCodeEntry* instruction);
 
-public:
-	AtomicNoRetInstructionWorker(WorkItem *work_item,
-			StackFrame *stack_frame,
-			mem::Memory *memory);
-	virtual ~AtomicNoRetInstructionWorker();
-	void Execute(BrigCodeEntry *instruction) override;
+ public:
+  AtomicNoRetInstructionWorker(WorkItem* work_item, StackFrame* stack_frame,
+                               mem::Memory* memory);
+  virtual ~AtomicNoRetInstructionWorker();
+  void Execute(BrigCodeEntry* instruction) override;
 };
 
 }  // namespace HSA

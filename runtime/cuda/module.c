@@ -23,33 +23,28 @@
 #include "mhandle.h"
 #include "module.h"
 
-
 /* Create a module */
-CUmodule cuda_module_create(const char *cubin_path)
-{
-	CUmodule module;
+CUmodule cuda_module_create(const char *cubin_path) {
+  CUmodule module;
 
-	/* Create module */
-	module = xcalloc(1, sizeof(struct CUmod_st));
+  /* Create module */
+  module = xcalloc(1, sizeof(struct CUmod_st));
 
-	/* Initialize */
-	module->id = list_count(module_list);
-	module->elf_file = elf_file_create_from_path(cubin_path);
+  /* Initialize */
+  module->id = list_count(module_list);
+  module->elf_file = elf_file_create_from_path(cubin_path);
 
-	/* Add to module list */
-	list_add(module_list, module);
+  /* Add to module list */
+  list_add(module_list, module);
 
-	return module;
+  return module;
 }
 
 /* Free module */
-void cuda_module_free(CUmodule module)
-{
-	list_remove(module_list, module);
+void cuda_module_free(CUmodule module) {
+  list_remove(module_list, module);
 
-	if (module->elf_file)
-		elf_file_free(module->elf_file);
+  if (module->elf_file) elf_file_free(module->elf_file);
 
-	free(module);
+  free(module);
 }
-

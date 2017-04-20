@@ -21,49 +21,31 @@
 
 #include "Extended.h"
 
+namespace x86 {
 
-namespace x86
-{
-
-
-void Extended::DoubleToExtended(double f, unsigned char *x)
-{
-	asm volatile ("fldl %1; fstpt %0\n\t"
-			: "=m" (*x) : "m" (f));
+void Extended::DoubleToExtended(double f, unsigned char* x) {
+  asm volatile("fldl %1; fstpt %0\n\t" : "=m"(*x) : "m"(f));
 }
 
-
-double Extended::ExtendedToDouble(const unsigned char *x)
-{
-	double f;
-	asm volatile ("fldt %1; fstpl %0\n\t"
-			: "=m" (f) : "m" (*x));
-	return f;
+double Extended::ExtendedToDouble(const unsigned char* x) {
+  double f;
+  asm volatile("fldt %1; fstpl %0\n\t" : "=m"(f) : "m"(*x));
+  return f;
 }
 
-
-void Extended::FloatToExtended(float f, unsigned char *x)
-{
-	asm volatile ("flds %1; fstpt %0\n\t"
-			: "=m" (*x) : "m" (f));
+void Extended::FloatToExtended(float f, unsigned char* x) {
+  asm volatile("flds %1; fstpt %0\n\t" : "=m"(*x) : "m"(f));
 }
 
-
-float Extended::ExtendedToFloat(const unsigned char *x)
-{
-	float f;
-	asm volatile ("fldt %1; fstps %0\n\t"
-			: "=m" (f) : "m" (*x));
-	return f;
+float Extended::ExtendedToFloat(const unsigned char* x) {
+  float f;
+  asm volatile("fldt %1; fstps %0\n\t" : "=m"(f) : "m"(*x));
+  return f;
 }
 
-
-void Extended::Dump(std::ostream &os) const
-{
-	double d = ExtendedToDouble(x);
-	os << misc::fmt("%g", d);
+void Extended::Dump(std::ostream& os) const {
+  double d = ExtendedToDouble(x);
+  os << misc::fmt("%g", d);
 }
-
 
 }  // namespace x86
-

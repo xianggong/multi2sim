@@ -21,27 +21,23 @@
 #include "memory.h"
 #include "mhandle.h"
 
+struct cuda_memory_object_t *cuda_memory_object_create(void) {
+  struct cuda_memory_object_t *mem;
 
-struct cuda_memory_object_t *cuda_memory_object_create(void)
-{
-	struct cuda_memory_object_t *mem;
+  /* Create memory object */
+  mem = xcalloc(1, sizeof(struct cuda_memory_object_t));
 
-	/* Create memory object */
-	mem = xcalloc(1, sizeof(struct cuda_memory_object_t));
+  /* Initialize */
+  mem->id = list_count(memory_object_list);
 
-	/* Initialize */
-	mem->id = list_count(memory_object_list);
+  /* Add to memory object list */
+  list_add(memory_object_list, mem);
 
-	/* Add to memory object list */
-	list_add(memory_object_list, mem);
-
-	return mem;
+  return mem;
 }
 
-void cuda_memory_object_free(struct cuda_memory_object_t *mem)
-{
-	list_remove(memory_object_list, mem);
+void cuda_memory_object_free(struct cuda_memory_object_t *mem) {
+  list_remove(memory_object_list, mem);
 
-	free(mem);
+  free(mem);
 }
-

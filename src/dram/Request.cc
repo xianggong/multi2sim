@@ -23,31 +23,22 @@
 #include "Request.h"
 #include "System.h"
 
+namespace dram {
 
-namespace dram
-{
+Request::Request() { type = RequestInvalid; }
 
-Request::Request()
-{
-	type = RequestInvalid;
+void Request::setFinished() {
+  // FIXME: If not in stand alone DRAM sim, return request back up
+  // through cache hierarchy.
+
+  // Debug
+  long long cycle = System::frequency_domain->getCycle();
+  System::activity << misc::fmt("[%lld] Request complete for 0x%llx\n", cycle,
+                                address->getEncoded());
 }
 
-
-void Request::setFinished()
-{
-	// FIXME: If not in stand alone DRAM sim, return request back up
-	// through cache hierarchy.
-
-	// Debug
-	long long cycle = System::frequency_domain->getCycle();
-	System::activity << misc::fmt("[%lld] Request complete for 0x%llx\n",
-		cycle, address->getEncoded());
-}
-
-
-void Request::setEncodedAddress(long long addr)
-{
-	address.reset(new Address(addr));
+void Request::setEncodedAddress(long long addr) {
+  address.reset(new Address(addr));
 }
 
 }  // namespace dram

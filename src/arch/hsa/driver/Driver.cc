@@ -28,40 +28,32 @@
 #include "HsaExecutable.h"
 #include "SignalDestroyHandler.h"
 
-
-namespace HSA
-{
+namespace HSA {
 
 // Initialize table of ABI call names
-const char *Driver::call_name[CallCodeCount] =
-{
-	"Invalid",  // For code 0
+const char* Driver::call_name[CallCodeCount] = {
+    "Invalid",  // For code 0
 #define DEFCALL(name, code, func) #name,
 #include "Driver.def"
 #undef DEFCALL
 };
 
-
 // Initialize table of ABI call functions
-const Driver::CallFn Driver::call_fn[CallCodeCount] =
-{
-	nullptr,  // For code 0
+const Driver::CallFn Driver::call_fn[CallCodeCount] = {
+    nullptr,  // For code 0
 #define DEFCALL(name, code, func) &Driver::Call##name,
 #include "Driver.def"
 #undef DEFCALL
 };
 
-
 // Initialize the map from function name to driver call number
-misc::StringMap Driver::function_name_to_call_map = 
-{
+misc::StringMap Driver::function_name_to_call_map = {
 #define STR(x) #x
 #define DEFCALL(name, code, func) {STR(func), code},
 #include "Driver.def"
 #undef DEFCALL
 #undef STR
 };
-
 
 // Debug file name, as set by user
 std::string Driver::debug_file;
@@ -72,95 +64,74 @@ std::unique_ptr<Driver> Driver::instance;
 // Debugger
 misc::Debug Driver::debug;
 
-
-Driver::Driver() : comm::Driver("HSA", "/dev/hsa")
-{
-	signal_manager.reset(new SignalManager());
+Driver::Driver() : comm::Driver("HSA", "/dev/hsa") {
+  signal_manager.reset(new SignalManager());
 }
 
+void Driver::RegisterOptions() {
+  // Get command line object
+  misc::CommandLine* command_line = misc::CommandLine::getInstance();
 
-void Driver::RegisterOptions()
-{
-	// Get command line object
-	misc::CommandLine *command_line = misc::CommandLine::getInstance();
+  // Category
+  command_line->setCategory("HSA");
 
-	// Category
-	command_line->setCategory("HSA");
-
-	// Option '--hsa-debug-driver <file>'
-	command_line->RegisterString("--hsa-debug-driver <file>", debug_file,
-			"Dump debug information for the HSA driver, "
-			"including all ABI calls coming from the runtime.");
+  // Option '--hsa-debug-driver <file>'
+  command_line->RegisterString(
+      "--hsa-debug-driver <file>", debug_file,
+      "Dump debug information for the HSA driver, "
+      "including all ABI calls coming from the runtime.");
 }
 
-
-void Driver::ProcessOptions()
-{
-	debug.setPath(debug_file);
-	//debug.setPrefix("[HSA driver]");
+void Driver::ProcessOptions() {
+  debug.setPath(debug_file);
+  // debug.setPrefix("[HSA driver]");
 }
 
+Driver* Driver::getInstance() {
+  // Instance already exists
+  if (instance.get()) return instance.get();
 
-Driver *Driver::getInstance()
-{
-	// Instance already exists
-	if (instance.get())
-		return instance.get();
-
-	// Create instance
-	instance.reset(new Driver());
-	return instance.get();
+  // Create instance
+  instance.reset(new Driver());
+  return instance.get();
 }
 
+std::unique_ptr<DriverCallHandler> Driver::GetDriverCallHandler(int code) {
+  switch (code) {
+    case CallCodeSignalDestroy:
 
-std::unique_ptr<DriverCallHandler> Driver::GetDriverCallHandler(int code)
-{
-	switch(code)
-	{
-	case CallCodeSignalDestroy:
+      return misc::new_unique<SignalDestroyHandler>(signal_manager.get());
+      break;
 
-		return misc::new_unique<SignalDestroyHandler>(
-				signal_manager.get());
-		break;
+    default:
 
-	default:
-
-		return std::unique_ptr<DriverCallHandler>(nullptr);
-		break;
-	}
+      return std::unique_ptr<DriverCallHandler>(nullptr);
+      break;
+  }
 }
 
+int Driver::Call(comm::Context* context, mem::Memory* memory, int code,
+                 unsigned args_ptr) {
+  auto driver_call_handler = GetDriverCallHandler(code);
+  if (driver_call_handler.get()) {
+    driver_call_handler->Process(memory, args_ptr);
+    return 0;
+  }
 
-int Driver::Call(comm::Context *context,
-		mem::Memory *memory,
-		int code,
-		unsigned args_ptr)
-{
-	auto driver_call_handler = GetDriverCallHandler(code);
-	if (driver_call_handler.get())
-	{
-		driver_call_handler->Process(memory, args_ptr);
-		return 0;
-	}
+  // Check valid call
+  if (code < 0 || code >= CallCodeCount || !call_fn[code]) {
+    throw misc::Panic(misc::fmt("Invalid call code (%d)\n", code));
+    return -1;
+  }
 
-	// Check valid call
-	if (code < 0 || code >= CallCodeCount || !call_fn[code])
-	{
-		throw misc::Panic(misc::fmt("Invalid call code (%d)\n", code));
-		return -1;
-	}
+  // Debug
+  debug << misc::fmt("ABI call '%s'\n", call_name[code]);
 
-	// Debug
-	debug << misc::fmt("ABI call '%s'\n", call_name[code]);
-
-	// Invoke call
-	CallFn fn = call_fn[code];
-	return (this->*fn)(context, memory, args_ptr);
+  // Invoke call
+  CallFn fn = call_fn[code];
+  return (this->*fn)(context, memory, args_ptr);
 }
 
-
-Driver::~Driver()
-{
-}
+Driver::~Driver() {}
 
 }  // namespace HSA

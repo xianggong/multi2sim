@@ -22,72 +22,66 @@
 
 #include <iostream>
 
+namespace dram {
 
-namespace dram
-{
+class Address {
+  // Encoded address
+  long long encoded;
 
-class Address
-{
-	// Encoded address
-	long long encoded;
+  // Address components
+  int physical;
+  int logical;
+  int rank;
+  int bank;
+  int row;
+  int column;
 
-	// Address components
-	int physical;
-	int logical;
-	int rank;
-	int bank;
-	int row;
-	int column;
+  /// Decodes an encoded address into its components locations and stores
+  /// them in the class.  The encoded address is taken from the class's
+  /// encoded member
+  ///
+  /// For now, this decodes in the order:
+  /// 	physical:logical:rank:bank:row:column.
+  /// This will eventually be configurable.
+  void DecodeAddress();
 
-	/// Decodes an encoded address into its components locations and stores
-	/// them in the class.  The encoded address is taken from the class's
-	/// encoded member
-	///
-	/// For now, this decodes in the order:
-	/// 	physical:logical:rank:bank:row:column.
-	/// This will eventually be configurable.
-	void DecodeAddress();
+ public:
+  /// Creates an address object with all location information derived
+  /// from the encoded address.
+  ///
+  /// \param encoded
+  /// The encoded memory address.
+  Address(long long encoded);
 
-public:
+  /// Returns the encoded address.
+  long long getEncoded() const { return encoded; }
 
-	/// Creates an address object with all location information derived
-	/// from the encoded address.
-	///
-	/// \param encoded
-	/// The encoded memory address.
-	Address(long long encoded);
+  /// Returns the physical channel address component.
+  int getPhysical() const { return physical; }
 
-	/// Returns the encoded address.
-	long long getEncoded() const { return encoded; }
+  /// Returns the logical channel address component.
+  int getLogical() const { return logical; }
 
-	/// Returns the physical channel address component.
-	int getPhysical() const { return physical; }
+  /// Returns the rank address component.
+  int getRank() const { return rank; }
 
-	/// Returns the logical channel address component.
-	int getLogical() const { return logical; }
+  /// Returns the bank address component.
+  int getBank() const { return bank; }
 
-	/// Returns the rank address component.
-	int getRank() const { return rank; }
+  /// Returns the row address component.
+  int getRow() const { return row; }
 
-	/// Returns the bank address component.
-	int getBank() const { return bank; }
+  /// Returns the column address component.
+  int getColumn() const { return column; }
 
-	/// Returns the row address component.
-	int getRow() const { return row; }
+  /// Dump the object to an output stream.
+  void dump(std::ostream& os = std::cout) const;
 
-	/// Returns the column address component.
-	int getColumn() const { return column; }
-
-	/// Dump the object to an output stream.
-	void dump(std::ostream &os = std::cout) const;
-
-	/// Dump object with the << operator
-	friend std::ostream &operator<<(std::ostream &os,
-			const Address &object)
-	{
-		object.dump(os);
-		return os;
-	}
+  /// Dump object with the << operator
+  friend std::ostream& operator<<(std::ostream& os, const Address& object) {
+    object.dump(os);
+    return os;
+  }
 };
 
 }  // namespace dram
