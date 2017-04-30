@@ -261,6 +261,64 @@ class ComputeUnit {
 
   // Number of total mapped work groups for the compute unit
   long long num_mapped_work_groups = 0;
+
+
+  // Accumulative cycle of issued branch instructions
+  long long sum_cycle_branch_instructions = 0;
+
+  // Accumulative cycle of issued scalar memory instructions
+  long long sum_cycle_scalar_memory_instructions = 0;
+
+  // Accumulative cycle of issued scalar ALU instructions
+  long long sum_cycle_scalar_alu_instructions = 0;
+
+  // Accumulative cycle of issued SIMD instructions
+  long long sum_cycle_simd_instructions = 0;
+
+  // Accumulative cycle of issued vector memory instructions
+  long long sum_cycle_vector_memory_instructions = 0;
+
+  // Accumulative cycle of issued LDS instructions
+  long long sum_cycle_lds_instructions = 0;
+
+
+  // Min cycle of issued branch instructions
+  long long min_cycle_branch_instructions = 100000;
+
+  // Min cycle of issued scalar memory instructions
+  long long min_cycle_scalar_memory_instructions = 100000;
+
+  // Min cycle of issued scalar ALU instructions
+  long long min_cycle_scalar_alu_instructions = 100000;
+
+  // Min cycle of issued SIMD instructions
+  long long min_cycle_simd_instructions = 100000;
+
+  // Min cycle of issued vector memory instructions
+  long long min_cycle_vector_memory_instructions = 100000;
+
+  // Min cycle of issued LDS instructions
+  long long min_cycle_lds_instructions = 100000;
+
+
+  // Max cycle of issued branch instructions
+  long long max_cycle_branch_instructions = 0;
+
+  // Max cycle of issued scalar memory instructions
+  long long max_cycle_scalar_memory_instructions = 0;
+
+  // Max cycle of issued scalar ALU instructions
+  long long max_cycle_scalar_alu_instructions = 0;
+
+  // Max cycle of issued SIMD instructions
+  long long max_cycle_simd_instructions = 0;
+
+  // Max cycle of issued vector memory instructions
+  long long max_cycle_vector_memory_instructions = 0;
+
+  // Max cycle of issued LDS instructions
+  long long max_cycle_lds_instructions = 0;
+
 };
 }
 

@@ -95,6 +95,19 @@ void SimdUnit::Complete() {
     // Trace for m2svis
     Timing::m2svis << uop->getLifeCycleInCSV("simd");
 
+    // Update compute unit statistics
+    compute_unit->sum_cycle_simd_instructions += uop->cycle_length;
+
+    compute_unit->min_cycle_simd_instructions =
+        compute_unit->min_cycle_simd_instructions < uop->cycle_length
+            ? compute_unit->min_cycle_simd_instructions
+            : uop->cycle_length;
+
+    compute_unit->max_cycle_simd_instructions =
+        compute_unit->max_cycle_simd_instructions > uop->cycle_length
+            ? compute_unit->max_cycle_simd_instructions
+            : uop->cycle_length;
+
     // Trace
     Timing::trace << misc::fmt(
         "si.end_inst "
@@ -289,7 +302,7 @@ void SimdUnit::Decode() {
     uop->cycle_decode_active = compute_unit->getTiming()->getCycle();
 
     // if (si_spatial_report_active)
-    //	SIComputeUnitReportNewALUInst(simd->compute_unit);
+    //  SIComputeUnitReportNewALUInst(simd->compute_unit);
 
     // Trace
     Timing::trace << misc::fmt(

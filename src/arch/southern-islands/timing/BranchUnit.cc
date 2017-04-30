@@ -87,6 +87,19 @@ void BranchUnit::Complete() {
     // Trace for m2svis
     Timing::m2svis << uop->getLifeCycleInCSV("branch");
 
+    // Update compute unit statistics
+    compute_unit->sum_cycle_branch_instructions += uop->cycle_length;
+
+    compute_unit->min_cycle_branch_instructions =
+        compute_unit->min_cycle_branch_instructions < uop->cycle_length
+            ? compute_unit->min_cycle_branch_instructions
+            : uop->cycle_length;
+
+    compute_unit->max_cycle_branch_instructions =
+        compute_unit->max_cycle_branch_instructions > uop->cycle_length
+            ? compute_unit->min_cycle_branch_instructions
+            : uop->cycle_length;
+
     // Record trace
     Timing::trace << misc::fmt(
         "si.end_inst "

@@ -221,6 +221,33 @@ void ScalarUnit::Complete() {
     // Trace for m2svis
     Timing::m2svis << uop->getLifeCycleInCSV("scalar");
 
+    // Update compute unit statistics
+    if (uop->scalar_memory_read) {
+      compute_unit->sum_cycle_scalar_memory_instructions += uop->cycle_length;
+
+      compute_unit->min_cycle_scalar_memory_instructions =
+          compute_unit->min_cycle_scalar_memory_instructions < uop->cycle_length
+              ? compute_unit->min_cycle_scalar_memory_instructions
+              : uop->cycle_length;
+
+      compute_unit->max_cycle_scalar_memory_instructions =
+          compute_unit->max_cycle_scalar_memory_instructions > uop->cycle_length
+              ? compute_unit->max_cycle_scalar_memory_instructions
+              : uop->cycle_length;
+    } else {
+      compute_unit->sum_cycle_scalar_alu_instructions += uop->cycle_length;
+
+      compute_unit->min_cycle_scalar_alu_instructions =
+          compute_unit->min_cycle_scalar_alu_instructions < uop->cycle_length
+              ? compute_unit->min_cycle_scalar_alu_instructions
+              : uop->cycle_length;
+
+      compute_unit->max_cycle_scalar_alu_instructions =
+          compute_unit->max_cycle_scalar_alu_instructions > uop->cycle_length
+              ? compute_unit->max_cycle_scalar_alu_instructions
+              : uop->cycle_length;
+    }
+
     // Trace
     Timing::trace << misc::fmt(
         "si.end_inst "

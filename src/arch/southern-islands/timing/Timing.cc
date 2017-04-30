@@ -1029,8 +1029,58 @@ void Timing::DumpReport() const {
     report << misc::fmt("LDSInstructions = %lld\n",
                         compute_unit->num_lds_instructions);
     report << misc::fmt("Cycles = %lld\n", getCycle());
-    report << misc::fmt("InstructionsPerCycle = %.4g\n",
+    report << misc::fmt("InstructionsPerCycle = %.4g\n\n",
                         instructions_per_cycle);
+    report << misc::fmt(
+        "Cycles Avg ScalarALUInstructions = %.4g\n",
+        (double)compute_unit->sum_cycle_scalar_alu_instructions /
+            (double)compute_unit->num_scalar_alu_instructions);
+    report << misc::fmt(
+        "Cycles Avg ScalarMemInstructions = %.4g\n",
+        (double)compute_unit->sum_cycle_scalar_memory_instructions /
+            (double)compute_unit->num_scalar_memory_instructions);
+    report << misc::fmt(
+        "Cycles Avg BranchInstructions = %.4g\n",
+        (double)compute_unit->sum_cycle_branch_instructions /
+            (double)compute_unit->num_branch_instructions);
+    report << misc::fmt(
+        "Cycles Avg SIMDInstructions = %.4g\n",
+        (double)compute_unit->sum_cycle_simd_instructions /
+            (double)compute_unit->num_simd_instructions);
+    report << misc::fmt(
+        "Cycles Avg LDSInstructions = %.4g\n",
+        (double)compute_unit->sum_cycle_lds_instructions /
+            (double)compute_unit->num_lds_instructions);
+    report << misc::fmt(
+        "Cycles Min ScalarALUInstructions = %lld\n",
+        compute_unit->min_cycle_scalar_alu_instructions);
+    report << misc::fmt(
+        "Cycles Min ScalarMemInstructions = %lld\n",
+        compute_unit->min_cycle_scalar_memory_instructions);
+    report << misc::fmt(
+        "Cycles Min BranchInstructions = %lld\n",
+        compute_unit->min_cycle_branch_instructions);
+    report << misc::fmt(
+        "Cycles Min SIMDInstructions = %lld\n",
+        compute_unit->min_cycle_simd_instructions);
+    report << misc::fmt(
+        "Cycles Min LDSInstructions = %lld\n",
+        compute_unit->min_cycle_lds_instructions);
+    report << misc::fmt(
+        "Cycles Max ScalarALUInstructions = %lld\n",
+        compute_unit->max_cycle_scalar_alu_instructions);
+    report << misc::fmt(
+        "Cycles Max ScalarMemInstructions = %lld\n",
+        compute_unit->max_cycle_scalar_memory_instructions);
+    report << misc::fmt(
+        "Cycles Max BranchInstructions = %lld\n",
+        compute_unit->max_cycle_branch_instructions);
+    report << misc::fmt(
+        "Cycles Max SIMDInstructions = %lld\n",
+        compute_unit->max_cycle_simd_instructions);
+    report << misc::fmt(
+        "Cycles Max LDSInstructions = %lld\n",
+        compute_unit->max_cycle_lds_instructions);    
     report << misc::fmt("\n");
     report << misc::fmt("ScalarRegReads= %lld\n", compute_unit->num_sreg_reads);
     report << misc::fmt("ScalarRegWrites= %lld\n",

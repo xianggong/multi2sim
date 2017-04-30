@@ -96,6 +96,19 @@ void LdsUnit::Complete() {
     // Trace for m2svis
     Timing::m2svis << uop->getLifeCycleInCSV("lds");
 
+    // Update compute unit statistics
+    compute_unit->sum_cycle_lds_instructions += uop->cycle_length;
+
+    compute_unit->min_cycle_lds_instructions =
+        compute_unit->min_cycle_lds_instructions < uop->cycle_length
+            ? compute_unit->min_cycle_lds_instructions
+            : uop->cycle_length;
+
+    compute_unit->max_cycle_lds_instructions =
+        compute_unit->max_cycle_lds_instructions > uop->cycle_length
+            ? compute_unit->min_cycle_lds_instructions
+            : uop->cycle_length;
+
     // Trace
     Timing::trace << misc::fmt(
         "si.end_inst "
