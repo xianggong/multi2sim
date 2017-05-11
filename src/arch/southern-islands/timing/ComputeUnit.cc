@@ -597,6 +597,9 @@ void ComputeUnit::Run() {
   // Fetch
   for (int i = 0; i < num_wavefront_pools; i++)
     Fetch(fetch_buffers[i].get(), wavefront_pools[i].get());
+
+  // Update overlapping counter
+  UpdateAluMemOverlapCounter();
 }
 
 void ComputeUnit::Dump(std::ostream& os) const {
@@ -622,4 +625,111 @@ void ComputeUnit::Dump(std::ostream& os) const {
   os << '\n';
 }
 
+void ComputeUnit::UpdateAluMemOverlapCounter() {
+  // Check if ALU and MEM instructions overlap in this cycle
+  bool isAluUnitActive = false;
+  bool isMemUnitActive = false;
+
+  // SIMDs
+  for (auto& simd_unit : simd_units) isAluUnitActive |= simd_unit->isActive();
+
+  // Vector memory
+  isMemUnitActive |= vector_memory_unit.isActive();
+
+  // LDS unit
+  isMemUnitActive |= lds_unit.isActive();
+
+  // FIXME: Scalar unit can process both ALU and MEM instructions
+  isAluUnitActive |= scalar_unit.isActive();
+
+  // Branch unit
+  isAluUnitActive |= branch_unit.isActive();
+
+  // OVerlap if both kinds have activity
+  if (isAluUnitActive && isMemUnitActive) num_alu_mem_overlap_cycles++;
+}
+
+std::string ComputeUnit::getUtilization() {
+  std::string util =
+      "Utilization:\t Active or Stall / Idle / Active Only / Active and Stall "
+      "/ Stall Only \n";
+
+  // SIMDs
+  for (auto& simd_unit : simd_units) {
+    util += simd_unit->getUtilization("SIMD");
+  }
+
+  // Vector memory
+  util += vector_memory_unit.getUtilization("VMem");
+
+  // LDS unit
+  util += lds_unit.getUtilization("LDS");
+
+  // Scalar unit
+  util += scalar_unit.getUtilization("Scalar");
+
+  // Branch unit
+  util += branch_unit.getUtilization("Branch");
+
+  util +=
+      "\nCounter:\t Total / Active or Stall / Idle / Active Only / Active and "
+      "Stall / Stall Only\n";
+
+  // SIMD units
+  for (auto& simd_unit : simd_units) {
+    util += simd_unit->getCounter("SIMD");
+  }
+
+  // Vector memory
+  util += vector_memory_unit.getCounter("VMem");
+
+  // LDS unit
+  util += lds_unit.getCounter("LDS");
+
+  // Scalar unit
+  util += scalar_unit.getCounter("Scalar");
+
+  // Branch unit
+  util += branch_unit.getCounter("Branch");
+
+  util += "\n";
+
+  return util;
+}
+
+std::string ComputeUnit::getInstMetrics() {
+  std::string instMetrics = "Cycles.EU:\t Avg \t Min \t Max\n";
+  instMetrics += misc::fmt(
+      "Cycles.SIMD:\t %.4g \t %lld \t %lld\n",
+      (double)sum_cycle_simd_instructions / (double)num_simd_instructions,
+      min_cycle_simd_instructions, max_cycle_simd_instructions);
+  instMetrics += misc::fmt("Cycles.VMem:\t %.4g \t %lld \t %lld\n",
+                           (double)sum_cycle_vector_memory_instructions /
+                               (double)num_lds_instructions,
+                           min_cycle_vector_memory_instructions,
+                           max_cycle_vector_memory_instructions);
+  instMetrics += misc::fmt(
+      "Cycles.LDS:\t %.4g \t %lld \t %lld\n",
+      (double)sum_cycle_lds_instructions / (double)num_lds_instructions,
+      min_cycle_lds_instructions, max_cycle_lds_instructions);
+  instMetrics += misc::fmt("Cycles.SALU:\t %.4g \t %lld \t %lld\n",
+                           (double)sum_cycle_scalar_alu_instructions /
+                               (double)num_scalar_alu_instructions,
+                           min_cycle_scalar_alu_instructions,
+                           max_cycle_scalar_alu_instructions);
+  instMetrics += misc::fmt("Cycles.SMem:\t %.4g \t %lld \t %lld\n",
+                           (double)sum_cycle_scalar_memory_instructions /
+                               (double)num_scalar_memory_instructions,
+                           min_cycle_scalar_memory_instructions,
+                           max_cycle_scalar_memory_instructions);
+  instMetrics += misc::fmt(
+      "Cycles.Branch:\t %.4g \t %lld \t %lld\n",
+      (double)sum_cycle_branch_instructions / (double)num_branch_instructions,
+      min_cycle_branch_instructions, max_cycle_branch_instructions);
+  instMetrics += misc::fmt("\n");
+
+  instMetrics += "\n";
+
+  return instMetrics;
+}
 }  // Namespace SI

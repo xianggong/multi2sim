@@ -65,61 +65,61 @@ std::string Uop::getLifeCycleInCSV(const char* execunit) {
   std::stringstream ss;
   if (isValid) {
     ss << misc::fmt(
-              "%lld|%lld|%lld|"       // Instruction st/fn/len
-              "%lld|%lld|%lld|%lld|"  // Fetch begin/stall/active/end
-              "%lld|%lld|%lld|%lld|"  // Issue begin/stall/active/end
-              "%lld|%lld|%lld|%lld|"  // Decode begin/stall/active/end
-              "%lld|%lld|%lld|%lld|"  // Read begin/stall/active/end
-              "%lld|%lld|%lld|%lld|"  // Execute begin/stall/active/end
-              "%lld|%lld|%lld|%lld|"  // Write begin/stall/active/end
+              "%lld|%lld|%lld|"                           // Instruction st/fn/len
+              "%lld|%lld|%lld|%lld|"                      // Fetch begin/stall/active/end
+              "%lld|%lld|%lld|%lld|"                      // Issue begin/stall/active/end
+              "%lld|%lld|%lld|%lld|"                      // Decode begin/stall/active/end
+              "%lld|%lld|%lld|%lld|"                      // Read begin/stall/active/end
+              "%lld|%lld|%lld|%lld|"                      // Execute begin/stall/active/end
+              "%lld|%lld|%lld|%lld|"                      // Write begin/stall/active/end
 
-              "%lld|%lld|%d|%d|"  // GUID/ID/CU/IB/
-              "%d|%d|%lld|"       // WF/WG/UOP
-              "\"%s\"|\"%s\"|",   // Exec unit/Inst type
+              "%lld|%lld|%d|%d|"                          // GUID/ID/CU/IB/
+              "%d|%d|%lld|"                               // WF/WG/UOP
+              "\"%s\"|\"%s\"|",                           // Exec unit/Inst type
 
-              cycle_start,   // Instruction start
-              cycle_finish,  // Instruction finish
-              cycle_length,  // Instruction length
+              cycle_start,                                // Instruction start
+              cycle_finish,                               // Instruction finish
+              cycle_length,                               // Instruction length
 
-              cycle_fetch_begin,   // Fetch begin
-              cycle_fetch_stall,   // Fetch stall
-              cycle_fetch_active,  // Fetch active
-              cycle_issue_begin,   // Fetch end
+              cycle_fetch_begin,                          // Fetch begin
+              cycle_fetch_stall,                          // Fetch stall
+              cycle_fetch_active,                         // Fetch active
+              cycle_issue_begin,                          // Fetch end
 
-              cycle_issue_begin,   // Issue begin
-              cycle_issue_stall,   // Issue stall
-              cycle_issue_active,  // Issue active
-              cycle_decode_begin,  // Issue end
+              cycle_issue_begin,                          // Issue begin
+              cycle_issue_stall,                          // Issue stall
+              cycle_issue_active,                         // Issue active
+              cycle_decode_begin,                         // Issue end
 
-              cycle_decode_begin,   // Decode begin
-              cycle_decode_stall,   // Decode stall
-              cycle_decode_active,  // Decode active
-              cycle_read_begin,     // Decode end
+              cycle_decode_begin,                         // Decode begin
+              cycle_decode_stall,                         // Decode stall
+              cycle_decode_active,                        // Decode active
+              cycle_read_begin,                           // Decode end
 
-              cycle_read_begin,     // Read begin
-              cycle_read_stall,     // Read stall
-              cycle_read_active,    // Read active
-              cycle_execute_begin,  // Read end
+              cycle_read_begin,                           // Read begin
+              cycle_read_stall,                           // Read stall
+              cycle_read_active,                          // Read active
+              cycle_execute_begin,                        // Read end
 
-              cycle_execute_begin,   // execute begin
-              cycle_execute_stall,   // execute stall
-              cycle_execute_active,  // execute active
-              cycle_write_begin,     // execute end
+              cycle_execute_begin,                        // execute begin
+              cycle_execute_stall,                        // execute stall
+              cycle_execute_active,                       // execute active
+              cycle_write_begin,                          // execute end
 
-              cycle_write_begin,   // write begin
-              cycle_write_stall,   // write stall
-              cycle_write_active,  // write active
-              cycle_finish,        // write end
+              cycle_write_begin,                          // write begin
+              cycle_write_stall,                          // write stall
+              cycle_write_active,                         // write active
+              cycle_finish,                               // write end
 
-              id,                                          // GUID
-              getIdInComputeUnit(),                        // ID in CU
-              compute_unit->getIndex(),                    // CU ID
-              getWavefrontPoolId(),                        // IB ID
-              getWavefront()->getId(),                     // WF ID
-              getWorkGroup()->getId(),                     // WG ID
-              getIdInWavefront(),                          // UOP ID
-              execunit,                                    // Execution Unit
-              getInstruction()->getFormatString().c_str()  // Instruction type
+              id,                                         // GUID
+              getIdInComputeUnit(),                       // ID in CU
+              compute_unit->getIndex(),                   // CU ID
+              getWavefrontPoolId(),                       // IB ID
+              getWavefront()->getId(),                    // WF ID
+              getWorkGroup()->getId(),                    // WG ID
+              getIdInWavefront(),                         // UOP ID
+              execunit,                                   // Execution Unit
+              getInstruction()->getFormatString().c_str() // Instruction type
               )
        << "\"" << *getInstruction() << "\"\n";
   } else {

@@ -35,4 +35,68 @@ void ExecutionUnit::Issue(std::unique_ptr<Uop> uop) {
   assert(canIssue());
   issue_buffer.push_back(std::move(uop));
 }
+
+void ExecutionUnit::resetStatus() {
+  // Reset status of all pipeline stage to idle
+  IssueStatus = Idle;
+  DecodeStatus = Idle;
+  ReadStatus = Idle;
+  ExecutionStatus = Idle;
+  WriteStatus = Idle;
+}
+
+void ExecutionUnit::updateCounter() {
+  count_total_cycles++;
+
+  // ExecutionUnit is idle when all stages are idle
+  if (IssueStatus == Idle && DecodeStatus == Idle && ReadStatus == Idle &&
+      ExecutionStatus == Idle && WriteStatus == Idle) {
+    count_idle_cycles++;
+    return;
+  } else  // ExecutionUnit is active when not idle, including stalls
+    count_active_or_stall_cycles++;
+
+  bool isAnyStageActive = IssueStatus == Active || DecodeStatus == Active ||
+                          ReadStatus == Active || ExecutionStatus == Active ||
+                          WriteStatus == Active;
+  bool isAnyStageStall = IssueStatus == Stall || DecodeStatus == Stall ||
+                         ReadStatus == Stall || ExecutionStatus == Stall ||
+                         WriteStatus == Stall;
+  if (isAnyStageStall) {
+    if (isAnyStageActive)
+      count_active_and_stall_cycles++;
+    else
+      count_stall_only_cycles++;
+  } else
+    count_active_only_cycles++;
+}
+
+std::string ExecutionUnit::getUtilization(std::string ExecutionUnitName) {
+  return "Util." + ExecutionUnitName +
+         misc::fmt(":\t %.2g \t %.2g \t %.2g \t %.2g \t %.2g\n",
+                   100 * (double)count_active_or_stall_cycles /
+                       (double)count_total_cycles,
+                   100 * (double)count_idle_cycles / (double)count_total_cycles,
+                   100 * (double)count_active_only_cycles /
+                       (double)count_total_cycles,
+                   100 * (double)count_active_and_stall_cycles /
+                       (double)count_total_cycles,
+                   100 * (double)count_stall_only_cycles /
+                       (double)count_total_cycles);
+}
+
+std::string ExecutionUnit::getCounter(std::string ExecutionUnitName) {
+  return "Count." + ExecutionUnitName +
+         misc::fmt(":\t %lld \t %lld \t %lld \t %lld \t %lld \t %lld\n",
+                   count_total_cycles, count_active_or_stall_cycles,
+                   count_idle_cycles, count_active_only_cycles,
+                   count_active_and_stall_cycles, count_stall_only_cycles);
+}
+
+bool ExecutionUnit::isActive() {
+  bool isIdle = IssueStatus == Idle && DecodeStatus == Idle &&
+                ReadStatus == Idle && ExecutionStatus == Idle &&
+                WriteStatus == Idle;
+  return !isIdle;
+}
 }

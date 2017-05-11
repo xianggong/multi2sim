@@ -37,9 +37,13 @@ int SimdUnit::exec_buffer_size = 2;
 int SimdUnit::read_exec_write_buffer_size = 2;
 
 void SimdUnit::Run() {
+  SimdUnit::resetStatus();
+
   SimdUnit::Complete();
   SimdUnit::Execute();
   SimdUnit::Decode();
+
+  SimdUnit::updateCounter();
 }
 
 bool SimdUnit::isValidUop(Uop* uop) const {
@@ -64,6 +68,9 @@ void SimdUnit::Issue(std::unique_ptr<Uop> uop) {
 
   // Issue it
   ExecutionUnit::Issue(std::move(uop));
+
+  // Update pipeline stage status
+  IssueStatus = Active;
 }
 
 void SimdUnit::Complete() {
@@ -86,7 +93,11 @@ void SimdUnit::Complete() {
     assert(uop);
 
     // Break if uop is not ready
-    if (compute_unit->getTiming()->getCycle() < uop->execute_ready) break;
+    if (compute_unit->getTiming()->getCycle() < uop->execute_ready) {
+      ReadStatus = Active;
+      ExecutionStatus = Active;
+      break;
+    }
 
     // Update uop info
     uop->cycle_finish = compute_unit->getTiming()->getCycle();
@@ -94,6 +105,9 @@ void SimdUnit::Complete() {
 
     // Trace for m2svis
     Timing::m2svis << uop->getLifeCycleInCSV("simd");
+
+    // Update pipeline stage status
+    WriteStatus = Active;
 
     // Update compute unit statistics
     compute_unit->sum_cycle_simd_instructions += uop->cycle_length;
@@ -149,12 +163,20 @@ void SimdUnit::Execute() {
     instructions_processed++;
 
     // Break if uop is not ready
-    if (compute_unit->getTiming()->getCycle() < uop->decode_ready) break;
+    if (compute_unit->getTiming()->getCycle() < uop->decode_ready) {
+    	DecodeStatus = Active;
+    	break;
+    }
 
     // Stall if width has been reached
     if (instructions_processed > width) {
       // Update uop stall
       uop->cycle_execute_stall++;
+
+      // Update pipeline stage status
+      ReadStatus = Stall;
+      ExecutionStatus = Stall;
+      WriteStatus = Stall;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -176,6 +198,11 @@ void SimdUnit::Execute() {
     if (int(exec_buffer.size()) == exec_buffer_size) {
       // Update uop stall
       uop->cycle_execute_stall++;
+
+      // Update pipeline stage status
+      ReadStatus = Stall;
+      ExecutionStatus = Stall;
+      WriteStatus = Stall;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -209,6 +236,11 @@ void SimdUnit::Execute() {
     uop->cycle_write_begin = uop->execute_ready - write_latency;
     uop->cycle_write_active = uop->execute_ready - write_latency;
     uop->write_ready = uop->execute_ready;
+
+    // Update pipeline stage status
+    ReadStatus = Active;
+    ExecutionStatus = Active;
+    WriteStatus = Active;
 
     // Update wavefront pool entry
     uop->getWavefrontPoolEntry()->ready_next_cycle = true;
@@ -253,12 +285,18 @@ void SimdUnit::Decode() {
     instructions_processed++;
 
     // Break if uop is not ready
-    if (compute_unit->getTiming()->getCycle() < uop->issue_ready) break;
+    if (compute_unit->getTiming()->getCycle() < uop->issue_ready) {
+    	IssueStatus = Active;
+    	break;
+    }
 
     // Stall if width has been reached
     if (instructions_processed > width) {
       // Update uop stall
       uop->cycle_decode_stall++;
+
+      // Update pipeline stage status
+      DecodeStatus = Stall;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -281,6 +319,9 @@ void SimdUnit::Decode() {
       // Update uop stall
       uop->cycle_decode_stall++;
 
+      // Update pipeline stage status
+      DecodeStatus = Stall;
+
       // Trace
       Timing::trace << misc::fmt(
           "si.inst "
@@ -300,6 +341,9 @@ void SimdUnit::Decode() {
     // Update uop cycle
     uop->cycle_decode_begin = uop->issue_ready;
     uop->cycle_decode_active = compute_unit->getTiming()->getCycle();
+
+    // Update pipeline stage status
+    DecodeStatus = Active;
 
     // if (si_spatial_report_active)
     //  SIComputeUnitReportNewALUInst(simd->compute_unit);

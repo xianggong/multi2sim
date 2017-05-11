@@ -37,12 +37,16 @@ int LdsUnit::write_buffer_size = 1;
 int LdsUnit::max_in_flight_mem_accesses = 32;
 
 void LdsUnit::Run() {
+  LdsUnit::resetStatus();
+
   // Run pipeline stages in reverse order
   LdsUnit::Complete();
   LdsUnit::Write();
   LdsUnit::Mem();
   LdsUnit::Read();
   LdsUnit::Decode();
+
+  LdsUnit::updateCounter();
 }
 
 bool LdsUnit::isValidUop(Uop* uop) const {
@@ -65,6 +69,9 @@ void LdsUnit::Issue(std::unique_ptr<Uop> uop) {
 
   // Issue it
   ExecutionUnit::Issue(std::move(uop));
+
+  // Update pipeline stage status
+  IssueStatus = Active;
 }
 
 void LdsUnit::Complete() {
@@ -83,7 +90,11 @@ void LdsUnit::Complete() {
     Uop* uop = it->get();
 
     // Uop is not ready yet
-    if (compute_unit->getTiming()->getCycle() < uop->write_ready) break;
+    if (compute_unit->getTiming()->getCycle() < uop->write_ready) {
+    	WriteStatus = Active;
+    	break;
+    }
+
 
     // Statistics
     assert(uop->getWavefrontPoolEntry()->lgkm_cnt > 0);
@@ -95,6 +106,9 @@ void LdsUnit::Complete() {
 
     // Trace for m2svis
     Timing::m2svis << uop->getLifeCycleInCSV("lds");
+
+    // Update pipeline stage status
+    WriteStatus = Active;
 
     // Update compute unit statistics
     compute_unit->sum_cycle_lds_instructions += uop->cycle_length;
@@ -150,12 +164,18 @@ void LdsUnit::Write() {
     instructions_processed++;
 
     // Break if Uop is not ready yet
-    if (uop->lds_witness) break;
+    if (uop->lds_witness) {
+    	ExecutionStatus = Active;
+    	break;
+    }
 
     // Stall if the width has been reached
     if (instructions_processed > width) {
       // Update uop stall write
       uop->cycle_write_stall++;
+
+      // Update pipeline stage status
+      WriteStatus = Stall;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -177,6 +197,9 @@ void LdsUnit::Write() {
     if (int(write_buffer.size()) == write_buffer_size) {
       // Update uop stall write
       uop->cycle_write_stall++;
+
+      // Update pipeline stage status
+      WriteStatus = Stall;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -203,6 +226,9 @@ void LdsUnit::Write() {
     // Update uop cycle
     uop->cycle_write_begin = uop->execute_ready;
     uop->cycle_write_active = compute_unit->getTiming()->getCycle();
+
+    // Update pipeline stage status
+    WriteStatus = Active;
 
     // Trace
     Timing::trace << misc::fmt(
@@ -244,12 +270,18 @@ void LdsUnit::Mem() {
     instructions_processed++;
 
     // Break if Uop is not ready yet
-    if (compute_unit->getTiming()->getCycle() < uop->read_ready) break;
+    if (compute_unit->getTiming()->getCycle() < uop->read_ready) {
+    	ReadStatus = Active;
+    	break;
+    }
 
     // Stall if the width has been reached
     if (instructions_processed > width) {
       // Update stall execution
       uop->cycle_execute_stall++;
+
+      // Update pipeline stage status
+      ExecutionStatus = Stall;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -274,6 +306,9 @@ void LdsUnit::Mem() {
     if (int(mem_buffer.size()) == max_in_flight_mem_accesses) {
       // Update stall execution
       uop->cycle_execute_stall++;
+
+      // Update pipeline stage status
+      ExecutionStatus = Stall;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -333,6 +368,9 @@ void LdsUnit::Mem() {
     uop->cycle_execute_begin = uop->read_ready;
     uop->cycle_execute_active = compute_unit->getTiming()->getCycle();
 
+    // Update pipeline stage status
+    ExecutionStatus = Active;
+
     // Trace
     Timing::trace << misc::fmt(
         "si.inst "
@@ -377,6 +415,9 @@ void LdsUnit::Read() {
       // Update uop stall read
       uop->cycle_read_stall++;
 
+      // Update pipeline stage status
+      ReadStatus = Stall;
+
       // Trace
       Timing::trace << misc::fmt(
           "si.inst "
@@ -395,6 +436,9 @@ void LdsUnit::Read() {
       // Update uop stall read
       uop->cycle_read_stall++;
 
+      // Update pipeline stage status
+      ReadStatus = Stall;
+
       // Trace
       Timing::trace << misc::fmt(
           "si.inst "
@@ -409,7 +453,10 @@ void LdsUnit::Read() {
     }
 
     // Uop is not ready yet
-    if (compute_unit->getTiming()->getCycle() < uop->decode_ready) break;
+    if (compute_unit->getTiming()->getCycle() < uop->decode_ready) {
+    	DecodeStatus = Active;
+    	break;
+    }
 
     // Update uop
     uop->read_ready = compute_unit->getTiming()->getCycle() + read_latency;
@@ -417,6 +464,9 @@ void LdsUnit::Read() {
     // Update uop cycle
     uop->cycle_read_begin = uop->decode_ready;
     uop->cycle_read_active = compute_unit->getTiming()->getCycle();
+
+    // Update pipeline stage status
+    ReadStatus = Active;
 
     // Trace
     Timing::trace << misc::fmt(
@@ -458,12 +508,18 @@ void LdsUnit::Decode() {
     instructions_processed++;
 
     // Uop is not ready yet
-    if (compute_unit->getTiming()->getCycle() < uop->issue_ready) break;
+    if (compute_unit->getTiming()->getCycle() < uop->issue_ready) {
+    	IssueStatus = Active;
+    	break;
+    }
 
     // Stall if the width has been reached
     if (instructions_processed > width) {
       // Update uop stall decode
       uop->cycle_decode_stall++;
+
+      // Update pipeline stage status
+      DecodeStatus = Stall;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -486,6 +542,9 @@ void LdsUnit::Decode() {
       // Update uop stall decode
       uop->cycle_decode_stall++;
 
+      // Update pipeline stage status
+      DecodeStatus = Stall;
+
       // Trace
       Timing::trace << misc::fmt(
           "si.inst "
@@ -505,6 +564,9 @@ void LdsUnit::Decode() {
     // Update uop cycle
     uop->cycle_decode_begin = uop->issue_ready;
     uop->cycle_decode_active = compute_unit->getTiming()->getCycle();
+
+    // Update pipeline stage status
+    DecodeStatus = Active;
 
     // if (si_spatial_report_active)
     //	SIComputeUnitReportNewLDSInst(lds->compute_unit);

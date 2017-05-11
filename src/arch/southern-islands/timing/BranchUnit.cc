@@ -37,11 +37,15 @@ int BranchUnit::write_latency = 1;
 int BranchUnit::write_buffer_size = 1;
 
 void BranchUnit::Run() {
+  resetStatus();
+
   Complete();
   Write();
   Execute();
   Read();
   Decode();
+
+  updateCounter();
 }
 
 bool BranchUnit::isValidUop(Uop* uop) const {
@@ -61,6 +65,9 @@ void BranchUnit::Issue(std::unique_ptr<Uop> uop) {
 
   // Issue it
   ExecutionUnit::Issue(std::move(uop));
+
+  // Update pipeline stage status
+  IssueStatus = Active;
 }
 
 void BranchUnit::Complete() {
@@ -78,7 +85,10 @@ void BranchUnit::Complete() {
     Uop* uop = it->get();
 
     // Break if uop is not ready
-    if (compute_unit->getTiming()->getCycle() < uop->write_ready) break;
+    if (compute_unit->getTiming()->getCycle() < uop->write_ready) {
+      WriteStatus = Active;
+      break;
+    }
 
     // Update uop info
     uop->cycle_finish = compute_unit->getTiming()->getCycle();
@@ -99,6 +109,9 @@ void BranchUnit::Complete() {
         compute_unit->max_cycle_branch_instructions > uop->cycle_length
             ? compute_unit->min_cycle_branch_instructions
             : uop->cycle_length;
+
+    // Update pipeline stage status
+    WriteStatus = Active;
 
     // Record trace
     Timing::trace << misc::fmt(
@@ -142,12 +155,18 @@ void BranchUnit::Write() {
     instructions_processed++;
 
     // Break if uop is not ready
-    if (compute_unit->getTiming()->getCycle() < uop->execute_ready) break;
+    if (compute_unit->getTiming()->getCycle() < uop->execute_ready) {
+      ExecutionStatus = Active;
+      break;
+    }
 
     // Stall if width has been reached
     if (instructions_processed > width) {
       // Update stall write
       uop->cycle_write_stall++;
+
+      // Update pipeline stage status
+      WriteStatus = Stall;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -170,6 +189,9 @@ void BranchUnit::Write() {
       // Update stall write
       uop->cycle_write_stall++;
 
+      // Update pipeline stage status
+      WriteStatus = Stall;
+
       // Trace
       Timing::trace << misc::fmt(
           "si.inst "
@@ -189,6 +211,9 @@ void BranchUnit::Write() {
     // Update uop cycle
     uop->cycle_write_begin = uop->execute_ready;
     uop->cycle_write_active = compute_unit->getTiming()->getCycle();
+
+    // Update pipeline stage status
+    WriteStatus = Active;
 
     // Trace
     Timing::trace << misc::fmt(
@@ -228,12 +253,18 @@ void BranchUnit::Execute() {
     instructions_processed++;
 
     // Break if uop is not ready
-    if (compute_unit->getTiming()->getCycle() < uop->read_ready) break;
+    if (compute_unit->getTiming()->getCycle() < uop->read_ready) {
+      ReadStatus = Active;
+      break;
+    }
 
     // Stall if width has been reached
     if (instructions_processed > width) {
       // Update stall execution
       uop->cycle_execute_stall++;
+
+      // Update pipeline stage status
+      ExecutionStatus = Stall;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -256,6 +287,9 @@ void BranchUnit::Execute() {
       // Update stall execution
       uop->cycle_execute_stall++;
 
+      // Update pipeline stage status
+      ExecutionStatus = Stall;
+
       // Trace
       Timing::trace << misc::fmt(
           "si.inst "
@@ -275,6 +309,9 @@ void BranchUnit::Execute() {
     // Update uop cycle
     uop->cycle_execute_begin = uop->read_ready;
     uop->cycle_execute_active = compute_unit->getTiming()->getCycle();
+
+    // Update pipeline stage status
+    ExecutionStatus = Active;
 
     // Trace
     Timing::trace << misc::fmt(
@@ -314,12 +351,18 @@ void BranchUnit::Read() {
     instructions_processed++;
 
     // Break if uop is not ready
-    if (compute_unit->getTiming()->getCycle() < uop->decode_ready) break;
+    if (compute_unit->getTiming()->getCycle() < uop->decode_ready) {
+      DecodeStatus = Active;
+      break;
+    }
 
     // Stall if width has been reached
     if (instructions_processed > width) {
       // Update uop stall read
       uop->cycle_read_stall++;
+
+      // Update pipeline stage status
+      ReadStatus = Stall;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -342,6 +385,9 @@ void BranchUnit::Read() {
       // Update uop stall
       uop->cycle_read_stall++;
 
+      // Update pipeline stage status
+      ReadStatus = Stall;
+
       // Trace
       Timing::trace << misc::fmt(
           "si.inst "
@@ -361,6 +407,9 @@ void BranchUnit::Read() {
     // Update uop cycle
     uop->cycle_read_begin = uop->decode_ready;
     uop->cycle_read_active = compute_unit->getTiming()->getCycle();
+
+    // Update pipeline stage status
+    ReadStatus = Active;
 
     // Trace
     Timing::trace << misc::fmt(
@@ -400,12 +449,18 @@ void BranchUnit::Decode() {
     instructions_processed++;
 
     // Break if uop is not ready
-    if (compute_unit->getTiming()->getCycle() < uop->issue_ready) break;
+    if (compute_unit->getTiming()->getCycle() < uop->issue_ready) {
+      IssueStatus = Active;
+      break;
+    }
 
     // Stall if width has been reached
     if (instructions_processed > width) {
       // Update uop stall decode
       uop->cycle_decode_stall++;
+
+      // Update pipeline stage status
+      DecodeStatus = Stall;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -428,6 +483,9 @@ void BranchUnit::Decode() {
       // Update uop stall decode
       uop->cycle_decode_stall++;
 
+      // Update pipeline stage status
+      DecodeStatus = Stall;
+
       // Trace
       Timing::trace << misc::fmt(
           "si.inst "
@@ -447,6 +505,9 @@ void BranchUnit::Decode() {
     // Update uop cycle
     uop->cycle_decode_begin = uop->issue_ready;
     uop->cycle_decode_active = compute_unit->getTiming()->getCycle();
+
+    // Update pipeline stage status
+    DecodeStatus = Active;
 
     // Trace
     Timing::trace << misc::fmt(

@@ -30,6 +30,9 @@ namespace SI {
 // Forward declarations
 class ComputeUnit;
 
+// Status of each pipeline stage, for M2SVis
+enum StageStatus { Idle = 1, Active, Stall };
+
 /// Abstract base class representing an execution unit where the front-end can
 /// issue instructions. Derived classes are SimdUnit, ScalarUnit, ...
 class ExecutionUnit {
@@ -42,6 +45,19 @@ class ExecutionUnit {
  protected:
   // Issue buffer absorbing instructions from the front end
   std::deque<std::unique_ptr<Uop>> issue_buffer;
+
+  // Status of pipeline stage
+  StageStatus IssueStatus = Idle;
+  StageStatus DecodeStatus = Idle;
+  StageStatus ReadStatus = Idle;
+  StageStatus ExecutionStatus = Idle;
+  StageStatus WriteStatus = Idle;
+
+  // Reset status
+  void resetStatus();
+
+  // Update counter
+  void updateCounter();
 
  public:
   /// Constructor
@@ -75,6 +91,18 @@ class ExecutionUnit {
 
   /// Return the compute unit that this execution unit belongs to.
   ComputeUnit* getComputeUnit() const { return compute_unit; }
+
+  // Counters for utilization
+  long long count_total_cycles = 0;
+  long long count_idle_cycles = 0;
+  long long count_active_or_stall_cycles = 0;
+  long long count_active_only_cycles = 0;
+  long long count_active_and_stall_cycles = 0;
+  long long count_stall_only_cycles = 0;
+
+  std::string getUtilization(std::string ExecutionUnitName);
+  std::string getCounter(std::string ExecutionUnitName);
+  bool isActive();
 };
 }
 

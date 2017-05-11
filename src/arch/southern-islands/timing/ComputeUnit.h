@@ -56,6 +56,9 @@ class ComputeUnit {
   // Update the visualization states for non-issued instructions
   void UpdateFetchVisualization(FetchBuffer* fetch_buffer);
 
+  // Record count of cycles where ALU and MEM instructions overlap
+  void UpdateAluMemOverlapCounter();
+
   // Associated timing simulator, saved for performance
   Timing* timing = nullptr;
 
@@ -153,7 +156,6 @@ class ComputeUnit {
   // Number of vector registers per compute unit
   static int num_vector_registers;
 
-
   //
   // Class members
   //
@@ -204,6 +206,10 @@ class ComputeUnit {
     compute_unit.Dump(os);
     return os;
   }
+
+  std::string getUtilization();
+
+  std::string getInstMetrics();
 
   //
   // Public member variables
@@ -262,7 +268,6 @@ class ComputeUnit {
   // Number of total mapped work groups for the compute unit
   long long num_mapped_work_groups = 0;
 
-
   // Accumulative cycle of issued branch instructions
   long long sum_cycle_branch_instructions = 0;
 
@@ -281,25 +286,23 @@ class ComputeUnit {
   // Accumulative cycle of issued LDS instructions
   long long sum_cycle_lds_instructions = 0;
 
-
   // Min cycle of issued branch instructions
-  long long min_cycle_branch_instructions = 100000;
+  long long min_cycle_branch_instructions = LLONG_MAX;
 
   // Min cycle of issued scalar memory instructions
-  long long min_cycle_scalar_memory_instructions = 100000;
+  long long min_cycle_scalar_memory_instructions = LLONG_MAX;
 
   // Min cycle of issued scalar ALU instructions
-  long long min_cycle_scalar_alu_instructions = 100000;
+  long long min_cycle_scalar_alu_instructions = LLONG_MAX;
 
   // Min cycle of issued SIMD instructions
-  long long min_cycle_simd_instructions = 100000;
+  long long min_cycle_simd_instructions = LLONG_MAX;
 
   // Min cycle of issued vector memory instructions
-  long long min_cycle_vector_memory_instructions = 100000;
+  long long min_cycle_vector_memory_instructions = LLONG_MAX;
 
   // Min cycle of issued LDS instructions
-  long long min_cycle_lds_instructions = 100000;
-
+  long long min_cycle_lds_instructions = LLONG_MAX;
 
   // Max cycle of issued branch instructions
   long long max_cycle_branch_instructions = 0;
@@ -319,6 +322,8 @@ class ComputeUnit {
   // Max cycle of issued LDS instructions
   long long max_cycle_lds_instructions = 0;
 
+  // Count of cycles that ALU and MEM instructions overlap
+  long long num_alu_mem_overlap_cycles = 0;
 };
 }
 

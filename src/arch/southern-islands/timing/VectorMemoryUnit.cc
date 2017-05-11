@@ -40,11 +40,15 @@ int VectorMemoryUnit::write_latency = 1;
 int VectorMemoryUnit::write_buffer_size = 1;
 
 void VectorMemoryUnit::Run() {
+  resetStatus();
+
   Complete();
   Write();
   Memory();
   Read();
   Decode();
+
+  updateCounter();
 }
 
 bool VectorMemoryUnit::isValidUop(Uop* uop) const {
@@ -72,6 +76,9 @@ void VectorMemoryUnit::Issue(std::unique_ptr<Uop> uop) {
 
   // Issue it
   ExecutionUnit::Issue(std::move(uop));
+
+  // Update pipeline stage status
+  IssueStatus = Active;
 }
 
 void VectorMemoryUnit::Complete() {
@@ -89,7 +96,10 @@ void VectorMemoryUnit::Complete() {
     Uop* uop = it->get();
 
     // Break if uop is not ready
-    if (compute_unit->getTiming()->getCycle() < uop->write_ready) break;
+    if (compute_unit->getTiming()->getCycle() < uop->write_ready) {
+      WriteStatus = Active;
+      break;
+    }
 
     // Access complete, remove the uop from the queue
     assert(uop->getWavefrontPoolEntry()->lgkm_cnt > 0);
@@ -101,6 +111,9 @@ void VectorMemoryUnit::Complete() {
 
     // Trace for m2svis
     Timing::m2svis << uop->getLifeCycleInCSV("simd-m");
+
+    // Update pipeline stage status
+    WriteStatus = Active;
 
     // Update compute unit statistics
     compute_unit->sum_cycle_vector_memory_instructions += uop->cycle_length;
@@ -154,12 +167,18 @@ void VectorMemoryUnit::Write() {
     instructions_processed++;
 
     // Uop is not ready yet
-    if (uop->global_memory_witness) break;
+    if (uop->global_memory_witness) {
+      ExecutionStatus = Active;
+      break;
+    }
 
     // Stall if width has been reached
     if (instructions_processed > width) {
       // Update uop stall write
       uop->cycle_write_stall++;
+
+      // Update pipeline stage status
+      WriteStatus = Stall;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -182,6 +201,9 @@ void VectorMemoryUnit::Write() {
       // Update uop stall write
       uop->cycle_write_stall++;
 
+      // Update pipeline stage status
+      WriteStatus = Stall;
+
       // Trace
       Timing::trace << misc::fmt(
           "si.inst "
@@ -202,6 +224,9 @@ void VectorMemoryUnit::Write() {
     uop->cycle_write_begin =
         compute_unit->getTiming()->getCycle() - uop->cycle_write_stall;
     uop->cycle_write_active = compute_unit->getTiming()->getCycle();
+
+    // Update pipeline stage status
+    WriteStatus = Active;
 
     // Trace
     Timing::trace << misc::fmt(
@@ -244,12 +269,18 @@ void VectorMemoryUnit::Memory() {
     instructions_processed++;
 
     // Break if uop is not ready
-    if (compute_unit->getTiming()->getCycle() < uop->read_ready) break;
+    if (compute_unit->getTiming()->getCycle() < uop->read_ready) {
+      ReadStatus = Active;
+      break;
+    }
 
     // Stall if width has been reached
     if (instructions_processed > width) {
       // Update stall execution
       uop->cycle_execute_stall++;
+
+      // Update pipeline stage status
+      ExecutionStatus = Stall;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -271,6 +302,9 @@ void VectorMemoryUnit::Memory() {
     if ((int)mem_buffer.size() == max_inflight_mem_accesses) {
       // Update stall execution
       uop->cycle_execute_stall++;
+
+      // Update pipeline stage status
+      ExecutionStatus = Stall;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -368,6 +402,9 @@ void VectorMemoryUnit::Memory() {
     uop->cycle_execute_begin = uop->read_ready;
     uop->cycle_execute_active = compute_unit->getTiming()->getCycle();
 
+    // Update pipeline stage status
+    ExecutionStatus = Active;
+
     // Trace
     Timing::trace << misc::fmt(
         "si.inst "
@@ -406,12 +443,18 @@ void VectorMemoryUnit::Read() {
     instructions_processed++;
 
     // Break if uop is not ready
-    if (compute_unit->getTiming()->getCycle() < uop->decode_ready) break;
+    if (compute_unit->getTiming()->getCycle() < uop->decode_ready) {
+      DecodeStatus = Active;
+      break;
+    }
 
     // Stall if width has been reached
     if (instructions_processed > width) {
       // Update uop stall read
       uop->cycle_read_stall++;
+
+      // Update pipeline stage status
+      ReadStatus = Stall;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -434,6 +477,9 @@ void VectorMemoryUnit::Read() {
       // Update uop stall read
       uop->cycle_read_stall++;
 
+      // Update pipeline stage status
+      ReadStatus = Stall;
+
       // Trace
       Timing::trace << misc::fmt(
           "si.inst "
@@ -453,6 +499,9 @@ void VectorMemoryUnit::Read() {
     // Update uop cycle
     uop->cycle_read_begin = uop->decode_ready;
     uop->cycle_read_active = compute_unit->getTiming()->getCycle();
+
+    // Update pipeline stage status
+    ReadStatus = Active;
 
     // Trace
     Timing::trace << misc::fmt(
@@ -492,12 +541,18 @@ void VectorMemoryUnit::Decode() {
     instructions_processed++;
 
     // Break if uop is not ready
-    if (compute_unit->getTiming()->getCycle() < uop->issue_ready) break;
+    if (compute_unit->getTiming()->getCycle() < uop->issue_ready) {
+      IssueStatus = Active;
+      break;
+    }
 
     // Stall if width has been reached
     if (instructions_processed > width) {
       // Update uop stall decode
       uop->cycle_decode_stall++;
+
+      // Update pipeline stage status
+      DecodeStatus = Stall;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -520,6 +575,9 @@ void VectorMemoryUnit::Decode() {
       // Update uop stall decode
       uop->cycle_decode_stall++;
 
+      // Update pipeline stage status
+      DecodeStatus = Stall;
+
       // Trace
       Timing::trace << misc::fmt(
           "si.inst "
@@ -539,6 +597,9 @@ void VectorMemoryUnit::Decode() {
     // Update uop cycle
     uop->cycle_decode_begin = uop->issue_ready;
     uop->cycle_decode_active = compute_unit->getTiming()->getCycle();
+
+    // Update pipeline stage status
+    DecodeStatus = Active;
 
     // Trace
     Timing::trace << misc::fmt(

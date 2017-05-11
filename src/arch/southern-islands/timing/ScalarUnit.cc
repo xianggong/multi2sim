@@ -42,12 +42,16 @@ int ScalarUnit::write_latency = 1;
 int ScalarUnit::write_buffer_size = 1;
 
 void ScalarUnit::Run() {
+  resetStatus();
+
   // Run pipeline stages in reverse order
   ScalarUnit::Complete();
   ScalarUnit::Write();
   ScalarUnit::Execute();
   ScalarUnit::Read();
   ScalarUnit::Decode();
+
+  updateCounter();
 }
 
 bool ScalarUnit::isValidUop(Uop* uop) const {
@@ -86,6 +90,9 @@ void ScalarUnit::Issue(std::unique_ptr<Uop> uop) {
 
   // Issue it
   ExecutionUnit::Issue(std::move(uop));
+
+  // Update pipeline stage status
+  IssueStatus = Active;
 }
 
 void ScalarUnit::Complete() {
@@ -105,7 +112,10 @@ void ScalarUnit::Complete() {
     WorkGroup* work_group = uop->getWorkGroup();
 
     // Break if uop is not ready
-    if (compute_unit->getTiming()->getCycle() < uop->write_ready) break;
+    if (compute_unit->getTiming()->getCycle() < uop->write_ready) {
+      WriteStatus = Active;
+      break;
+    }
 
     // If this is the last instruction and there are outstanding
     // memory operations, wait for them to complete
@@ -115,6 +125,9 @@ void ScalarUnit::Complete() {
          uop->getWavefrontPoolEntry()->exp_cnt)) {
       // Update uop complete stall
       uop->cycle_complete_stall++;
+
+      // Update pipeline stage status
+      WriteStatus = Stall;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -218,6 +231,9 @@ void ScalarUnit::Complete() {
     uop->cycle_finish = compute_unit->getTiming()->getCycle();
     uop->cycle_length = uop->cycle_finish - uop->cycle_start;
 
+    // Update pipeline stage status
+    WriteStatus = Active;
+
     // Trace for m2svis
     Timing::m2svis << uop->getLifeCycleInCSV("scalar");
 
@@ -290,6 +306,7 @@ void ScalarUnit::Write() {
     if (uop->scalar_memory_read) {
       // Check if access is complete
       if (uop->global_memory_witness) {
+        ExecutionStatus = Active;
         break;
       }
 
@@ -297,6 +314,9 @@ void ScalarUnit::Write() {
       if (instructions_processed > width) {
         // Update write stall
         uop->cycle_write_stall++;
+
+        // Update pipeline status
+        WriteStatus = Stall;
 
         // Trace
         Timing::trace << misc::fmt(
@@ -319,6 +339,9 @@ void ScalarUnit::Write() {
         // Update write stall
         uop->cycle_write_stall++;
 
+        // Update pipeline status
+        WriteStatus = Stall;
+
         // Trace
         Timing::trace << misc::fmt(
             "si.inst "
@@ -339,6 +362,9 @@ void ScalarUnit::Write() {
       uop->cycle_write_begin =
           compute_unit->getTiming()->getCycle() - uop->cycle_write_stall;
       uop->cycle_write_active = compute_unit->getTiming()->getCycle();
+
+      // Update pipeline status
+      WriteStatus = Active;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -367,6 +393,9 @@ void ScalarUnit::Write() {
         // Update write stall
         uop->cycle_write_stall++;
 
+        // Update pipeline status
+        WriteStatus = Stall;
+
         // Trace
         Timing::trace << misc::fmt(
             "si.inst "
@@ -388,27 +417,8 @@ void ScalarUnit::Write() {
         // Update write stall
         uop->cycle_write_stall++;
 
-        // Trace
-        Timing::trace << misc::fmt(
-            "si.inst "
-            "id=%lld "
-            "cu=%d "
-            "wf=%d "
-            "uop_id=%lld "
-            "stg=\"s\"\n",
-            uop->getIdInComputeUnit(), compute_unit->getIndex(),
-            uop->getWavefront()->getId(), uop->getIdInWavefront());
-
-        break;
-      }
-
-      // Sanity check write buffer
-      assert((int)write_buffer.size() <= write_buffer_size);
-
-      // Stall if the write buffer is full
-      if ((int)write_buffer.size() == write_buffer_size) {
-        // Update write stall
-        uop->cycle_write_stall++;
+        // Update pipeline status
+        WriteStatus = Stall;
 
         // Trace
         Timing::trace << misc::fmt(
@@ -420,6 +430,7 @@ void ScalarUnit::Write() {
             "stg=\"s\"\n",
             uop->getIdInComputeUnit(), compute_unit->getIndex(),
             uop->getWavefront()->getId(), uop->getIdInWavefront());
+
         break;
       }
 
@@ -429,6 +440,9 @@ void ScalarUnit::Write() {
       // Update uop cycle
       uop->cycle_write_begin = uop->execute_ready;
       uop->cycle_write_active = compute_unit->getTiming()->getCycle();
+
+      // Update pipeline status
+      WriteStatus = Active;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -471,12 +485,18 @@ void ScalarUnit::Execute() {
     instructions_processed++;
 
     // Uop is not ready yet
-    if (compute_unit->getTiming()->getCycle() < uop->read_ready) break;
+    if (compute_unit->getTiming()->getCycle() < uop->read_ready) {
+      ReadStatus = Active;
+      break;
+    }
 
     // Stall if width has been reached
     if (instructions_processed > width) {
       // Update execution stall
       uop->cycle_execute_stall++;
+
+      // Update pipeline status
+      ExecutionStatus = Stall;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -498,6 +518,9 @@ void ScalarUnit::Execute() {
     if ((int)exec_buffer.size() == exec_buffer_size) {
       // Update execution stall
       uop->cycle_execute_stall++;
+
+      // Update pipeline status
+      ExecutionStatus = Stall;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -537,6 +560,9 @@ void ScalarUnit::Execute() {
       uop->cycle_execute_begin = uop->read_ready;
       uop->cycle_execute_active = compute_unit->getTiming()->getCycle();
 
+      // Update pipeline status
+      ExecutionStatus = Active;
+
       // Trace
       Timing::trace << misc::fmt(
           "si.inst "
@@ -561,6 +587,9 @@ void ScalarUnit::Execute() {
       // Update uop cycle
       uop->cycle_execute_begin = uop->read_ready;
       uop->cycle_execute_active = compute_unit->getTiming()->getCycle();
+
+      // Update pipeline status
+      ExecutionStatus = Active;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -603,12 +632,18 @@ void ScalarUnit::Read() {
     instructions_processed++;
 
     // Uop is not ready yet
-    if (compute_unit->getTiming()->getCycle() < uop->decode_ready) break;
+    if (compute_unit->getTiming()->getCycle() < uop->decode_ready) {
+      DecodeStatus = Active;
+      break;
+    }
 
     // Stall if the decode width has been reached
     if (instructions_processed > width) {
       // Update read stall
       uop->cycle_read_stall++;
+
+      // Update pipeline status
+      ReadStatus = Stall;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -631,6 +666,9 @@ void ScalarUnit::Read() {
       // Update read stall
       uop->cycle_read_stall++;
 
+      // Update pipeline status
+      ReadStatus = Stall;
+
       // Trace
       Timing::trace << misc::fmt(
           "si.inst "
@@ -650,6 +688,9 @@ void ScalarUnit::Read() {
     // Update uop cycle
     uop->cycle_read_begin = uop->decode_ready;
     uop->cycle_read_active = compute_unit->getTiming()->getCycle();
+
+    // Update pipeline status
+    ReadStatus = Active;
 
     // Trace
     Timing::trace << misc::fmt(
@@ -698,6 +739,9 @@ void ScalarUnit::Decode() {
       // Update decode stall
       uop->cycle_decode_stall++;
 
+      // Update pipeline status
+      DecodeStatus = Stall;
+
       // Trace
       Timing::trace << misc::fmt(
           "si.inst "
@@ -719,6 +763,9 @@ void ScalarUnit::Decode() {
       // Update decode stall
       uop->cycle_decode_stall++;
 
+      // Update pipeline status
+      DecodeStatus = Stall;
+
       // Trace
       Timing::trace << misc::fmt(
           "si.inst "
@@ -738,6 +785,9 @@ void ScalarUnit::Decode() {
     // Update uop cycle
     uop->cycle_decode_begin = uop->issue_ready;
     uop->cycle_decode_active = compute_unit->getTiming()->getCycle();
+
+    // Update pipeline status
+    DecodeStatus = Active;
 
     // Trace
     Timing::trace << misc::fmt(
