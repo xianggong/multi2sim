@@ -187,8 +187,8 @@ void Gpu::CalcGetWorkGroupsPerWavefrontPool(int work_items_per_work_group,
   // Get maximum number of work-groups per SIMD as limited by the
   // amount of available local memory, given the local memory used
   // by each work-group in the NDRange
-  local_memory_per_work_group = misc::RoundUp(local_memory_per_work_group,
-                                              ComputeUnit::lds_alloc_size);
+  local_memory_per_work_group =
+      misc::RoundUp(local_memory_per_work_group, ComputeUnit::lds_alloc_size);
   int max_work_groups_limited_by_local_memory =
       local_memory_per_work_group
           ? ComputeUnit::lds_size / local_memory_per_work_group
@@ -221,6 +221,16 @@ void Gpu::CalcGetWorkGroupsPerWavefrontPool(int work_items_per_work_group,
 
 void Gpu::Run() {
   // Advance one cycle in each compute unit
-  for (auto& compute_unit : compute_units) compute_unit->Run();
+  if (getenv("M2S_RANDOM_CU")) {
+    auto timing = Timing::getInstance();
+    int start_cu = timing->getCycle() % num_compute_units;
+
+    for (int i = 0; i < num_compute_units; ++i) {
+      int index = (i + start_cu) % num_compute_units;
+      compute_units[index]->Run();
+    }
+  } else {
+    for (auto& compute_unit : compute_units) compute_unit->Run();
+  }
 }
 }

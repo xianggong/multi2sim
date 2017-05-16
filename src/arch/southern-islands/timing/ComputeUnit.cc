@@ -135,8 +135,23 @@ void ComputeUnit::Issue(FetchBuffer* fetch_buffer) {
   IssueToExecutionUnit(fetch_buffer, &scalar_unit);
 
   // Issue instructions to SIMD units
-  for (auto& simd_unit : simd_units)
-    IssueToExecutionUnit(fetch_buffer, simd_unit.get());
+  char* isRandom = getenv("M2S_RANDOM_ISSUE");
+  if (isRandom) {
+    for (int i = 0; i < num_wavefront_pools; ++i) {
+      // Save timing simulator
+      timing = Timing::getInstance();
+
+      // Issue buffer chosen to issue this cycle
+      int active_issue_buffer = timing->getCycle() % num_wavefront_pools;
+
+      // Randomize simd unit
+      int index = (i + active_issue_buffer) % num_wavefront_pools;
+      IssueToExecutionUnit(fetch_buffer, simd_units[index].get());
+    }
+  } else {
+    for (auto& simd_unit : simd_units)
+      IssueToExecutionUnit(fetch_buffer, simd_unit.get());
+  }
 
   // Issue instructions to vector memory unit
   IssueToExecutionUnit(fetch_buffer, &vector_memory_unit);
@@ -594,9 +609,18 @@ void ComputeUnit::Run() {
     }
   }
 
-  // Fetch
-  for (int i = 0; i < num_wavefront_pools; i++)
-    Fetch(fetch_buffers[i].get(), wavefront_pools[i].get());
+  // Fetch, randomized
+  char* isRandom = getenv("M2S_RANDOM_FETCH");
+  if (isRandom) {
+    for (int i = 0; i < num_wavefront_pools; i++) {
+      int index = (i + active_issue_buffer) % num_wavefront_pools;
+      Fetch(fetch_buffers[index].get(), wavefront_pools[index].get());
+    }
+  } else {
+    for (int i = 0; i < num_wavefront_pools; i++) {
+      Fetch(fetch_buffers[i].get(), wavefront_pools[i].get());
+    }
+  }
 
   // Update overlapping counter
   UpdateAluMemOverlapCounter();
