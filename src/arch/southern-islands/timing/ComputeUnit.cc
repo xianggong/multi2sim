@@ -599,6 +599,18 @@ void ComputeUnit::Run() {
   // Branch unit
   branch_unit.Run();
 
+  // printf("clk = %lld cu = %d\n", timing->getCycle(), getIndex());
+  // for(auto &fetch_buffer : fetch_buffers) {
+  //   printf("%d uop in fetch_buffer[%d]: \t", fetch_buffer->getSize(),
+  //          fetch_buffer->getId());
+  //   for (auto it = fetch_buffer->begin(), e = fetch_buffer->end(); it != e;
+  //        ++it) {
+  //     auto uop = it->get();
+  //     printf("%s ", uop->getInstruction()->getName());
+  //   }
+  //   printf("\n");
+  // }
+
   // Issue from the active issue buffer
   Issue(fetch_buffers[active_issue_buffer].get());
 

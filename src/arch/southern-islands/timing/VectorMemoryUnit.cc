@@ -180,6 +180,8 @@ void VectorMemoryUnit::Write() {
       // Update pipeline stage status
       WriteStatus = Stall;
 
+      count_stall_write++;
+
       // Trace
       Timing::trace << misc::fmt(
           "si.inst "
@@ -203,6 +205,8 @@ void VectorMemoryUnit::Write() {
 
       // Update pipeline stage status
       WriteStatus = Stall;
+
+      count_stall_write++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -282,6 +286,8 @@ void VectorMemoryUnit::Memory() {
       // Update pipeline stage status
       ExecutionStatus = Stall;
 
+      count_stall_execution++;
+
       // Trace
       Timing::trace << misc::fmt(
           "si.inst "
@@ -305,6 +311,8 @@ void VectorMemoryUnit::Memory() {
 
       // Update pipeline stage status
       ExecutionStatus = Stall;
+
+      count_stall_execution++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -388,12 +396,19 @@ void VectorMemoryUnit::Memory() {
       }
     }
 
+    // Update pipeline stage status
+    ExecutionStatus = Active;
+
     // Make sure that all the work items in the wavefront have
     // successfully accessed the vector cache. If not, the uop
     // is not moved to the write buffer. Instead, the uop will
     // be re-processed next cycle. Once all work items access
     // the vector cache, the uop will be moved to the write buffer.
-    if (!all_work_items_accessed) continue;
+    if (!all_work_items_accessed) {
+      count_vmem_divergence++;
+      continue;
+    }
+
 
     // Update uop execute ready cycle for m2svis tool
     uop->execute_ready = compute_unit->getTiming()->getCycle();
@@ -401,9 +416,6 @@ void VectorMemoryUnit::Memory() {
     // Update uop cycle
     uop->cycle_execute_begin = uop->read_ready;
     uop->cycle_execute_active = compute_unit->getTiming()->getCycle();
-
-    // Update pipeline stage status
-    ExecutionStatus = Active;
 
     // Trace
     Timing::trace << misc::fmt(
@@ -456,6 +468,8 @@ void VectorMemoryUnit::Read() {
       // Update pipeline stage status
       ReadStatus = Stall;
 
+      count_stall_read++;
+
       // Trace
       Timing::trace << misc::fmt(
           "si.inst "
@@ -479,6 +493,8 @@ void VectorMemoryUnit::Read() {
 
       // Update pipeline stage status
       ReadStatus = Stall;
+
+      count_stall_read++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -554,6 +570,8 @@ void VectorMemoryUnit::Decode() {
       // Update pipeline stage status
       DecodeStatus = Stall;
 
+      count_stall_decode++;
+
       // Trace
       Timing::trace << misc::fmt(
           "si.inst "
@@ -577,6 +595,8 @@ void VectorMemoryUnit::Decode() {
 
       // Update pipeline stage status
       DecodeStatus = Stall;
+
+      count_stall_decode++;
 
       // Trace
       Timing::trace << misc::fmt(

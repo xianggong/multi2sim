@@ -129,6 +129,8 @@ void ScalarUnit::Complete() {
       // Update pipeline stage status
       WriteStatus = Stall;
 
+      count_stall_write++;
+
       // Trace
       Timing::trace << misc::fmt(
           "si.inst "
@@ -318,6 +320,8 @@ void ScalarUnit::Write() {
         // Update pipeline status
         WriteStatus = Stall;
 
+        count_stall_write++;
+
         // Trace
         Timing::trace << misc::fmt(
             "si.inst "
@@ -341,6 +345,8 @@ void ScalarUnit::Write() {
 
         // Update pipeline status
         WriteStatus = Stall;
+
+        count_stall_write++;
 
         // Trace
         Timing::trace << misc::fmt(
@@ -396,6 +402,8 @@ void ScalarUnit::Write() {
         // Update pipeline status
         WriteStatus = Stall;
 
+        count_stall_write++;
+
         // Trace
         Timing::trace << misc::fmt(
             "si.inst "
@@ -419,6 +427,8 @@ void ScalarUnit::Write() {
 
         // Update pipeline status
         WriteStatus = Stall;
+
+        count_stall_write++;
 
         // Trace
         Timing::trace << misc::fmt(
@@ -498,6 +508,8 @@ void ScalarUnit::Execute() {
       // Update pipeline status
       ExecutionStatus = Stall;
 
+      count_stall_execution++;
+
       // Trace
       Timing::trace << misc::fmt(
           "si.inst "
@@ -521,6 +533,8 @@ void ScalarUnit::Execute() {
 
       // Update pipeline status
       ExecutionStatus = Stall;
+
+      count_stall_execution++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -645,6 +659,8 @@ void ScalarUnit::Read() {
       // Update pipeline status
       ReadStatus = Stall;
 
+      count_stall_read++;
+
       // Trace
       Timing::trace << misc::fmt(
           "si.inst "
@@ -668,6 +684,8 @@ void ScalarUnit::Read() {
 
       // Update pipeline status
       ReadStatus = Stall;
+
+      count_stall_read++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -742,6 +760,8 @@ void ScalarUnit::Decode() {
       // Update pipeline status
       DecodeStatus = Stall;
 
+      count_stall_decode++;
+
       // Trace
       Timing::trace << misc::fmt(
           "si.inst "
@@ -765,6 +785,8 @@ void ScalarUnit::Decode() {
 
       // Update pipeline status
       DecodeStatus = Stall;
+
+      count_stall_decode++;
 
       // Trace
       Timing::trace << misc::fmt(

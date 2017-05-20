@@ -177,6 +177,8 @@ void LdsUnit::Write() {
       // Update pipeline stage status
       WriteStatus = Stall;
 
+      count_stall_write++;
+
       // Trace
       Timing::trace << misc::fmt(
           "si.inst "
@@ -200,6 +202,8 @@ void LdsUnit::Write() {
 
       // Update pipeline stage status
       WriteStatus = Stall;
+
+      count_stall_write++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -283,6 +287,8 @@ void LdsUnit::Mem() {
       // Update pipeline stage status
       ExecutionStatus = Stall;
 
+      count_stall_execution++;
+
       // Trace
       Timing::trace << misc::fmt(
           "si.inst "
@@ -309,6 +315,8 @@ void LdsUnit::Mem() {
 
       // Update pipeline stage status
       ExecutionStatus = Stall;
+
+      count_stall_execution++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -418,6 +426,8 @@ void LdsUnit::Read() {
       // Update pipeline stage status
       ReadStatus = Stall;
 
+      count_stall_read++;
+
       // Trace
       Timing::trace << misc::fmt(
           "si.inst "
@@ -438,6 +448,8 @@ void LdsUnit::Read() {
 
       // Update pipeline stage status
       ReadStatus = Stall;
+
+      count_stall_read++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -521,6 +533,8 @@ void LdsUnit::Decode() {
       // Update pipeline stage status
       DecodeStatus = Stall;
 
+      count_stall_decode++;
+
       // Trace
       Timing::trace << misc::fmt(
           "si.inst "
@@ -544,6 +558,8 @@ void LdsUnit::Decode() {
 
       // Update pipeline stage status
       DecodeStatus = Stall;
+
+      count_stall_decode++;
 
       // Trace
       Timing::trace << misc::fmt(

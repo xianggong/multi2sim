@@ -87,10 +87,14 @@ std::string ExecutionUnit::getUtilization(std::string ExecutionUnitName) {
 
 std::string ExecutionUnit::getCounter(std::string ExecutionUnitName) {
   return "Count." + ExecutionUnitName +
-         misc::fmt(":\t %lld \t %lld \t %lld \t %lld \t %lld \t %lld\n",
-                   count_total_cycles, count_active_or_stall_cycles,
-                   count_idle_cycles, count_active_only_cycles,
-                   count_active_and_stall_cycles, count_stall_only_cycles);
+         misc::fmt(
+             ":\t %lld \t %lld \t %lld \t %lld \t %lld \t %lld[%lld %lld %lld "
+             "%lld %lld] \t %lld\n",
+             count_total_cycles, count_active_or_stall_cycles,
+             count_idle_cycles, count_active_only_cycles,
+             count_active_and_stall_cycles, count_stall_only_cycles,
+             count_stall_issue, count_stall_decode, count_stall_read,
+             count_stall_execution, count_stall_write, count_vmem_divergence);
 }
 
 bool ExecutionUnit::isActive() {

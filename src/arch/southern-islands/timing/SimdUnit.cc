@@ -178,6 +178,10 @@ void SimdUnit::Execute() {
       ExecutionStatus = Stall;
       WriteStatus = Stall;
 
+      count_stall_read++;
+      count_stall_execution++;
+      count_stall_write++;
+
       // Trace
       Timing::trace << misc::fmt(
           "si.inst "
@@ -203,6 +207,10 @@ void SimdUnit::Execute() {
       ReadStatus = Stall;
       ExecutionStatus = Stall;
       WriteStatus = Stall;
+
+      count_stall_read++;
+      count_stall_execution++;
+      count_stall_write++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -298,6 +306,8 @@ void SimdUnit::Decode() {
       // Update pipeline stage status
       DecodeStatus = Stall;
 
+      count_stall_decode++;
+
       // Trace
       Timing::trace << misc::fmt(
           "si.inst "
@@ -321,6 +331,8 @@ void SimdUnit::Decode() {
 
       // Update pipeline stage status
       DecodeStatus = Stall;
+
+      count_stall_decode++;
 
       // Trace
       Timing::trace << misc::fmt(

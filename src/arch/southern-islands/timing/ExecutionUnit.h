@@ -100,6 +100,14 @@ class ExecutionUnit {
   long long count_active_and_stall_cycles = 0;
   long long count_stall_only_cycles = 0;
 
+  long long count_stall_issue = 0;
+  long long count_stall_decode = 0;
+  long long count_stall_read = 0;
+  long long count_stall_execution = 0;
+  long long count_stall_write = 0;
+
+  long long count_vmem_divergence = 0;
+
   std::string getUtilization(std::string ExecutionUnitName);
   std::string getCounter(std::string ExecutionUnitName);
   bool isActive();

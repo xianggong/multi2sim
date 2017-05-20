@@ -1035,7 +1035,8 @@ void Timing::DumpReport() const {
         "ALU & Mem instructions overlap for %lld cycles, overlapping ratio = "
         "%.4g %%\n",
         compute_unit->num_alu_mem_overlap_cycles,
-        100 * double(compute_unit->num_alu_mem_overlap_cycles) / (double)getCycle());
+        100 * double(compute_unit->num_alu_mem_overlap_cycles) /
+            (double)getCycle());
 
     report << compute_unit->getUtilization();
     report << compute_unit->getInstMetrics();
@@ -1125,13 +1126,12 @@ bool Timing::Run() {
       }
     }
 
+    // If a context has been suspended while waiting for the ndrange
+    // check if it can be woken up.
     if (ndrange->isRunningWorkGroupsEmpty() && ndrange->LastWorkGroupSent()) {
       gpu->UnmapNDRange(ndrange);
       ndrange->WakeupContext();
     }
-
-    // If a context has been suspended while waiting for the ndrange
-    // check if it can be woken up.
   }
 
   // Stop if maximum number of GPU cycles exceeded

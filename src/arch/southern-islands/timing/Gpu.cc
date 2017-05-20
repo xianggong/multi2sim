@@ -206,7 +206,19 @@ void Gpu::CalcGetWorkGroupsPerWavefrontPool(int work_items_per_work_group,
   work_groups_per_wavefront_pool = std::min(
       work_groups_per_wavefront_pool, max_work_groups_limited_by_local_memory);
 
-  // Debug information
+  Emulator::scheduler_debug
+      << misc::fmt("max_work_groups_limited_by_max_wavefronts: %d\n",
+                   max_work_groups_limited_by_max_wavefronts);
+  Emulator::scheduler_debug
+      << misc::fmt("max_work_groups_limited_by_num_scalar_registers: %d\n",
+                   max_work_groups_limited_by_num_scalar_registers);
+  Emulator::scheduler_debug
+      << misc::fmt("max_work_groups_limited_by_num_vector_registers: %d\n",
+                   max_work_groups_limited_by_num_vector_registers);
+  Emulator::scheduler_debug
+      << misc::fmt("max_work_groups_limited_by_local_memory: %d\n",
+                   max_work_groups_limited_by_local_memory);
+
   if (work_groups_per_wavefront_pool ==
       max_work_groups_limited_by_max_wavefronts) {
     Emulator::scheduler_debug << "WG is limited by max wavefronts\n";
