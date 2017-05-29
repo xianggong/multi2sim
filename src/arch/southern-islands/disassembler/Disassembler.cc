@@ -323,6 +323,11 @@ void Disassembler::DisassembleBinary(const std::string& path) {
       BinaryDictEntry* si_dict_entry = binary.GetSIDictEntry();
       ELFReader::Section* section = si_dict_entry->text_section;
 
+      std::cout << "VGPRs = " << si_dict_entry->num_vgpr << "\n"; 
+      std::cout << "SGPRs = " << si_dict_entry->num_sgpr << "\n"; 
+      std::cout << "LDS Size = " << si_dict_entry->lds_size << "\n"; 
+      std::cout << "Stack Size= " << si_dict_entry->stack_size << "\n"; 
+
       // Disassemble
       DisassembleBuffer(std::cout, section->getBuffer(), section->getSize());
       std::cout << "\n\n\n";

@@ -42,12 +42,12 @@ int Driver::CallInit(comm::Context* context, mem::Memory* memory,
 /// ABI Call 'MemAlloc'
 ///
 /// \param unsigned int size
-///	Number of bytes to allocate
+/// Number of bytes to allocate
 ///
 /// \return
-///	The function returns a pointer in the device memory space. This pointer
-///	should not be dereferenced in the runtime, but instead passed to other
-///	ABI calls taking device pointers as input arguments.
+/// The function returns a pointer in the device memory space. This pointer
+/// should not be dereferenced in the runtime, but instead passed to other
+/// ABI calls taking device pointers as input arguments.
 int Driver::CallMemAlloc(comm::Context* context, mem::Memory* memory,
                          unsigned args_ptr) {
   // Arguments
@@ -133,16 +133,16 @@ int Driver::CallMemRead(comm::Context* context, mem::Memory* memory,
 /// Write memory from host into Southern Islands device.
 ///
 /// \param void *device_ptr
-///	Destination pointer in device memory.
+/// Destination pointer in device memory.
 ///
 /// \param void *host_ptr
-///	Source pointer in host memory.
+/// Source pointer in host memory.
 ///
 /// \param unsigned int size
-///	Number of bytes to read.
+/// Number of bytes to read.
 ///
 /// \return
-///	The function does not have any return value.
+/// The function does not have any return value.
 int Driver::CallMemWrite(comm::Context* context, mem::Memory* memory,
                          unsigned args_ptr) {
   SI::Emulator* emulator = SI::Emulator::getInstance();
@@ -243,7 +243,7 @@ int Driver::CallMemFree(comm::Context* context, mem::Memory* memory,
 /// ABI Call 'ProgramCreate'
 ///
 /// \return
-///	Return unique program id
+/// Return unique program id
 int Driver::CallProgramCreate(comm::Context* context, mem::Memory* memory,
                               unsigned args_ptr) {
   // Create program
@@ -261,16 +261,16 @@ int Driver::CallProgramCreate(comm::Context* context, mem::Memory* memory,
 /// Associate a binary to a Southern Islands program.
 ///
 /// \param program_id
-///	Program ID, as returned by a previous ABI call to 'Program Create'.
+/// Program ID, as returned by a previous ABI call to 'Program Create'.
 ///
 /// \param bin_ptr
-///	Pointer to the memory space where the program binary can be found.
+/// Pointer to the memory space where the program binary can be found.
 ///
 /// \param bin_size
-///	Size of the program binary.
+/// Size of the program binary.
 ///
 /// \return
-///	No return value.
+/// No return value.
 int Driver::CallProgramSetBinary(comm::Context* context, mem::Memory* memory,
                                  unsigned args_ptr) {
   // Arguments
@@ -304,13 +304,13 @@ int Driver::CallProgramSetBinary(comm::Context* context, mem::Memory* memory,
 /// ABI Call 'KernelCreate'
 ///
 /// \param int program_id
-///	Program ID, as returned by ABI call 'Program Create'.
+/// Program ID, as returned by ABI call 'Program Create'.
 ///
 /// \param char *func_name
-///	Kernel function name in the program.
+/// Kernel function name in the program.
 ///
 /// \return int
-///	Unique kernel ID.
+/// Unique kernel ID.
 int Driver::CallKernelCreate(comm::Context* context, mem::Memory* memory,
                              unsigned args_ptr) {
   // Arguments
@@ -348,23 +348,23 @@ int Driver::CallKernelCreate(comm::Context* context, mem::Memory* memory,
 /// Set a kernel argument with a basic type (cl_char, cl_int, cl_float, ...).
 ///
 /// \param int kernel_id
-/// 	Kernel ID, as returned by ABI call 'si_kernel_create'
+///   Kernel ID, as returned by ABI call 'si_kernel_create'
 ///
 /// \param unsigned index
-/// 	Argument index to set.
+///   Argument index to set.
 ///
 /// \param void *host_ptr
-///	Address in host memory containing the value of the argument. The memory
-/// 	pointed to by this variable will be copied internally, keeping a copy of
-/// 	the argument for future use.
+/// Address in host memory containing the value of the argument. The memory
+///   pointed to by this variable will be copied internally, keeping a copy of
+///   the argument for future use.
 ///
 /// \param int size
-/// 	Argument size. This size must match the size encoded in the kernel
-/// 	metadata for this particular argument.
+///   Argument size. This size must match the size encoded in the kernel
+///   metadata for this particular argument.
 ///
 /// @return int
 ///
-///	No return value.
+/// No return value.
 
 int Driver::CallKernelSetArgValue(comm::Context* context, mem::Memory* memory,
                                   unsigned args_ptr) {
@@ -419,26 +419,26 @@ int Driver::CallKernelSetArgValue(comm::Context* context, mem::Memory* memory,
 /// the kernel binary.
 ///
 /// \param int kernel_id
-///	Kernel ID, as returned by ABI call 'Kernel Create'
+/// Kernel ID, as returned by ABI call 'Kernel Create'
 ///
 /// \param int index
-///	Argument index to set.
+/// Argument index to set.
 ///
 /// \param void *device_ptr
-///	If the argument represents a 'cl_mem' object in global memory, pointer
-///	to device memory containing the data, as returned by a previous call to
-///	'Mem Alloc'.
-///	If the argument is a variable in local memory, the purpose of the call
-///	is just allocating space for it, so this value should be NULL.
+/// If the argument represents a 'cl_mem' object in global memory, pointer
+/// to device memory containing the data, as returned by a previous call to
+/// 'Mem Alloc'.
+/// If the argument is a variable in local memory, the purpose of the call
+/// is just allocating space for it, so this value should be NULL.
 ///
 /// \param unsigned int size
-///	If the argument represents a 'cl_mem' object, size allocated in global
-///	memory for the object.
-///	If the argument is a variable in local memory, number of bytes to be
-///	allocated in the device local memory.
+/// If the argument represents a 'cl_mem' object, size allocated in global
+/// memory for the object.
+/// If the argument is a variable in local memory, number of bytes to be
+/// allocated in the device local memory.
 ///
 /// \return
-///	No return value.
+/// No return value.
 int Driver::CallKernelSetArgPointer(comm::Context* context, mem::Memory* memory,
                                     unsigned args_ptr) {
   // Arguments
@@ -468,10 +468,17 @@ int Driver::CallKernelSetArgPointer(comm::Context* context, mem::Memory* memory,
     throw Error(misc::fmt("Invalid type for argument %d", index));
 
   debug << misc::fmt("\tname=%s\n", (arg->name).c_str());
+
   // Save value
   arg->set = true;
   arg->size = size;
   arg->setDevicePtr(device_ptr);
+
+  // Update local_memory_size_dynamic in kernel
+  if (arg->getScope() == Argument::ScopeHwLocal) {
+    auto local_mem_size_dynamic = kernel->getLocalMemorySizeDynamic() + size;
+    kernel->setLocalMemorySizeDynamic(local_mem_size_dynamic);
+  }
 
   // No return value
   return 0;
@@ -500,25 +507,25 @@ int Driver::CallKernelSetArgImage(comm::Context* context, mem::Memory* memory,
 /// Create and initialize an ND-Range for the supplied kernel.
 ///
 /// \param int kernel_id
-/// 	Kernel ID, as returned by ABI call 'KernelCreate'
+///   Kernel ID, as returned by ABI call 'KernelCreate'
 ///
 /// \param int work_dim
-///	Number of work dimensions. This is an integer number between 1 and 3,
-///	which determines the number of elements of the following arrays.
+/// Number of work dimensions. This is an integer number between 1 and 3,
+/// which determines the number of elements of the following arrays.
 ///
 /// \param unsigned int *global_offset
-///	Array of 'work_dim' integers containing global offsets.
+/// Array of 'work_dim' integers containing global offsets.
 ///
 /// \param unsigned int *global_size
-///	Array of 'work_dim' integers containing the ND-Range global size in each
-///	dimension.
+/// Array of 'work_dim' integers containing the ND-Range global size in each
+/// dimension.
 ///
 /// \param unsigned int *local_size
-///	Array of 'work_dim' integers containing the local size in each
-///	dimension.
+/// Array of 'work_dim' integers containing the local size in each
+/// dimension.
 ///
 /// \return int
-///	ID of new nd-range
+/// ID of new nd-range
 
 int Driver::CallNDRangeCreate(comm::Context* context, mem::Memory* memory,
                               unsigned args_ptr) {
@@ -578,6 +585,9 @@ int Driver::CallNDRangeCreate(comm::Context* context, mem::Memory* memory,
   // Set the global and local sizes
   ndrange->SetupSize(global_size, local_size, work_dim);
 
+  // Already initialized local memory size in NDRange, reset to 0 in kernel
+  kernel->setLocalMemorySizeDynamic(0);
+
   // Return ID of new nd-range
   return ndrange->getId();
 }
@@ -597,9 +607,9 @@ int Driver::CallNDRangeGetNumBufferEntries(comm::Context* context,
   // TODO - Implement this part for timing simulator
   // if (si_gpu)
   // {
-  //  	available_buffer_entries =
-  // 		SI_DRIVER_MAX_WORK_GROUP_BUFFER_SIZE -
-  // 		list_count(si_gpu->waiting_work_groups);
+  //    available_buffer_entries =
+  //    SI_DRIVER_MAX_WORK_GROUP_BUFFER_SIZE -
+  //    list_count(si_gpu->waiting_work_groups);
   // }
   // else
   //{
@@ -766,9 +776,9 @@ int Driver::CallNDRangeSetFused(comm::Context* context, mem::Memory* memory,
   // the CPU
   // if (driver->fused)
   // {
-  //	opencl_debug("\tfused\n");
-  //	assert(si_gpu);
-  //	si_gpu->mmu->read_only = 1;
+  //  opencl_debug("\tfused\n");
+  //  assert(si_gpu);
+  //  si_gpu->mmu->read_only = 1;
   // }
   // else
   //{
@@ -790,7 +800,7 @@ int Driver::CallNDRangeFlush(comm::Context* context, mem::Memory* memory,
   // TODO - add support for timing simulator
   // If there's not a timing simulator, no need to flush
   // if (!si_gpu)
-  //	return 0;
+  //  return 0;
 
   // Read arguments
   int ndrange_id;

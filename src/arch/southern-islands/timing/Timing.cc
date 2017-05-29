@@ -728,9 +728,10 @@ void Timing::ParseConfiguration(misc::IniFile* ini_file) {
   SimdUnit::width = ini_file->ReadInt(section, "Width", SimdUnit::width);
   SimdUnit::issue_buffer_size = ini_file->ReadInt(section, "IssueBufferSize",
                                                   SimdUnit::issue_buffer_size);
+  SimdUnit::width =
+      ini_file->ReadInt(section, "Width", SimdUnit::width);
   SimdUnit::decode_latency =
       ini_file->ReadInt(section, "DecodeLatency", SimdUnit::decode_latency);
-  // TODO SimdUnit::decode_width
   SimdUnit::decode_buffer_size = ini_file->ReadInt(
       section, "DecodeBufferSize", SimdUnit::decode_buffer_size);
   SimdUnit::read_exec_write_latency = ini_file->ReadInt(
@@ -800,6 +801,7 @@ void Timing::ParseConfiguration(misc::IniFile* ini_file) {
       ini_file->ReadInt(section, "WriteBufferSize", LdsUnit::write_buffer_size);
 
   // Section [VectorMemUnit]
+  section = "VectorMemUnit";
   VectorMemoryUnit::width =
       ini_file->ReadInt(section, "Width", VectorMemoryUnit::width);
   VectorMemoryUnit::issue_buffer_size = ini_file->ReadInt(
@@ -818,7 +820,52 @@ void Timing::ParseConfiguration(misc::IniFile* ini_file) {
   VectorMemoryUnit::write_buffer_size = ini_file->ReadInt(
       section, "WriteBufferSize", VectorMemoryUnit::write_buffer_size);
 
-  // TODO Section [LDS]
+  // Section [LDS]
+  section = "LDS";
+  ComputeUnit::lds_size =
+      ini_file->ReadInt(section, "Size", ComputeUnit::lds_size);
+  ComputeUnit::lds_alloc_size =
+      ini_file->ReadInt(section, "AllocSize", ComputeUnit::lds_alloc_size);
+  ComputeUnit::lds_block_size =
+      ini_file->ReadInt(section, "BlockSize", ComputeUnit::lds_block_size);
+  ComputeUnit::lds_latency =
+      ini_file->ReadInt(section, "Latency", ComputeUnit::lds_latency);
+  ComputeUnit::lds_num_ports =
+      ini_file->ReadInt(section, "Ports", ComputeUnit::lds_num_ports);
+
+  if ((ComputeUnit::lds_size & (ComputeUnit::lds_size - 1)) ||
+      ComputeUnit::lds_size < 4)
+    throw Error(
+        misc::fmt("%s: %s->Size must be a power of two and at least 4.\n",
+                  ini_file->getPath().c_str(), section.c_str()));
+  if (ComputeUnit::lds_alloc_size < 1)
+    throw Error(misc::fmt("%s: invalid value for %s->Allocsize.\n",
+                          ini_file->getPath().c_str(), section.c_str()));
+  if (ComputeUnit::lds_size % ComputeUnit::lds_alloc_size)
+    throw Error(misc::fmt("%s: %s->Size must be a multiple of %s->AllocSize.\n",
+                          ini_file->getPath().c_str(), section.c_str(),
+                          section.c_str()));
+  if ((ComputeUnit::lds_block_size & (ComputeUnit::lds_block_size - 1)) ||
+      ComputeUnit::lds_block_size < 4)
+    throw Error(
+        misc::fmt("%s: %s->BlockSize must be a power of two and at "
+                  "least 4.\n",
+                  ini_file->getPath().c_str(), section.c_str()));
+  if (ComputeUnit::lds_alloc_size % ComputeUnit::lds_block_size)
+    throw Error(misc::fmt(
+        "%s: %s->AllocSize must be a multiple of "
+        "%s->BlockSize.\n",
+        ini_file->getPath().c_str(), section.c_str(), section.c_str()));
+  if (ComputeUnit::lds_latency < 1)
+    throw Error(misc::fmt("%s: invalid value for %s->Latency.\n",
+                          ini_file->getPath().c_str(), section.c_str()));
+  if (ComputeUnit::lds_size < ComputeUnit::lds_block_size)
+    throw Error(
+        misc::fmt("%s: %s->Size cannot be smaller than %s->BlockSize * "
+                  "%s->Banks.\n",
+                  ini_file->getPath().c_str(), section.c_str(), section.c_str(),
+                  section.c_str()));
+
   // Enforce only the allowed variables
   ini_file->Check();
 }

@@ -57,6 +57,7 @@ class Kernel {
 
   // Memory requirements
   int local_memory_size = 0;
+  int local_memory_size_dynamic = 0;
   int private_memory_size = 0;
 
   // Kernel function metadata
@@ -106,8 +107,15 @@ class Kernel {
   /// Get count of arguments
   unsigned getNumArguments() const { return arguments.size(); }
 
-  /// Get mem_size_local
-  int getLocalMemorySize() const { return local_memory_size; }
+  /// Get mem_size_local = static from kernel binary + dynamic from runtime
+  int getLocalMemorySize() const {
+    return local_memory_size + local_memory_size_dynamic;
+  }
+
+  /// Get mem_size_local allocated by clSetKernelArg
+  int getLocalMemorySizeDynamic() const {
+    return local_memory_size_dynamic;
+  }
 
   /// Get mem_size_private
   int getPrivateMemorySize() const { return private_memory_size; }
@@ -117,6 +125,11 @@ class Kernel {
 
   /// Get kernel name
   std::string getName() const { return name; }
+
+  // Set mem_local_local passed by clSetKernelArg
+  void setLocalMemorySizeDynamic(unsigned size) {
+    local_memory_size_dynamic = size;
+  }
 
   /// Setup NDRange constant buffers
   void SetupNDRangeConstantBuffers(NDRange* ndrange);
@@ -136,8 +149,7 @@ class Kernel {
   void CreateNDRangeConstantBuffers(NDRange* ndrange);
 
   /// FIXME not implemented yet
-  static void FlushNDRangeBuffers(
-      NDRange* ndrange /*SIGpu *gpu, X86Emu *x86_emu*/);
+  static void FlushNDRangeBuffers(      NDRange* ndrange /*SIGpu *gpu, X86Emu *x86_emu*/);
   void NDRangeSetupMMU(NDRange* ndrange);
 };
 
