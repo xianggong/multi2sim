@@ -110,6 +110,7 @@ class ExecutionUnit {
 
   std::string getUtilization(std::string ExecutionUnitName);
   std::string getCounter(std::string ExecutionUnitName);
+  std::string getStatus(std::string ExecutionUnitName);
   bool isActive();
 };
 }

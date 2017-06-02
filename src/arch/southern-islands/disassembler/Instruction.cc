@@ -129,9 +129,13 @@ const misc::StringMap Instruction::special_reg_map = {{"vcc", SpecialRegVcc},
 
 void Instruction::DumpOperand(std::ostream& os, int operand) {
   assert(operand >= 0 && operand <= 511);
+
+  auto disassembler = Disassembler::getInstance();
   if (operand <= 103) {
     /* SGPR */
     os << "s" << operand;
+    disassembler->num_sgpr =
+        disassembler->num_sgpr < operand ? operand : disassembler->num_sgpr;
   } else if (operand <= 127) {
     /* sdst special registers */
     os << sdst_map.MapValue(operand - 104);
@@ -148,11 +152,15 @@ void Instruction::DumpOperand(std::ostream& os, int operand) {
   } else if (operand <= 511) {
     /* VGPR */
     os << "v" << operand - 256;
+    disassembler->num_vgpr = disassembler->num_vgpr < operand - 256
+                                 ? operand - 256
+                                 : disassembler->num_vgpr;
   }
 }
 
 void Instruction::DumpOperandSeries(std::ostream& os, int start, int end) {
   assert(start <= end);
+  auto disassembler = Disassembler::getInstance();
   if (start == end) {
     DumpOperand(os, start);
     return;
@@ -160,6 +168,8 @@ void Instruction::DumpOperandSeries(std::ostream& os, int start, int end) {
 
   if (start <= 103) {
     os << "s[" << start << ':' << end << ']';
+    disassembler->num_sgpr =
+        disassembler->num_sgpr < end ? end : disassembler->num_sgpr;
   } else if (start <= 245) {
     if (start >= 112 && start <= 123) {
       assert(end <= 123);
@@ -215,6 +225,8 @@ void Instruction::DumpOperandSeries(std::ostream& os, int start, int end) {
         misc::fmt("Illegal operand series: [%d:%d]", start, end));
   } else if (start <= 511) {
     os << "v[" << start - 256 << ':' << end - 256 << ']';
+    disassembler->num_vgpr =
+        disassembler->num_vgpr < end - 256 ? end - 256 : disassembler->num_vgpr;
   }
 }
 

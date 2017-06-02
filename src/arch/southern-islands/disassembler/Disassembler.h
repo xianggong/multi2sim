@@ -25,11 +25,14 @@
 
 #include <arch/common/Disassembler.h>
 #include <lib/cpp/CommandLine.h>
+#include <lib/cpp/ELFReader.h>
 #include <lib/cpp/Error.h>
 
 #include "Instruction.h"
 
 namespace SI {
+
+struct BinaryDictEntry;
 
 class Disassembler : public comm::Disassembler {
   // Unique instance of Southern Islands Disassembler
@@ -194,6 +197,11 @@ class Disassembler : public comm::Disassembler {
     assert(index >= 0 && index < dec_table_exp_count);
     return dec_table_exp[index];
   }
+
+  int num_vgpr = -1;
+  int num_sgpr = -1;
+  void parseGPRs(ELFReader::Section* section, int *vgpr, int *sgpr);
+
 };
 
 }  // namespace SI

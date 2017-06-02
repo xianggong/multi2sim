@@ -780,6 +780,9 @@ Kernel::Kernel(int id, const std::string& name, Program* program)
   binary_file = misc::new_unique<Binary>(kernel_buffer.get(), kernel_buf_size,
                                          symbol_name);
 
+  // Load number of GPRs from disassembler
+  binary_file->parseGPRs();
+
   // Load metadata
   LoadMetaData();
 }

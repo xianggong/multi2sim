@@ -190,6 +190,7 @@ class Binary : ELFReader::File {
   ~Binary();
 
   BinaryDictEntry* GetSIDictEntry() { return si_dict_entry; }
+  void parseGPRs();
 };
 
 }  // namespace SI

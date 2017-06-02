@@ -1,4 +1,3 @@
-
 /*
  *  Multi2Sim
  *  Copyright (C) 2014  Rafael Ubal (ubal@ece.neu.edu)

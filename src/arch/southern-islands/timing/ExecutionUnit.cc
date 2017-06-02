@@ -25,6 +25,12 @@
 
 namespace SI {
 
+std::map<StageStatus, std::string> stage_status_map = {
+	std::make_pair(Idle, "i"),
+	std::make_pair(Active, "a"),
+	std::make_pair(Stall, "s")
+};
+
 void ExecutionUnit::Issue(std::unique_ptr<Uop> uop) {
   // Spend issue latency
   Timing* timing = Timing::getInstance();
@@ -43,6 +49,18 @@ void ExecutionUnit::resetStatus() {
   ReadStatus = Idle;
   ExecutionStatus = Idle;
   WriteStatus = Idle;
+}
+
+std::string ExecutionUnit::getStatus(std::string ExecutionUnitName) {
+	std::string status = "";
+	
+	status += stage_status_map[IssueStatus] + " ";
+	status += stage_status_map[DecodeStatus] + " ";
+	status += stage_status_map[ReadStatus] + " ";
+	status += stage_status_map[ExecutionStatus] + " ";
+	status += stage_status_map[WriteStatus] + "\n";
+	
+	return status;
 }
 
 void ExecutionUnit::updateCounter() {

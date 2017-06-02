@@ -120,7 +120,7 @@ void LdsUnit::Complete() {
 
     compute_unit->max_cycle_lds_instructions =
         compute_unit->max_cycle_lds_instructions > uop->cycle_length
-            ? compute_unit->min_cycle_lds_instructions
+            ? compute_unit->max_cycle_lds_instructions
             : uop->cycle_length;
 
     // Trace

@@ -180,6 +180,51 @@ Disassembler* Disassembler::getInstance() {
   return instance.get();
 }
 
+void Disassembler::parseGPRs(ELFReader::Section* section, int* vgpr,
+                             int* sgpr) {
+  const char* buffer = section->getBuffer();
+  int size = section->getSize();
+
+  const char* original_buffer = buffer;
+  int rel_addr = 0;
+
+  Instruction::Format format;
+  Instruction::Bytes* bytes;
+
+  Instruction inst;
+
+  // Reset counter, it will be updated in decode
+  num_vgpr = -1;
+  num_sgpr = -1;
+
+  std::stringstream ss;
+
+  // Read through instructions to find labels.
+  while (buffer < original_buffer + size) {
+    // Decode instruction
+    inst.Decode(buffer, rel_addr);
+    format = inst.getFormat();
+    bytes = inst.getBytes();
+
+    // Get GPR info
+    ss.str("");
+    inst.Dump(ss);
+
+    // If ENDPGM, break.
+    if (format == Instruction::FormatSOPP && bytes->sopp.op == 1) break;
+
+    buffer += inst.getSize();
+    rel_addr += inst.getSize();
+  }
+
+  *vgpr = num_vgpr;
+  *sgpr = num_sgpr;
+
+  // Reset counter
+  num_vgpr = -1;
+  num_sgpr = -1;
+}
+
 void Disassembler::DisassembleBuffer(std::ostream& os, const char* buffer,
                                      int size) {
   std::stringstream ss;
@@ -253,25 +298,49 @@ void Disassembler::DisassembleBuffer(std::ostream& os, const char* buffer,
     bytes = inst.getBytes();
     inst_count++;
 
-    // Dump a label if necessary.
-    if (*next_label == rel_addr && next_label != end_label) {
-      os << misc::fmt("label_%04X:\n", rel_addr / 4);
-      next_label++;
+    if (getenv("M2CDISASM")) {
+      // Dump a label if necessary.
+      if (*next_label == rel_addr && next_label != end_label) {
+        os << misc::fmt("\tlabel_%04X:\n", rel_addr / 4);
+        next_label++;
+      }
+      // Dump the instruction
+      ss.str("");
+      ss << '\t';
+      inst.Dump(ss);
+
+      // Spaces
+      if (ss.str().length() < 59)
+        ss << std::string(59 - ss.str().length(), ' ');
+
+      // Hex dump
+      os << ss.str();
+      os << misc::fmt(" // %08X: %08X", rel_addr, bytes->word[0]);
+      if (inst.getSize() == 8) os << misc::fmt(" %08X", bytes->word[1]);
+      os << '\n';
+
+    } else {
+      // Dump a label if necessary.
+      if (*next_label == rel_addr && next_label != end_label) {
+        os << misc::fmt("label_%04X:\n", rel_addr / 4);
+        next_label++;
+      }
+
+      // Dump the instruction
+      ss.str("");
+      ss << ' ';
+      inst.Dump(ss);
+
+      // Spaces
+      if (ss.str().length() < 59)
+        ss << std::string(59 - ss.str().length(), ' ');
+
+      // Hex dump
+      os << ss.str();
+      os << misc::fmt(" // %08X: %08X", rel_addr, bytes->word[0]);
+      if (inst.getSize() == 8) os << misc::fmt(" %08X", bytes->word[1]);
+      os << '\n';
     }
-
-    // Dump the instruction
-    ss.str("");
-    ss << ' ';
-    inst.Dump(ss);
-
-    // Spaces
-    if (ss.str().length() < 59) ss << std::string(59 - ss.str().length(), ' ');
-
-    // Hex dump
-    os << ss.str();
-    os << misc::fmt(" // %08X: %08X", rel_addr, bytes->word[0]);
-    if (inst.getSize() == 8) os << misc::fmt(" %08X", bytes->word[1]);
-    os << '\n';
 
     // Break at end of program.
     if (format == Instruction::FormatSOPP && bytes->sopp.op == 1) break;
@@ -301,36 +370,95 @@ void Disassembler::DisassembleBinary(const std::string& path) {
         throw Error(misc::fmt("%s: symbol '%s' without content", path.c_str(),
                               symbol_name.c_str()));
 
-      // Get kernel name
-      std::string kernel_name =
-          symbol_name.substr(9, symbol_name.length() - 16);
-      std::cout << "**\n** Disassembly for '__kernel " << kernel_name
-                << "'\n**\n\n";
+      // Output for M2C
+      if (getenv("M2CDISASM")) {
+        // Get kernel name
+        std::string kernel_name =
+            symbol_name.substr(9, symbol_name.length() - 16);
+        std::cout << ".global " << kernel_name << "\n";
+        std::cout << "\n";
 
-      // Get the area of the text section pointed to
-      // by the symbol
-      std::istringstream symbol_stream;
-      symbol->getStream(symbol_stream);
+        // Get the area of the text section pointed to
+        // by the symbol
+        std::istringstream symbol_stream;
+        symbol->getStream(symbol_stream);
 
-      // Copy the symbol data into a buffer
-      auto buffer = misc::new_unique_array<char>(symbol->getSize());
-      symbol_stream.read(buffer.get(), (unsigned)symbol->getSize());
+        // Copy the symbol data into a buffer
+        auto buffer = misc::new_unique_array<char>(symbol->getSize());
+        symbol_stream.read(buffer.get(), (unsigned)symbol->getSize());
 
-      // Create internal ELF
-      Binary binary(buffer.get(), symbol->getSize(), kernel_name);
+        // Create internal ELF
+        Binary binary(buffer.get(), symbol->getSize(), kernel_name);
 
-      // Get section with Southern Islands ISA
-      BinaryDictEntry* si_dict_entry = binary.GetSIDictEntry();
-      ELFReader::Section* section = si_dict_entry->text_section;
+        // Get section with Southern Islands ISA
+        BinaryDictEntry* si_dict_entry = binary.GetSIDictEntry();
+        ELFReader::Section* section = si_dict_entry->text_section;
 
-      std::cout << "VGPRs = " << si_dict_entry->num_vgpr << "\n"; 
-      std::cout << "SGPRs = " << si_dict_entry->num_sgpr << "\n"; 
-      std::cout << "LDS Size = " << si_dict_entry->lds_size << "\n"; 
-      std::cout << "Stack Size= " << si_dict_entry->stack_size << "\n"; 
+        std::cout << ".metadata\n\n";
+        std::cout << "\tCOMPUTE_PGM_RSRC2:USER_SGPR = "
+                  << si_dict_entry->compute_pgm_rsrc2->user_sgpr << "\n";
+        std::cout << "\tCOMPUTE_PGM_RSRC2:TGID_X_EN = "
+                  << si_dict_entry->compute_pgm_rsrc2->tgid_x_en << "\n";
+        std::cout << "\tCOMPUTE_PGM_RSRC2:LDS_SIZE = "
+                  << si_dict_entry->compute_pgm_rsrc2->lds_size << "\n";
+        std::cout << "\n";
 
-      // Disassemble
-      DisassembleBuffer(std::cout, section->getBuffer(), section->getSize());
-      std::cout << "\n\n\n";
+        for (unsigned i = 0; i < si_dict_entry->num_user_elements; ++i) {
+          auto user_element = si_dict_entry->user_elements[i];
+          std::cout << "\tuserElements[" << i
+                    << "] = " + std::string(binary_user_data_map.MapValue(
+                                    user_element.dataClass))
+                    << ", " << user_element.apiSlot << ", "
+                    << "s[" << user_element.startUserReg << ":"
+                    << user_element.startUserReg + user_element.userRegCount - 1
+                    << "]\n";
+        }
+
+        std::cout << "\n";
+        std::cout << "\tFloatMode = 192\n";
+        std::cout << "\tIeeeMode = 0\n";
+        std::cout << "\trat_op = 0x0c00\n";
+        std::cout << "\n";
+        std::cout << "\t// VGPRs = " << si_dict_entry->num_vgpr << "\n";
+        std::cout << "\t// SGPRs = " << si_dict_entry->num_sgpr << "\n";
+        std::cout << "\n";
+        std::cout << "\n";
+
+        std::cout << ".args\n";
+
+        std::cout << "\n";
+        // Disassemble
+        std::cout << ".text\n";
+        DisassembleBuffer(std::cout, section->getBuffer(), section->getSize());
+        std::cout << "\n\n\n";
+
+      } else {
+        // Get kernel name
+        std::string kernel_name =
+            symbol_name.substr(9, symbol_name.length() - 16);
+        std::cout << "**\n** Disassembly for '__kernel " << kernel_name
+                  << "'\n**\n\n";
+
+        // Get the area of the text section pointed to
+        // by the symbol
+        std::istringstream symbol_stream;
+        symbol->getStream(symbol_stream);
+
+        // Copy the symbol data into a buffer
+        auto buffer = misc::new_unique_array<char>(symbol->getSize());
+        symbol_stream.read(buffer.get(), (unsigned)symbol->getSize());
+
+        // Create internal ELF
+        Binary binary(buffer.get(), symbol->getSize(), kernel_name);
+
+        // Get section with Southern Islands ISA
+        BinaryDictEntry* si_dict_entry = binary.GetSIDictEntry();
+        ELFReader::Section* section = si_dict_entry->text_section;
+
+        // Disassemble
+        DisassembleBuffer(std::cout, section->getBuffer(), section->getSize());
+        std::cout << "\n\n\n";
+      }
     }
   }
 }

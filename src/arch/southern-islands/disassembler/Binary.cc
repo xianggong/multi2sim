@@ -902,6 +902,15 @@ void Binary::ReadSections() {
   }
 }
 
+void Binary::parseGPRs() {
+    int vgpr = -1;
+    int sgpr = -1;
+    ELFReader::Section* section = si_dict_entry->text_section;
+    Disassembler::getInstance()->parseGPRs(section, &vgpr, &sgpr);
+    si_dict_entry->num_vgpr = vgpr;
+    si_dict_entry->num_sgpr = sgpr;
+}
+
 Binary::Binary(const char* buffer, unsigned int size, std::string name)
     : ELFReader::File(buffer, size) {
   // Initialize
@@ -930,6 +939,8 @@ Binary::Binary(const char* buffer, unsigned int size, std::string name)
   /* Read notes in PT_NOTE segment for Southern Islands
    * dictionary entry */
   ReadNotes(si_dict_entry);
+
+  parseGPRs();
 }
 
 Binary::~Binary() {

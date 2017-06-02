@@ -59,8 +59,7 @@ class Wavefront {
   std::unique_ptr<WavefrontData> data;
 
   // Program counter. Offset to 'inst_addr' in NDRange where we can find the
-  // next
-  // instruction to be executed.
+  // next instruction to be executed.
   unsigned pc = 0;
 
   // Current instruction
@@ -124,10 +123,10 @@ class Wavefront {
   /// Constructor
   ///
   /// \param work_group
-  ///	Work-group that the wavefront belongs to
+  /// Work-group that the wavefront belongs to
   ///
   /// \param id
-  ///	Global 1D identifier of the wavefront
+  /// Global 1D identifier of the wavefront
   ///
   Wavefront(WorkGroup* work_group, int id);
 
@@ -354,10 +353,10 @@ class Wavefront {
   /// iterators. This is an example of how to dump all work-items in the
   /// wavefront:
   /// \code
-  ///	for (auto it = wavefront->getWorkItemsBegin(),
-  ///			e = wavefront->getWorkItemsEnd();
-  ///			it != e;
-  ///			++it)
+  /// for (auto it = wavefront->getWorkItemsBegin(),
+  ///     e = wavefront->getWorkItemsEnd();
+  ///     it != e;
+  ///     ++it)
   /// \endcode
   std::vector<std::unique_ptr<WorkItem>>::iterator getWorkItemsBegin() {
     return work_items_begin;

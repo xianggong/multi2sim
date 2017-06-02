@@ -107,7 +107,7 @@ void BranchUnit::Complete() {
 
     compute_unit->max_cycle_branch_instructions =
         compute_unit->max_cycle_branch_instructions > uop->cycle_length
-            ? compute_unit->min_cycle_branch_instructions
+            ? compute_unit->max_cycle_branch_instructions
             : uop->cycle_length;
 
     // Update pipeline stage status

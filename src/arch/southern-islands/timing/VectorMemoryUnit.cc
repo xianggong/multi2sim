@@ -125,7 +125,7 @@ void VectorMemoryUnit::Complete() {
 
     compute_unit->max_cycle_vector_memory_instructions =
         compute_unit->max_cycle_vector_memory_instructions > uop->cycle_length
-            ? compute_unit->min_cycle_vector_memory_instructions
+            ? compute_unit->max_cycle_vector_memory_instructions
             : uop->cycle_length;
 
     // Record trace
