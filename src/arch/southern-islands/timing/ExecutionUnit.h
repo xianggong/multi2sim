@@ -32,6 +32,7 @@ class ComputeUnit;
 
 // Status of each pipeline stage, for M2SVis
 enum StageStatus { Idle = 1, Active, Stall };
+extern std::map<StageStatus, std::string> stage_status_map;
 
 /// Abstract base class representing an execution unit where the front-end can
 /// issue instructions. Derived classes are SimdUnit, ScalarUnit, ...
@@ -110,7 +111,7 @@ class ExecutionUnit {
 
   std::string getUtilization(std::string ExecutionUnitName);
   std::string getCounter(std::string ExecutionUnitName);
-  std::string getStatus(std::string ExecutionUnitName);
+  virtual std::string getStatus() const = 0;
   bool isActive();
 };
 }

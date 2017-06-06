@@ -46,6 +46,38 @@ void SimdUnit::Run() {
   SimdUnit::updateCounter();
 }
 
+std::string SimdUnit::getStatus() const {
+  std::string status = "SIMD";
+
+  status += "\t";
+  if (issue_buffer.size() != 0) {
+    status += stage_status_map[IssueStatus] +
+              std::to_string(issue_buffer[0]->getIdInComputeUnit());
+  } else
+    status += "__";
+
+  status += "\t";
+  if (decode_buffer.size() != 0) {
+    status += stage_status_map[DecodeStatus] +
+              std::to_string(decode_buffer[0]->getIdInComputeUnit());
+  } else
+    status += "__";
+
+  status += "\t";
+  if (exec_buffer.size() != 0) {
+    if (exec_buffer.size() != 1)
+      status += "+" + std::to_string(exec_buffer.size());
+    else
+      status += stage_status_map[ExecutionStatus] +
+                std::to_string(exec_buffer[0]->getIdInComputeUnit());
+  } else
+    status += "__";
+
+  status += "\n";
+
+  return status;
+}
+
 bool SimdUnit::isValidUop(Uop* uop) const {
   // Get instruction
   Instruction* instruction = uop->getInstruction();
@@ -164,8 +196,8 @@ void SimdUnit::Execute() {
 
     // Break if uop is not ready
     if (compute_unit->getTiming()->getCycle() < uop->decode_ready) {
-    	DecodeStatus = Active;
-    	break;
+      DecodeStatus = Active;
+      break;
     }
 
     // Stall if width has been reached
@@ -294,8 +326,8 @@ void SimdUnit::Decode() {
 
     // Break if uop is not ready
     if (compute_unit->getTiming()->getCycle() < uop->issue_ready) {
-    	IssueStatus = Active;
-    	break;
+      IssueStatus = Active;
+      break;
     }
 
     // Stall if width has been reached

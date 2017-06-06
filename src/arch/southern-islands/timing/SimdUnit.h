@@ -104,6 +104,8 @@ class SimdUnit : public ExecutionUnit {
 
   /// Decode stage of the execution pipeline
   void Decode();
+
+  std::string getStatus() const;
 };
 }
 

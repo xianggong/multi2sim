@@ -51,18 +51,6 @@ void ExecutionUnit::resetStatus() {
   WriteStatus = Idle;
 }
 
-std::string ExecutionUnit::getStatus(std::string ExecutionUnitName) {
-	std::string status = "";
-	
-	status += stage_status_map[IssueStatus] + " ";
-	status += stage_status_map[DecodeStatus] + " ";
-	status += stage_status_map[ReadStatus] + " ";
-	status += stage_status_map[ExecutionStatus] + " ";
-	status += stage_status_map[WriteStatus] + "\n";
-	
-	return status;
-}
-
 void ExecutionUnit::updateCounter() {
   count_total_cycles++;
 

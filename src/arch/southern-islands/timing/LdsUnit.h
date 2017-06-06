@@ -112,7 +112,10 @@ class LdsUnit : public ExecutionUnit {
 
   /// Statistics
   long long num_instructions;
+
+  std::string getStatus() const;
 };
 }
 
 #endif
+  

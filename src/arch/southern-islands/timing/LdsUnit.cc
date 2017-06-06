@@ -49,6 +49,52 @@ void LdsUnit::Run() {
   LdsUnit::updateCounter();
 }
 
+std::string LdsUnit::getStatus() const {
+  std::string status = "LDS   ";
+
+  status += "\t";
+  if (issue_buffer.size() != 0) {
+    status += stage_status_map[IssueStatus] +
+              std::to_string(issue_buffer[0]->getIdInComputeUnit());
+  } else
+    status += "__";
+
+  status += "\t";
+  if (decode_buffer.size() != 0) {
+    status += stage_status_map[DecodeStatus] +
+              std::to_string(decode_buffer[0]->getIdInComputeUnit());
+  } else
+    status += "__";
+
+  status += "\t";
+  if (read_buffer.size() != 0) {
+    status += stage_status_map[ReadStatus] +
+              std::to_string(read_buffer[0]->getIdInComputeUnit());
+  } else
+    status += "__";
+
+  status += "\t";
+  if (mem_buffer.size() != 0) {
+    if (mem_buffer.size() != 1)
+      status += "+" + std::to_string(mem_buffer.size());
+    else
+      status += stage_status_map[ExecutionStatus] +
+                std::to_string(mem_buffer[0]->getIdInComputeUnit());
+  } else
+    status += "__";
+
+  status += "\t";
+  if (write_buffer.size() != 0) {
+    status += stage_status_map[WriteStatus] +
+              std::to_string(write_buffer[0]->getIdInComputeUnit());
+  } else
+    status += "__";
+
+  status += "\n";
+
+  return status;
+}
+
 bool LdsUnit::isValidUop(Uop* uop) const {
   // Get instruction
   Instruction* instruction = uop->getInstruction();
@@ -91,10 +137,9 @@ void LdsUnit::Complete() {
 
     // Uop is not ready yet
     if (compute_unit->getTiming()->getCycle() < uop->write_ready) {
-    	WriteStatus = Active;
-    	break;
+      WriteStatus = Active;
+      break;
     }
-
 
     // Statistics
     assert(uop->getWavefrontPoolEntry()->lgkm_cnt > 0);
@@ -165,8 +210,8 @@ void LdsUnit::Write() {
 
     // Break if Uop is not ready yet
     if (uop->lds_witness) {
-    	ExecutionStatus = Active;
-    	break;
+      ExecutionStatus = Active;
+      break;
     }
 
     // Stall if the width has been reached
@@ -275,8 +320,8 @@ void LdsUnit::Mem() {
 
     // Break if Uop is not ready yet
     if (compute_unit->getTiming()->getCycle() < uop->read_ready) {
-    	ReadStatus = Active;
-    	break;
+      ReadStatus = Active;
+      break;
     }
 
     // Stall if the width has been reached
@@ -466,8 +511,8 @@ void LdsUnit::Read() {
 
     // Uop is not ready yet
     if (compute_unit->getTiming()->getCycle() < uop->decode_ready) {
-    	DecodeStatus = Active;
-    	break;
+      DecodeStatus = Active;
+      break;
     }
 
     // Update uop
@@ -521,8 +566,8 @@ void LdsUnit::Decode() {
 
     // Uop is not ready yet
     if (compute_unit->getTiming()->getCycle() < uop->issue_ready) {
-    	IssueStatus = Active;
-    	break;
+      IssueStatus = Active;
+      break;
     }
 
     // Stall if the width has been reached

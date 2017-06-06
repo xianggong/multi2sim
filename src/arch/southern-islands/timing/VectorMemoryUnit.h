@@ -117,6 +117,8 @@ class VectorMemoryUnit : public ExecutionUnit {
 
   /// Issue the given instruction into the vector memory unit
   void Issue(std::unique_ptr<Uop> uop) override;
+
+  std::string getStatus() const;
 };
 }
 

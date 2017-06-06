@@ -580,9 +580,21 @@ void ComputeUnit::Run() {
   // Save timing simulator
   timing = Timing::getInstance();
 
-  // Issue buffer chosen to issue this cycle
+  // Issue buffer chosen to issue this cycle, round-robin
   int active_issue_buffer = timing->getCycle() % num_wavefront_pools;
   assert(active_issue_buffer >= 0 && active_issue_buffer < num_wavefront_pools);
+
+  // Issue from fetch buffer with greatest pressure
+  char* isFetchPressureScheduler = getenv("M2S_FP_SCHED");
+  if (isFetchPressureScheduler) {
+    int pressure = 0;
+    for (unsigned i = 0; i < fetch_buffers.size(); ++i) {
+      if (fetch_buffers[i]->getSize() > pressure) {
+        active_issue_buffer = i;
+        pressure = fetch_buffers[i]->getSize();
+      }
+    }
+  }
 
   // SIMDs
   for (auto& simd_unit : simd_units) simd_unit->Run();
@@ -599,20 +611,45 @@ void ComputeUnit::Run() {
   // Branch unit
   branch_unit.Run();
 
-  // printf("clk = %lld cu = %d\n", timing->getCycle(), getIndex());
-  // for(auto &fetch_buffer : fetch_buffers) {
-  //   printf("%d uop in fetch_buffer[%d]: \t", fetch_buffer->getSize(),
-  //          fetch_buffer->getId());
-  //   for (auto it = fetch_buffer->begin(), e = fetch_buffer->end(); it != e;
-  //        ++it) {
-  //     auto uop = it->get();
-  //     printf("%s ", uop->getInstruction()->getName());
-  //   }
-  //   printf("\n");
-  // }
-
   // Issue from the active issue buffer
   Issue(fetch_buffers[active_issue_buffer].get());
+
+  Timing::trace << misc::fmt("CU[%d]\n", getIndex());
+  for (auto& fetch_buffer : fetch_buffers) {
+    if (fetch_buffer->getId() == active_issue_buffer)
+      Timing::trace << "  "
+                    << "*";
+    else
+      Timing::trace << "  "
+                    << "_";
+
+    Timing::trace << "  "
+                  << misc::fmt("%d uop in FetchBuf[%d]: \t",
+                               fetch_buffer->getSize(), fetch_buffer->getId());
+    for (auto it = fetch_buffer->begin(), e = fetch_buffer->end(); it != e;
+         ++it) {
+      auto uop = it->get();
+      Timing::trace << "  " << misc::fmt("%lld %s, ", uop->getIdInComputeUnit(),
+                                         uop->getInstruction()->getName());
+    }
+    Timing::trace << "  " << misc::fmt("\n");
+  }
+
+  // SIMDs
+  for (auto& simd_unit : simd_units)
+    Timing::trace << "  " << simd_unit->getStatus();
+
+  // Vector memory
+  Timing::trace << "  " << vector_memory_unit.getStatus();
+
+  // LDS unit
+  Timing::trace << "  " << lds_unit.getStatus();
+
+  // Scalar unit
+  Timing::trace << "  " << scalar_unit.getStatus();
+
+  // Branch unit
+  Timing::trace << "  " << branch_unit.getStatus();
 
   // Update visualization in non-active issue buffers
   for (int i = 0; i < (int)simd_units.size(); i++) {

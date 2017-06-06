@@ -122,6 +122,8 @@ class ScalarUnit : public ExecutionUnit {
   /// Remove the uop pointed to by the given iterator, and return a
   /// shared pointer reference to the removed entry.
   std::shared_ptr<Uop> Remove(std::deque<std::shared_ptr<Uop>>::iterator it);
+
+  std::string getStatus() const;
 };
 }
 

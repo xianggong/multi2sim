@@ -137,6 +137,8 @@ class BranchUnit : public ExecutionUnit {
 
   /// Return the current size of the write buffer
   unsigned getWriteBufferSize() { return write_buffer.size(); };
+
+  std::string getStatus() const;
 };
 }
 

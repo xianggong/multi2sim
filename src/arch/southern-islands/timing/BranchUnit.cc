@@ -48,6 +48,52 @@ void BranchUnit::Run() {
   updateCounter();
 }
 
+std::string BranchUnit::getStatus() const {
+  std::string status = "Branch ";
+
+  status += "\t";
+  if (issue_buffer.size() != 0) {
+    status += stage_status_map[IssueStatus] +
+              std::to_string(issue_buffer[0]->getIdInComputeUnit());
+  } else
+    status += "__";
+
+  status += "\t";
+  if (decode_buffer.size() != 0) {
+    status += stage_status_map[DecodeStatus] +
+              std::to_string(decode_buffer[0]->getIdInComputeUnit());
+  } else
+    status += "__";
+
+  status += "\t";
+  if (read_buffer.size() != 0) {
+    status += stage_status_map[ReadStatus] +
+              std::to_string(read_buffer[0]->getIdInComputeUnit());
+  } else
+    status += "__";
+
+  status += "\t";
+  if (exec_buffer.size() != 0) {
+    if (exec_buffer.size() != 1)
+      status += "+" + std::to_string(exec_buffer.size());
+    else
+      status += stage_status_map[ExecutionStatus] +
+                std::to_string(exec_buffer[0]->getIdInComputeUnit());
+  } else
+    status += "__";
+
+  status += "\t";
+  if (write_buffer.size() != 0) {
+    status += stage_status_map[WriteStatus] +
+              std::to_string(write_buffer[0]->getIdInComputeUnit());
+  } else
+    status += "__";
+
+  status += "\n";
+
+  return status;
+}
+
 bool BranchUnit::isValidUop(Uop* uop) const {
   // Get instruction
   Instruction* instruction = uop->getInstruction();
