@@ -217,8 +217,8 @@ void Disassembler::parseGPRs(ELFReader::Section* section, int* vgpr,
     rel_addr += inst.getSize();
   }
 
-  *vgpr = num_vgpr;
-  *sgpr = num_sgpr;
+  *vgpr = num_vgpr + 1;
+  *sgpr = num_sgpr + 1;
 
   // Reset counter
   num_vgpr = -1;

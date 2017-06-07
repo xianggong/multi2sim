@@ -47,7 +47,7 @@ void SimdUnit::Run() {
 }
 
 std::string SimdUnit::getStatus() const {
-  std::string status = "SIMD";
+  std::string status = "SIMD  ";
 
   status += "\t";
   if (issue_buffer.size() != 0) {
