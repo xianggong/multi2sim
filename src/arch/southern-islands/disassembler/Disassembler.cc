@@ -355,6 +355,118 @@ void Disassembler::DisassembleBinary(const std::string& path) {
   // Load ELF file
   ELFReader::File file(path);
 
+  std::string arguments = "";
+  for (int i = 0; i < file.getNumSymbols(); i++) {
+    // Get symbol
+    ELFReader::Symbol* symbol = file.getSymbol(i);
+    std::string symbol_name = symbol->getName();
+
+    // Get arguments from metadata
+    if (getenv("M2CDISASM")) {
+      if (misc::StringPrefix(symbol_name, "__OpenCL_") &&
+          misc::StringSuffix(symbol_name, "_metadata")) {
+        ELFReader::Symbol* metadata_symbol = symbol;
+        std::istringstream metadata_stream;
+        metadata_symbol->getStream(metadata_stream);
+
+        std::string line;
+        std::vector<std::string> token_list;
+
+        for (;;) {
+          // Read the next line
+          std::getline(metadata_stream, line);
+          misc::StringTokenize(line, token_list, ";:");
+
+          // Stop when ARGEND is found or line is empty
+          if (!token_list.size() || token_list.front() == "ARGEND") {
+            token_list.clear();
+            break;
+          }
+
+          // Value
+          if (token_list.front() == "value") {
+            // Token 1 - Name
+            token_list.erase(token_list.begin());
+            std::string name = *token_list.begin();
+
+            // Token 2 - Data type
+            token_list.erase(token_list.begin());
+            std::string data_type = *token_list.begin();
+
+            // Token 3 - Number of elements
+            token_list.erase(token_list.begin());
+            std::string num_elems = *token_list.begin();
+
+            // Token 4 - Constant buffer
+            token_list.erase(token_list.begin());
+            std::string constant_buffer_num = *token_list.begin();
+
+            // Token 5 - Constant offset
+            token_list.erase(token_list.begin());
+            std::string constant_offset = *token_list.begin();
+
+            // Add argument and clear token list
+            arguments += "\t";
+            arguments += data_type + " " + name + " " + constant_offset + "\n";
+            token_list.clear();
+            continue;
+          }
+
+          // Pointer
+          if (token_list.front() == "pointer") {
+            // Token 1 - Name
+            token_list.erase(token_list.begin());
+            std::string name = *token_list.begin();
+
+            // Token 2 - Data type
+            token_list.erase(token_list.begin());
+            std::string data_type = *token_list.begin();
+
+            // Token 3 - Number of elements
+            token_list.erase(token_list.begin());
+            std::string num_elems = *token_list.begin();
+
+            // Token 4 - Constant buffer
+            token_list.erase(token_list.begin());
+            std::string constant_buffer_num = *token_list.begin();
+
+            // Token 5 - Constant offset
+            token_list.erase(token_list.begin());
+            std::string constant_offset = *token_list.begin();
+
+            // Token 6 - Memory scope
+            token_list.erase(token_list.begin());
+            std::string arg_scope_string = *token_list.begin();
+
+            // Token 7 - Buffer number
+            token_list.erase(token_list.begin());
+            std::string buffer_num = *token_list.begin();
+
+            // Token 8 - Alignment
+            token_list.erase(token_list.begin());
+            std::string alignment = *token_list.begin();
+
+            // Token 9 - Access type
+            token_list.erase(token_list.begin());
+            std::string arg_access_type_string = *token_list.begin();
+
+            // Add argument and clear token list
+            arguments += "\t";
+            arguments += data_type;
+            if (num_elems != "1") arguments += "[" + num_elems + "]";
+            arguments += "* " + name + " " + constant_offset + " ";
+            arguments += arg_scope_string + buffer_num + " " +
+                         arg_access_type_string + "\n";
+            token_list.clear();
+            continue;
+          }
+
+          token_list.clear();
+        }
+      }
+    }
+  }
+
   // Decode external ELF
   for (int i = 0; i < file.getNumSymbols(); i++) {
     // Get symbol
@@ -394,6 +506,7 @@ void Disassembler::DisassembleBinary(const std::string& path) {
         BinaryDictEntry* si_dict_entry = binary.GetSIDictEntry();
         ELFReader::Section* section = si_dict_entry->text_section;
 
+        // Metadata
         std::cout << ".metadata\n\n";
         std::cout << "\tCOMPUTE_PGM_RSRC2:USER_SGPR = "
                   << si_dict_entry->compute_pgm_rsrc2->user_sgpr << "\n";
@@ -424,13 +537,18 @@ void Disassembler::DisassembleBinary(const std::string& path) {
         std::cout << "\n";
         std::cout << "\n";
 
+        // Arguments
         std::cout << ".args\n";
+        std::cout << arguments;
 
         std::cout << "\n";
-        // Disassemble
+
+        // Disassembly
         std::cout << ".text\n";
         DisassembleBuffer(std::cout, section->getBuffer(), section->getSize());
         std::cout << "\n\n\n";
+
+        arguments = "";
 
       } else {
         // Get kernel name
