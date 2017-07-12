@@ -326,4 +326,35 @@ void NDRange::WakeupContext() {
     suspended_context = nullptr;
   }
 }
+
+unsigned NDRange::GetSecondPC() const {
+  char* buffer = getInstructionBuffer();
+  unsigned rel_addr = 0;
+  Instruction inst;
+  int size;
+  Instruction::Format format;
+  Instruction::Bytes* bytes;
+
+  auto inst_buffer_end = getInstructionBuffer() + getInstructionBufferSize();
+  while (buffer < (char*)(inst_buffer_end)) {
+    // Decode instruction
+    inst.Decode(buffer, rel_addr);
+    format = inst.getFormat();
+    bytes = inst.getBytes();
+    size = inst.getSize();
+
+    // Check if S_ENDPGM is the last instruction
+    if (format == Instruction::FormatSOPP && bytes->sopp.op == 1)
+
+      // Second PC starts right after S_ENDPGM
+      if (rel_addr + size < getInstructionBufferSize())
+        return rel_addr + size;
+
+    buffer += size;
+    rel_addr += size;
+  }
+
+  // No second PC, return 0
+  return 0;
+}
 }

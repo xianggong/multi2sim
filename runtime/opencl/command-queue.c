@@ -17,14 +17,14 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include <unistd.h>
+#include <assert.h>
 #include <stdio.h>
 #include <string.h>
-#include <assert.h>
 #include <time.h>
+#include <unistd.h>
 
-#include "command.h"
 #include "command-queue.h"
+#include "command.h"
 #include "context.h"
 #include "debug.h"
 #include "device.h"
@@ -148,6 +148,12 @@ struct opencl_command_t *opencl_command_queue_dequeue(
 /*
  * OpenCL API Functions
  */
+
+cl_command_queue clCreateCommandQueueWithProperties(
+    cl_context context, cl_device_id device,
+    cl_command_queue_properties properties, cl_int *errcode_ret) {
+  return clCreateCommandQueue(context, device, properties, errcode_ret);
+}
 
 cl_command_queue clCreateCommandQueue(cl_context context, cl_device_id device,
                                       cl_command_queue_properties properties,
@@ -716,7 +722,11 @@ cl_int clEnqueueWaitForEvents(cl_command_queue command_queue,
   return 0;
 }
 
+// clEnqueueBarrier is a synchronization point that ensures that all queued
+// commands in command_queue have finished execution before the next batch of
+// commands can begin execution.
 cl_int clEnqueueBarrier(cl_command_queue command_queue) {
-  __OPENCL_NOT_IMPL__
-  return 0;
+  // Flush the queue
+  opencl_command_queue_flush(command_queue);
+  return CL_SUCCESS;
 }

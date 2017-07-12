@@ -107,6 +107,12 @@ void Gpu::MapNDRange(NDRange* ndrange) {
   char* env = getenv("M2S_WG_LIMIT");
   if (env) {
     int wg_limit = atoi(env);
+    if (wg_limit > work_groups_per_compute_unit)
+    {
+      Emulator::scheduler_debug
+          << misc::fmt("Manual limit > Hardware limit, aborting...\n");
+      exit(-1);
+    }
     work_groups_per_compute_unit = wg_limit;
     Emulator::scheduler_debug << misc::fmt("Manual limit: %d WG per CU\n",
                                            work_groups_per_compute_unit);

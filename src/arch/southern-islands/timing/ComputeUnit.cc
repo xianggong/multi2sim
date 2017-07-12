@@ -369,6 +369,160 @@ void ComputeUnit::Fetch(FetchBuffer* fetch_buffer,
   }
 }
 
+static int uniform_distribution(int rangeLow, int rangeHigh);
+
+static int uniform_distribution(int rangeLow, int rangeHigh) {
+  int range =
+      rangeHigh - rangeLow + 1;  //+1 makes it [rangeLow, rangeHigh], inclusive.
+  int copies =
+      RAND_MAX / range;  // we can fit n-copies of [0...range-1] into RAND_MAX
+  // Use rejection sampling to avoid distribution errors
+  int limit = range * copies;
+  int myRand = -1;
+  while (myRand < 0 || myRand >= limit) {
+    myRand = rand();
+  }
+  return myRand / copies + rangeLow;  // note that this involves the high-bits
+}
+
+void ComputeUnit::SetInitialPC(WorkGroup* work_group) {
+  auto ndrange = work_group->getNDRange();
+
+  /* Get mix granularity */
+  int granularity_val = 0;
+  char* granularity = getenv("M2S_MIX_LEVEL");
+  if (granularity) granularity_val = atoi(granularity);
+
+  /* Get mix ratio */
+  float ratio_val = 0.5f;
+  char* ratio = getenv("M2S_MIX_RATIO");
+  if (ratio) ratio_val = atof(ratio);
+
+  /* Get mix pattern */
+  int pattern_val = 0;
+  char* pattern = getenv("M2S_MIX_PATTERN");
+  if (pattern) pattern_val = atoi(pattern);
+
+  /* Calculate number of wavefront per CU */
+  auto wg_count_per_cu = getGpu()->getWorkGroupsPerComputeUnit();
+  auto wi_count_per_wg = ndrange->getLocalSize1D();
+  auto wf_count_per_wg = (wi_count_per_wg + WorkGroup::WavefrontSize - 1) /
+                         WorkGroup::WavefrontSize;
+  auto wf_count_per_cu = wg_count_per_cu * wf_count_per_wg;
+
+  // Emulator::scheduler_debug
+  //     << misc::fmt("%d wg/cu, %d wf/cu\n", wg_count_per_cu, wf_count_per_cu);
+
+  int low;
+  int high;
+  int wg_stride;
+  int wf_stride;
+  int r_val;
+  int threshold;
+
+  /* Intialize wavefront state */
+  Wavefront* wavefront;
+  for (auto wf_i = work_group->getWavefrontsBegin(),
+            wf_e = work_group->getWavefrontsEnd();
+       wf_i != wf_e; ++wf_i) {
+    wavefront = (*wf_i).get();
+
+    wavefront->setPC(0);
+
+    auto secondPC = ndrange->GetSecondPC();
+
+    // Default at work-group granularity
+    if (granularity_val == 0) {
+      /* Set PC */
+      switch (pattern_val) {
+        // Default pattern: greater than
+        case 0:
+          if (work_group->getId() >
+              (int)(ndrange->getNumWorkGroups() * ratio_val)) {
+            wavefront->setPC(secondPC);
+          }
+          break;
+        // Reverse pattern: less than
+        case 1:
+          if (work_group->getId() <
+              (int)(ndrange->getNumWorkGroups() * ratio_val)) {
+            wavefront->setPC(secondPC);
+          }
+          break;
+        // Random pattern: random
+        case 2:
+          low = 0;
+          high = 100;
+          threshold = (int)((high - low) * ratio_val);
+          r_val = uniform_distribution(low, high);
+          if (r_val <= threshold) {
+            wavefront->setPC(secondPC);
+          }
+          break;
+        // Round-robin
+        case 3:
+          wg_stride = (int)(wg_count_per_cu * ratio_val / 2);
+          wg_stride = wg_stride < 1 ? 1 : wg_stride;
+          if ((work_group->id_in_compute_unit / wg_stride) % 2) {
+            wavefront->setPC(secondPC);
+          }
+          break;
+        // Default to greater than
+        default:
+          if (wavefront->getId() >
+              (int)(ndrange->getNumWorkGroups() * ratio_val)) {
+            wavefront->setPC(secondPC);
+          }
+          break;
+      }
+    } else {
+      /* Set PC */
+      switch (pattern_val) {
+        // Default pattern: greater than
+        case 0:
+          if (wavefront->id_in_compute_unit >
+              (int)(wf_count_per_cu * ratio_val)) {
+            wavefront->setPC(secondPC);
+          }
+          break;
+        // Reverse pattern: less than
+        case 1:
+          if (wavefront->id_in_compute_unit <
+              (int)(wf_count_per_cu * ratio_val)) {
+            wavefront->setPC(secondPC);
+          }
+          break;
+        // Random pattern: random
+        case 2:
+          low = 0;
+          high = 100;
+          threshold = (int)((high - low) * ratio_val);
+          r_val = uniform_distribution(low, high);
+          if (r_val <= threshold) {
+            wavefront->setPC(secondPC);
+          }
+          break;
+        // Round-Robin
+        case 3:
+          wf_stride = (int)(wf_count_per_cu * ratio_val / 2);
+          wf_stride = wf_stride < 1 ? 1 : wf_stride;
+          Emulator::scheduler_debug << misc::fmt("wf_stride = %d\n", wf_stride);
+          if ((wavefront->id_in_compute_unit / wf_stride) % 2) {
+            wavefront->setPC(secondPC);
+          }
+          break;
+        // Default to greater than
+        default:
+          if (wavefront->id_in_compute_unit >=
+              (int)(wf_count_per_cu * ratio_val)) {
+            wavefront->setPC(secondPC);
+          }
+          break;
+      }
+    }
+  }
+}
+
 void ComputeUnit::MapWorkGroup(WorkGroup* work_group) {
   // Checks
   assert(work_group);
@@ -431,6 +585,9 @@ void ComputeUnit::MapWorkGroup(WorkGroup* work_group) {
 
   // Insert wavefronts into an instruction buffer
   work_group->wavefront_pool->MapWavefronts(work_group);
+
+  // Set PC for TwinKernel execution mode
+  SetInitialPC(work_group);
 
   // Increment count of mapped work groups
   num_mapped_work_groups++;
@@ -724,7 +881,8 @@ void ComputeUnit::UpdateAluMemOverlapCounter() {
 
 std::string ComputeUnit::getUtilization() {
   std::string util =
-      "Utilization:\t Active or Stall / Idle / Active Only / Active and Stall "
+      "Utilization:\t Active or Stall / Idle / Active Only / Active and "
+      "Stall "
       "/ Stall Only \n";
 
   // SIMDs
@@ -745,7 +903,8 @@ std::string ComputeUnit::getUtilization() {
   util += branch_unit.getUtilization("Branch");
 
   util +=
-      "\nCounter:\t Total / Active or Stall / Idle / Active Only / Active and "
+      "\nCounter:\t Total / Active or Stall / Idle / Active Only / Active "
+      "and "
       "Stall / Stall Only\n";
 
   // SIMD units

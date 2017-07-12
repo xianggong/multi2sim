@@ -185,6 +185,9 @@ class Wavefront {
   /// Return the global wavefront 1D identifier
   int getId() const { return id; }
 
+  /// Return the global wavefront 1D identifier in compute unit
+  int getIdInComputeUnit() const { return id_in_compute_unit; }
+
   /// Return PC of wavefront
   unsigned getPC() const { return pc; }
 

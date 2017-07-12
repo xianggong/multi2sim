@@ -59,6 +59,9 @@ class ComputeUnit {
   // Record count of cycles where ALU and MEM instructions overlap
   void UpdateAluMemOverlapCounter();
 
+  // Set initial PC for TwinKernel execution mode
+  void SetInitialPC(WorkGroup* work_group);
+
   // Associated timing simulator, saved for performance
   Timing* timing = nullptr;
 
@@ -324,6 +327,19 @@ class ComputeUnit {
 
   // Count of cycles that ALU and MEM instructions overlap
   long long num_alu_mem_overlap_cycles = 0;
+
+  // // Count of cycles of WFs executing the 1st Twin Kernel
+  // long long num_cycle_first_twin_kernel = 0;
+
+  // // Count of WFs executing the 1st Twin Kernel
+  // long long num_wf_first_twin_kernel = 0;
+
+  // // Count of cycles of WFs executing the 2nd Twin Kernel
+  // long long num_cycle_second_twin_kernel = 0;
+
+  // // Count of WFs executing the 1st Twin Kernel
+  // long long num_wf_second_twin_kernel = 0;
+
 };
 }
 

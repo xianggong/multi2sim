@@ -224,6 +224,9 @@ class NDRange {
     return global_size3[dim];
   }
 
+  /// Get the 1D global size
+  unsigned getGlobalSize1D() const { return global_size; }
+
   /// Get global memory size pointer
   unsigned* getGlobalSizePtr(unsigned dim) {
     assert(dim >= 0 && dim <= 2);
@@ -317,6 +320,9 @@ class NDRange {
 
   /// Get buffer containing instructions
   char* getInstructionBuffer() const { return instruction_buffer.get(); }
+
+  /// Get second PC for Twin Kernel
+  unsigned GetSecondPC() const;
 
   /// Get instruction address in instruction memory
   unsigned getInstructionAddress() const { return instruction_address; }
@@ -486,10 +492,10 @@ class NDRange {
   /// Insert a buffer descriptor into UAV(universal access view) table
   ///
   /// \param buffer_desc
-  ///	Buffer descriptor
+  /// Buffer descriptor
   ///
   /// \param uav
-  ///	Index in UAV table
+  /// Index in UAV table
   ///
   void InsertBufferIntoUAVTable(WorkItem::BufferDescriptor* buffer_descriptor,
                                 unsigned uav);
@@ -511,10 +517,10 @@ class NDRange {
   /// Insert a image descriptor into UAV(universal access view) table
   ///
   /// \param image_descriptor
-  ///	Image descriptor
+  /// Image descriptor
   ///
   /// \param uav
-  ///	Index in UAV table
+  /// Index in UAV table
   ///
   void ImageIntoUAVTable(WorkItem::ImageDescriptor* image_descriptor,
                          unsigned uav);

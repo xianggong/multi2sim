@@ -3508,7 +3508,36 @@ void WorkItem::ISA_V_CMP_NEQ_F32_Impl(Instruction* instruction) {
 // vcc = (S0.d < S1.d).
 #define INST INST_VOPC
 void WorkItem::ISA_V_CMP_LT_F64_Impl(Instruction* instruction) {
-  ISAUnimplemented(instruction);
+  // Input operands
+  union {
+    double as_double;
+    unsigned int as_reg[2];
+    unsigned int as_uint;
+
+  } s0, s1, dst;
+
+  Instruction::Register result_lo;
+  Instruction::Register result_hi;
+
+  // Load operands from registers.
+  s0.as_reg[0] = ReadReg(INST.src0);
+  s0.as_reg[1] = ReadReg(INST.src0 + 1);
+  s1.as_reg[0] = ReadReg(INST.vsrc1);
+  s1.as_reg[1] = ReadReg(INST.vsrc1 + 1);
+
+  dst.as_uint = (s0.as_double < s1.as_double);
+
+  // Write the results.
+  result_lo.as_uint = (unsigned int)dst.as_reg[0];
+  result_hi.as_uint = (unsigned int)dst.as_reg[1];
+  WriteBitmaskSReg(Instruction::RegisterVcc, result_lo.as_uint);
+  WriteBitmaskSReg(Instruction::RegisterVcc + 1, result_hi.as_uint);
+
+  // Print isa debug information.
+  if (Emulator::isa_debug) {
+    Emulator::isa_debug << misc::fmt("t%d: vcc<=(%u) ", id_in_wavefront,
+                                     result_lo.as_uint);
+  }  
 }
 #undef INST
 

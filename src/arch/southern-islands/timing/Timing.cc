@@ -728,8 +728,7 @@ void Timing::ParseConfiguration(misc::IniFile* ini_file) {
   SimdUnit::width = ini_file->ReadInt(section, "Width", SimdUnit::width);
   SimdUnit::issue_buffer_size = ini_file->ReadInt(section, "IssueBufferSize",
                                                   SimdUnit::issue_buffer_size);
-  SimdUnit::width =
-      ini_file->ReadInt(section, "Width", SimdUnit::width);
+  SimdUnit::width = ini_file->ReadInt(section, "Width", SimdUnit::width);
   SimdUnit::decode_latency =
       ini_file->ReadInt(section, "DecodeLatency", SimdUnit::decode_latency);
   SimdUnit::decode_buffer_size = ini_file->ReadInt(
@@ -1153,6 +1152,21 @@ bool Timing::Run() {
 
         // Exit if no compute unit available
         if (!available_compute_unit) break;
+
+        // Exit if mapped work group is considerably larger than average
+        if (getenv("M2S_WG_TAIL_FIX")) {
+          int num_cu = gpu->num_compute_units;
+          unsigned num_wgs =
+              ndrange->getGlobalSize1D() / ndrange->getLocalSize1D();
+          unsigned avg_wgs = (num_wgs + num_cu - 1) / num_cu;
+
+          printf("%d: %lld %d\n", available_compute_unit->getIndex(),
+                 available_compute_unit->num_mapped_work_groups, avg_wgs);
+          if (available_compute_unit->num_mapped_work_groups >= avg_wgs) {
+            gpu->RemoveFromAvailableComputeUnits(available_compute_unit);
+            break;
+          }
+        }
 
         // Remove work group from list and get its ID
         long work_group_id = ndrange->GetWaitingWorkGroup();
