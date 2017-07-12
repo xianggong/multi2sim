@@ -287,6 +287,14 @@ DEFINST(S_CMP_LE_I32,
 	0
 )
 
+DEFINST(S_CMP_EQ_U32,
+	" s_cmp_eq_u32  %SSRC0, %SSRC1",
+	SOPC,
+	6,
+	4,
+	0
+)
+
 DEFINST(S_CMP_GT_U32,
 	" s_cmp_gt_u32  %SSRC0, %SSRC1",
 	SOPC,

@@ -1647,6 +1647,40 @@ void WorkItem::ISA_S_CMP_LE_I32_Impl(Instruction* instruction) {
 }
 #undef INST
 
+// scc = (S0.u == S1.u).
+#define INST INST_SOPC
+void WorkItem::ISA_S_CMP_EQ_U32_Impl(Instruction* instruction) {
+  Instruction::Register s0;
+  Instruction::Register s1;
+  Instruction::Register result;
+
+  // Load operands from registers or as a literal constant.
+  assert(!(INST.ssrc0 == 0xFF && INST.ssrc1 == 0xFF));
+  if (INST.ssrc0 == 0xFF)
+    s0.as_uint = INST.lit_cnst;
+  else
+    s0.as_uint = ReadSReg(INST.ssrc0);
+  if (INST.ssrc1 == 0xFF)
+    s1.as_uint = INST.lit_cnst;
+  else
+    s1.as_uint = ReadSReg(INST.ssrc1);
+
+  // Compare the operands.
+  result.as_uint = (s0.as_uint == s1.as_uint);
+
+  // Write the results.
+  // Store the data in the destination register
+  WriteSReg(Instruction::RegisterScc, result.as_uint);
+
+  // Print isa debug information.
+  if (Emulator::isa_debug) {
+    Emulator::isa_debug << misc::fmt("wf%d: scc<=(%u) (%u ==? %u)",
+                                     wavefront->getId(), result.as_uint,
+                                     s0.as_uint, s1.as_uint);
+  }
+}
+#undef INST
+
 // scc = (S0.u > S1.u).
 #define INST INST_SOPC
 void WorkItem::ISA_S_CMP_GT_U32_Impl(Instruction* instruction) {
