@@ -2385,7 +2385,32 @@ void WorkItem::ISA_V_RCP_F64_Impl(Instruction* instruction) {
 // D.f = 1.0 / sqrt(S0.f).
 #define INST INST_VOP1
 void WorkItem::ISA_V_RSQ_F64_Impl(Instruction* instruction) {
-  ISAUnimplemented(instruction);
+  union {
+    double as_double;
+    unsigned as_reg[2];
+
+  } s0, value;
+
+  Instruction::Register result_lo;
+  Instruction::Register result_hi;
+
+  // Load operands from registers.
+  s0.as_reg[0] = ReadReg(INST.src0);
+  s0.as_reg[1] = ReadReg(INST.src0 + 1);
+
+  value.as_double = 1.0f / sqrt(s0.as_double);
+
+  // Write the results.
+  result_lo.as_uint = value.as_reg[0];
+  result_hi.as_uint = value.as_reg[1];
+  WriteVReg(INST.vdst, result_lo.as_uint);
+  WriteVReg(INST.vdst + 1, result_hi.as_uint);
+
+  // Print isa debug information.
+  if (Emulator::isa_debug) {
+    Emulator::isa_debug << misc::fmt("t%d: V[%u:+1]<=(%lgf) ", id_in_wavefront,
+                                     INST.vdst, value.as_double);
+  }  
 }
 #undef INST
 
