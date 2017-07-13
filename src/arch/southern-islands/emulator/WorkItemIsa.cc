@@ -5719,7 +5719,102 @@ void WorkItem::ISA_V_MUL_F64_Impl(Instruction* instruction) {
 // D.d = Look Up 2/PI (S0.d) with segment select S1.u[4:0].
 #define INST INST_VOP3a
 void WorkItem::ISA_V_LDEXP_F64_Impl(Instruction* instruction) {
-  ISAUnimplemented(instruction);
+  union {
+    double as_double;
+    unsigned as_reg[2];
+    int64_t as_int;
+  } s0, s1, value;
+
+  Instruction::Register result_lo;
+  Instruction::Register result_hi;
+
+  assert(!INST.clamp);
+  assert(!INST.omod);
+  assert(!INST.neg);
+  assert(!INST.abs);
+
+  // Load operands from registers.
+  s0.as_reg[0] = ReadReg(INST.src0);
+  s0.as_reg[1] = ReadReg(INST.src0 + 1);
+  s1.as_reg[0] = ReadReg(INST.src1);
+  s1.as_reg[1] = ReadReg(INST.src1 + 1);
+
+  // Add the operands, take into account special number cases.
+
+  // s0 == NaN64 || s1 == NaN64
+  if (std::fpclassify(s0.as_double) == FP_NAN ||
+      std::fpclassify(s1.as_double) == FP_NAN) {
+    // value <-- NaN64
+    value.as_double = NAN;
+  }
+  // s0,s1 == infinity
+  else if (std::fpclassify(s0.as_double) == FP_INFINITE &&
+           std::fpclassify(s1.as_double) == FP_INFINITE) {
+    // value <-- NaN64
+    value.as_double = NAN;
+  }
+  // s0,!s1 == infinity
+  else if (std::fpclassify(s0.as_double) == FP_INFINITE) {
+    // value <-- s0(+-infinity)
+    value.as_double = s0.as_double;
+  }
+  // s1,!s0 == infinity
+  else if (std::fpclassify(s1.as_double) == FP_INFINITE) {
+    // value <-- s1(+-infinity)
+    value.as_double = s1.as_double;
+  }
+  // s0 == +-denormal, +-0
+  else if (std::fpclassify(s0.as_double) == FP_SUBNORMAL ||
+           std::fpclassify(s0.as_double) == FP_ZERO) {
+    // s1 == +-denormal, +-0
+    if (std::fpclassify(s1.as_double) == FP_SUBNORMAL ||
+        std::fpclassify(s1.as_double) == FP_ZERO)
+      // s0 && s1 == -denormal, -0
+      if (std::signbit(s0.as_double) && std::signbit(s1.as_double))
+        // value <-- -0
+        value.as_double = -0;
+      else
+        // value <-- +0
+        value.as_double = +0;
+    // s1 == F
+    else
+      // value <-- s1
+      value.as_double = s1.as_double;
+  }
+  // s1 == +-denormal, +-0
+  else if (std::fpclassify(s1.as_double) == FP_SUBNORMAL ||
+           std::fpclassify(s1.as_double) == FP_ZERO) {
+    // s0 == +-denormal, +-0
+    if (std::fpclassify(s0.as_double) == FP_SUBNORMAL ||
+        std::fpclassify(s0.as_double) == FP_ZERO)
+      // s0 && s1 == -denormal, -0
+      if (std::signbit(s0.as_double) && std::signbit(s1.as_double))
+        // value <-- -0
+        value.as_double = -0;
+      else
+        // value <-- +0
+        value.as_double = +0;
+    // s0 == F
+    else
+      // value <-- s1
+      value.as_double = s0.as_double;
+  }
+  // s0 && s1 == F
+  else {
+    value.as_double = s0.as_double * (2 ^ s1.as_int);
+  }
+
+  // Write the results.
+  result_lo.as_uint = value.as_reg[0];
+  result_hi.as_uint = value.as_reg[1];
+  WriteVReg(INST.vdst, result_lo.as_uint);
+  WriteVReg(INST.vdst + 1, result_hi.as_uint);
+
+  // Print isa debug information.
+  if (Emulator::isa_debug) {
+    Emulator::isa_debug << misc::fmt("t%d: S[%u:+1]<=(%lgf) ", id_in_wavefront,
+                                     INST.vdst, value.as_double);
+  }  
 }
 #undef INST
 
