@@ -136,7 +136,7 @@ class Context : public comm::Context {
   static unsigned char host_fpenv[28];
 
   // Emulator that it belongs to
-  Emulator* emulator;
+  Emulator *emulator;
 
   // Context state, expressed as a bitmap of flags, e.g.,
   // ContextSuspended | ContextFutex
@@ -150,12 +150,12 @@ class Context : public comm::Context {
   // Memory management unit, which can be shared by multiple contexts.
   // NOTE: For now, the MMU of each context is taken directly from the
   // associated emulator's MMU. This will change with fused memory.
-  mem::Mmu* mmu = nullptr;
+  mem::Mmu *mmu = nullptr;
 
   // Address space within the MMU. Depending on whether a context is
   // cloned/forked or newly created, it will inherit or create a virtual
   // memory space, respectively.
-  mem::Mmu::Space* mmu_space = nullptr;
+  mem::Mmu::Space *mmu_space = nullptr;
 
   // Speculative memory. Its initialization is deferred to be able to link
   // it with the actual memory, known only at context creation.
@@ -183,11 +183,11 @@ class Context : public comm::Context {
   unsigned target_eip = 0;
 
   // Parent context
-  Context* parent = nullptr;
+  Context *parent = nullptr;
 
   // Context group initiator. There is only one group parent (if not null)
   // with many group children, no tree organization.
-  Context* group_parent = nullptr;
+  Context *group_parent = nullptr;
 
   // Signal to send parent when finished
   int exit_signal = 0;
@@ -269,8 +269,8 @@ class Context : public comm::Context {
 
   // Host thread function
   void HostThreadSuspend();
-  static void* HostThreadSuspend(void* data) {
-    ((Context*)data)->HostThreadSuspend();
+  static void *HostThreadSuspend(void *data) {
+    ((Context *)data)->HostThreadSuspend();
     return nullptr;
   }
 
@@ -363,13 +363,13 @@ class Context : public comm::Context {
 
   // Load segments from binary. The function returns the highest loaded
   // virtual address from all the loaded segments.
-  unsigned LoadSegments(ELFReader::File* binary);
+  unsigned LoadSegments(ELFReader::File *binary);
 
   // Load dynamic linker
   void LoadInterpreter();
 
   // Load entry of the auxiliary vector
-  void LoadAuxiliaryVectorEntry(unsigned& sp, unsigned type, unsigned value);
+  void LoadAuxiliaryVectorEntry(unsigned &sp, unsigned type, unsigned value);
 
   // Load auxiliary vector and return its size in bytes
   unsigned LoadAuxiliaryVector(unsigned where);
@@ -425,24 +425,24 @@ class Context : public comm::Context {
   // associated standard dependence in \a std_dep and its size as the
   // return value of the function. The function returns 0 if the
   // dependence is not a memory dependence.
-  int getMemoryDepSize(Uinst* uinst, int index, Uinst::Dep& std_dep);
+  int getMemoryDepSize(Uinst *uinst, int index, Uinst::Dep &std_dep);
 
   // Emit the effective address computation micro-instructions. Argument
   // \a index is the dependency index, a value between 0 and
   // UinstMaxDeps - 1
-  void EmitUinstEffectiveAddress(Uinst* uinst, int index);
+  void EmitUinstEffectiveAddress(Uinst *uinst, int index);
 
   // Parse regular dependence, given as a global dependence index. The
   // value in \a index must be between 0 and UinstMaxDeps -1
-  void ParseUinstDep(Uinst* uinst, int index);
+  void ParseUinstDep(Uinst *uinst, int index);
 
   // Parse input dependences. Argument \a index is a value between 0 and
   // UinstMaxIDeps - 1
-  void ParseUinstIDep(Uinst* uinst, int index);
+  void ParseUinstIDep(Uinst *uinst, int index);
 
   // Parse output dependence. Argument \a index is a value between 0 and
   // UinstMaxODeps - 1
-  void ParseUinstODep(Uinst* uinst, int index);
+  void ParseUinstODep(Uinst *uinst, int index);
 
   //
   // Instruction emulation (ContextIsaXXX.cc)
@@ -456,9 +456,9 @@ class Context : public comm::Context {
 
 // Instruction emulation functions. Each entry of Inst.def will be
 // expanded into a function prototype. For example, entry
-// 	DEFINST(adc_al_imm8, 0x14, SKIP, SKIP, SKIP, IB, 0)
+//  DEFINST(adc_al_imm8, 0x14, SKIP, SKIP, SKIP, IB, 0)
 // is expanded to
-//	void ExecuteInst_adc_al_imm8();
+//  void ExecuteInst_adc_al_imm8();
 #define DEFINST(name, op1, op2, op3, modrm, imm, pfx) void ExecuteInst_##name();
 #include <arch/x86/disassembler/Instruction.def>
 #undef DEFINST
@@ -467,8 +467,8 @@ class Context : public comm::Context {
   static ExecuteInstFn execute_inst_fn[Instruction::OpcodeCount];
 
   // Safe memory accesses, based on the current speculative mode
-  void MemoryRead(unsigned int address, int size, void* buffer);
-  void MemoryWrite(unsigned int address, int size, void* buffer);
+  void MemoryRead(unsigned int address, int size, void *buffer);
+  void MemoryWrite(unsigned int address, int size, void *buffer);
 
   // These are some functions created automatically by the macros in
   // ContextIsaStd.cc, but corresponding to non-existing instructions.
@@ -586,17 +586,17 @@ class Context : public comm::Context {
     regs.Write(inst.getOpIndex() + Instruction::RegEax, value);
   }
 
-  void LoadFpu(int index, unsigned char* value);
-  void StoreFpu(int index, unsigned char* value);
-  void PopFpu(unsigned char* value);
-  void PushFpu(unsigned char* value);
+  void LoadFpu(int index, unsigned char *value);
+  void StoreFpu(int index, unsigned char *value);
+  void PopFpu(unsigned char *value);
+  void PushFpu(unsigned char *value);
 
   float LoadFloat();
   double LoadDouble();
-  void LoadExtended(unsigned char* value);
+  void LoadExtended(unsigned char *value);
   void StoreFloat(float value);
   void StoreDouble(double value);
-  void StoreExtended(unsigned char* value);
+  void StoreExtended(unsigned char *value);
 
   // Store the code bits (14, 10, 9, and 8) of the FPU state word into the
   // 'code' register
@@ -618,20 +618,20 @@ class Context : public comm::Context {
   unsigned getMoffsAddress();
 
   // Store the value of an XMM register to memory
-  void StoreXmm(const XmmValue& value);
+  void StoreXmm(const XmmValue &value);
 
   // Load the value from memory into an XMM register
-  void LoadXmm(XmmValue& value);
+  void LoadXmm(XmmValue &value);
 
   // Store lower 32/64/128 bits from value into XMM register or memory
-  void StoreXmmM32(const XmmValue& value);
-  void StoreXmmM64(const XmmValue& value);
-  void StoreXmmM128(const XmmValue& value);
+  void StoreXmmM32(const XmmValue &value);
+  void StoreXmmM64(const XmmValue &value);
+  void StoreXmmM128(const XmmValue &value);
 
   // Load the lower 32/64/128 bits into lower bits of value
-  void LoadXmmM32(XmmValue& value);
-  void LoadXmmM64(XmmValue& value);
-  void LoadXmmM128(XmmValue& value);
+  void LoadXmmM32(XmmValue &value);
+  void LoadXmmM64(XmmValue &value);
+  void LoadXmmM128(XmmValue &value);
 
   //
   // System calls (ContextSyscall.cc)
@@ -642,9 +642,9 @@ class Context : public comm::Context {
 
   // Enumeration with all system call codes. Each entry of
   // ContextSyscall.def will be expanded into a code. For example, entry
-  //	DEFSYSCALL(exit, 1)
+  //  DEFSYSCALL(exit, 1)
   // will produce code
-  //	SyscallCode_exit
+  //  SyscallCode_exit
   // There is a last element 'SyscallCodeCount' that will be one unit
   // higher than the highest system call code found in the system call
   // definition file.
@@ -657,15 +657,15 @@ class Context : public comm::Context {
 
 // System call emulation functions. Each entry of ContextSyscall.def
 // will be expanded into a function prototype. For example, entry
-//	DEFSYSCALL(exit, 1)
+//  DEFSYSCALL(exit, 1)
 // is expanded to
-//	void ExecuteSyscall_exit();
+//  void ExecuteSyscall_exit();
 #define DEFSYSCALL(name, code) int ExecuteSyscall_##name();
 #include "ContextSyscall.def"
 #undef DEFSYSCALL
 
   // System call names
-  static const char* syscall_name[SyscallCodeCount + 1];
+  static const char *syscall_name[SyscallCodeCount + 1];
 
   // Prototype of a member function of class Context devoted to the
   // execution of ISA instructions. The emulator has a table indexed by an
@@ -679,9 +679,9 @@ class Context : public comm::Context {
   // Auxiliary system call functions
   int SyscallMmapAux(unsigned int addr, unsigned int len, int prot, int flags,
                      int guest_fd, int offset);
-  comm::FileDescriptor* SyscallOpenVirtualFile(const std::string& path,
+  comm::FileDescriptor *SyscallOpenVirtualFile(const std::string &path,
                                                int flags, int mode);
-  comm::FileDescriptor* SyscallOpenVirtualDevice(const std::string& path,
+  comm::FileDescriptor *SyscallOpenVirtualDevice(const std::string &path,
                                                  int flags, int mode);
 
   // System call 'nanosleep'
@@ -693,6 +693,11 @@ class Context : public comm::Context {
   int syscall_read_fd;
   void SyscallReadWakeup();
   bool SyscallReadCanWakeup();
+
+  // System call 'pread64'
+  int syscall_pread64_fd;
+  void SyscallPread64Wakeup();
+  bool SyscallPread64CanWakeup();
 
   // System call 'write'
   int syscall_write_fd;
@@ -740,35 +745,35 @@ class Context : public comm::Context {
 
   /// Load a program on the context. The meaning of each argument is
   /// identical to the prototype of comm::Emulator::Load().
-  void Load(const std::vector<std::string>& args,
-            const std::vector<std::string>& env = {},
-            const std::string& cwd = "",
-            const std::string& stdin_file_name = "",
-            const std::string& stdout_file_name = "");
+  void Load(const std::vector<std::string> &args,
+            const std::vector<std::string> &env = {},
+            const std::string &cwd = "",
+            const std::string &stdin_file_name = "",
+            const std::string &stdout_file_name = "");
 
   /// Initialize the context by cloning the main data structures from a
   /// parent context.
-  void Clone(Context* parent);
+  void Clone(Context *parent);
 
   /// Initialize the context by forking a parent context.
-  void Fork(Context* parent);
+  void Fork(Context *parent);
 
   /// Return the MMU used by the context.
-  mem::Mmu* getMmu() const { return mmu; }
+  mem::Mmu *getMmu() const { return mmu; }
 
   /// Return the virtual address space within the MMU used by the context.
-  mem::Mmu::Space* getMmuSpace() const { return mmu_space; }
+  mem::Mmu::Space *getMmuSpace() const { return mmu_space; }
 
   /// Given a file name, return its full path based on the current working
   /// directory for the context.
-  std::string getFullPath(const std::string& path) {
+  std::string getFullPath(const std::string &path) {
     return misc::getFullPath(path, loader->cwd);
   }
 
   /// Look for zombie child. If 'pid' is -1, the first finished child in
   /// the zombie contexts list is return. Otherwise, 'pid' is the pid of
   /// the child process. If no child has finished, return nullptr.
-  Context* getZombie(int pid);
+  Context *getZombie(int pid);
 
   /// Return a bitmap representing the context state. Enumaration values
   /// in type State can be used to check individual bits.
@@ -837,13 +842,13 @@ class Context : public comm::Context {
   void Execute();
 
   /// Return a reference of the register file
-  Regs& getRegs() { return regs; }
+  Regs &getRegs() { return regs; }
 
   /// Return the last emulated instruction.
-  Instruction* getInstruction() { return &inst; }
+  Instruction *getInstruction() { return &inst; }
 
   /// Return an pointer to the memory
-  mem::Memory* getMemory() const { return memory.get(); }
+  mem::Memory *getMemory() const { return memory.get(); }
 
   /// Force a new 'eip' value for the context. The forced value should be
   /// the same as the current 'eip' under normal circumstances. If it is
@@ -866,7 +871,7 @@ class Context : public comm::Context {
 
   /// Position of the context in the emulator's list of running contexts,
   /// or past-the-end iterator if not present.
-  std::list<Context*>::iterator running_contexts_iterator;
+  std::list<Context *>::iterator running_contexts_iterator;
 
   /// Flag indicating whether the context is present in the emulator's
   /// list of running contexts.
@@ -874,7 +879,7 @@ class Context : public comm::Context {
 
   /// Position of the context in the emulator's list of suspended
   /// contexts, or past-the-end iterator if not present.
-  std::list<Context*>::iterator suspended_contexts_iterator;
+  std::list<Context *>::iterator suspended_contexts_iterator;
 
   /// Flag indicating whether the context is present in the emulator's
   /// list of suspended contexts.
@@ -882,7 +887,7 @@ class Context : public comm::Context {
 
   /// Position of the context in the emulator's list of finished contexts,
   /// or past-the-end iterator if not present.
-  std::list<Context*>::iterator finished_contexts_iterator;
+  std::list<Context *>::iterator finished_contexts_iterator;
 
   /// Flag indicating whether the context is present in the emulator's
   /// list of finished contexts.
@@ -890,7 +895,7 @@ class Context : public comm::Context {
 
   /// Position of the context in the emulator's list of zombie contexts,
   /// or past-the-end iterator if not present.
-  std::list<Context*>::iterator zombie_contexts_iterator;
+  std::list<Context *>::iterator zombie_contexts_iterator;
 
   /// Flag indicating whether the context is present in the emulator's
   /// list of zombie contexts.
@@ -955,14 +960,14 @@ class Context : public comm::Context {
   bool evict_signal = false;
 
   // Hardware core where context is mapped, or nullptr if unmapped
-  Core* core = nullptr;
+  Core *core = nullptr;
 
   // Hardware thread where context is mapped, or nullptr if unmapped
-  Thread* thread = nullptr;
+  Thread *thread = nullptr;
 
   // If field 'thread' is other than nullptr, this field represents the
   // position of the context in the 'mapped_contexts' list of the thread.
-  std::list<Context*>::iterator mapped_contexts_iterator;
+  std::list<Context *>::iterator mapped_contexts_iterator;
 
   // Bitmap of thread affinity
   std::unique_ptr<misc::Bitmap> thread_affinity;

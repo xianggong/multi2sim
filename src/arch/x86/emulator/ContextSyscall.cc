@@ -17,6 +17,7 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <poll.h>
@@ -53,14 +54,14 @@ namespace x86 {
                 __FUNCTION__ + 15, syscall_error_note)); \
   return 0;
 
-static const char* syscall_error_note =
+static const char *syscall_error_note =
     "\tThe most common Linux system calls are currently supported by "
     "Multi2Sim, but your application might perform specific unsupported "
     "system calls or unsupported combinations of its arguments. To request "
     "support for a given system call, please report a bug in the Multi2Sim "
     "project manager tools.";
 
-const char* Context::syscall_name[SyscallCodeCount + 1] = {
+const char *Context::syscall_name[SyscallCodeCount + 1] = {
 #define DEFSYSCALL(name, code) #name,
 #include "ContextSyscall.def"
 #undef DEFSYSCALL
@@ -284,7 +285,7 @@ bool Context::SyscallReadCanWakeup() {
   }
 
   // Get file descriptor
-  comm::FileDescriptor* desc = file_table->getFileDescriptor(syscall_read_fd);
+  comm::FileDescriptor *desc = file_table->getFileDescriptor(syscall_read_fd);
   if (!desc) throw misc::Panic("Invalid file descriptor");
 
   // Check if data is ready in file by polling it
@@ -333,7 +334,7 @@ int Context::ExecuteSyscall_read() {
       guest_fd, buf_ptr, count);
 
   // Get file descriptor
-  comm::FileDescriptor* desc = file_table->getFileDescriptor(guest_fd);
+  comm::FileDescriptor *desc = file_table->getFileDescriptor(guest_fd);
   if (!desc) return -EBADF;
   int host_fd = desc->getHostIndex();
   emulator->syscall_debug << misc::fmt("  host_fd=%d\n", host_fd);
@@ -397,7 +398,7 @@ bool Context::SyscallWriteCanWakeup() {
   }
 
   // Get file descriptor
-  comm::FileDescriptor* desc = file_table->getFileDescriptor(syscall_write_fd);
+  comm::FileDescriptor *desc = file_table->getFileDescriptor(syscall_write_fd);
   if (!desc) throw misc::Panic("Invalid file descriptor");
 
   // Check if data is ready in file by polling it
@@ -445,7 +446,7 @@ int Context::ExecuteSyscall_write() {
       "  guest_fd=%d, buf_ptr=0x%x, count=0x%x\n", guest_fd, buf_ptr, count);
 
   // Get file descriptor
-  comm::FileDescriptor* desc = file_table->getFileDescriptor(guest_fd);
+  comm::FileDescriptor *desc = file_table->getFileDescriptor(guest_fd);
   if (!desc) return -EBADF;
   int host_fd = desc->getHostIndex();
   emulator->syscall_debug << misc::fmt("  host_fd=%d\n", host_fd);
@@ -501,7 +502,7 @@ static misc::StringMap open_flags_map = {
     {"O_LARGEFILE", 00100000}, {"O_DIRECTORY", 00200000},
     {"O_NOFOLLOW", 00400000},  {"O_NOATIME", 01000000}};
 
-comm::FileDescriptor* Context::SyscallOpenVirtualFile(const std::string& path,
+comm::FileDescriptor *Context::SyscallOpenVirtualFile(const std::string &path,
                                                       int flags, int mode) {
   // Assume no file found
   std::string temp_path;
@@ -521,7 +522,7 @@ comm::FileDescriptor* Context::SyscallOpenVirtualFile(const std::string& path,
   assert(host_fd > 0);
 
   // Add file descriptor table entry.
-  comm::FileDescriptor* desc = file_table->newFileDescriptor(
+  comm::FileDescriptor *desc = file_table->newFileDescriptor(
       comm::FileDescriptor::TypeVirtual, host_fd, temp_path, flags);
   emulator->syscall_debug << misc::fmt(
       "    host file '%s' opened: "
@@ -530,17 +531,17 @@ comm::FileDescriptor* Context::SyscallOpenVirtualFile(const std::string& path,
   return desc;
 }
 
-comm::FileDescriptor* Context::SyscallOpenVirtualDevice(const std::string& path,
+comm::FileDescriptor *Context::SyscallOpenVirtualDevice(const std::string &path,
                                                         int flags, int mode) {
   // Check if this is a Multi2Sim driver
-  comm::DriverPool* driver_pool = comm::DriverPool::getInstance();
-  comm::Driver* driver = driver_pool->getDriverByPath(path);
+  comm::DriverPool *driver_pool = comm::DriverPool::getInstance();
+  comm::Driver *driver = driver_pool->getDriverByPath(path);
   if (!driver)
     throw Error(
         misc::fmt("%s: Cannot find device in %s", __FUNCTION__, path.c_str()));
 
   // Create new file descriptor
-  comm::FileDescriptor* desc =
+  comm::FileDescriptor *desc =
       file_table->newFileDescriptor(comm::FileDescriptor::TypeDevice,
                                     0,  // Host descriptor doesn't matter
                                     path, flags);
@@ -572,16 +573,16 @@ int Context::ExecuteSyscall_open() {
   // The dynamic linker uses the 'open' system call to open shared libraries.
   // We need to intercept here attempts to access runtime libraries and
   // redirect them to our own Multi2Sim runtimes.
-  comm::RuntimePool* runtime_pool = comm::RuntimePool::getInstance();
+  comm::RuntimePool *runtime_pool = comm::RuntimePool::getInstance();
   std::string runtime_redirect_path;
   if (runtime_pool->Redirect(full_path, runtime_redirect_path))
     full_path = runtime_redirect_path;
 
   // Driver devices
-  comm::DriverPool* driver_pool = comm::DriverPool::getInstance();
+  comm::DriverPool *driver_pool = comm::DriverPool::getInstance();
   if (driver_pool->isPathRegistered(full_path)) {
     // Attempt to open virtual file
-    comm::FileDescriptor* desc =
+    comm::FileDescriptor *desc =
         SyscallOpenVirtualDevice(full_path, flags, mode);
     return desc->getGuestIndex();
   }
@@ -589,7 +590,7 @@ int Context::ExecuteSyscall_open() {
   // Virtual files
   if (misc::StringPrefix(full_path, "/proc/")) {
     // Attempt to open virtual file
-    comm::FileDescriptor* desc = SyscallOpenVirtualFile(full_path, flags, mode);
+    comm::FileDescriptor *desc = SyscallOpenVirtualFile(full_path, flags, mode);
     if (desc) return desc->getGuestIndex();
 
     // Unhandled virtual file. Let the application read the contents
@@ -602,7 +603,7 @@ int Context::ExecuteSyscall_open() {
   if (host_fd == -1) return -errno;
 
   // File opened, create a new file descriptor.
-  comm::FileDescriptor* desc = file_table->newFileDescriptor(
+  comm::FileDescriptor *desc = file_table->newFileDescriptor(
       comm::FileDescriptor::TypeRegular, host_fd, full_path, flags);
 
   // Debug
@@ -628,7 +629,7 @@ int Context::ExecuteSyscall_close() {
   emulator->syscall_debug << misc::fmt("  host_fd=%d\n", host_fd);
 
   // Get file descriptor table entry.
-  comm::FileDescriptor* desc = file_table->getFileDescriptor(guest_fd);
+  comm::FileDescriptor *desc = file_table->getFileDescriptor(guest_fd);
   if (!desc) return -EBADF;
 
   // Close host file descriptor only if it is valid and not
@@ -662,12 +663,12 @@ void Context::SyscallWaitpidWakeup() {}
 
 bool Context::SyscallWaitpidCanWakeup() {
   // A zombie child is available to 'waitpid' it
-  Context* child = getZombie(syscall_waitpid_pid);
+  Context *child = getZombie(syscall_waitpid_pid);
   if (child) {
     // Continue with 'waitpid' system call
     unsigned pstatus = regs.getEcx();
     regs.setEax(child->getId());
-    if (pstatus) memory->Write(pstatus, 4, (char*)&child->exit_code);
+    if (pstatus) memory->Write(pstatus, 4, (char *)&child->exit_code);
     child->setState(StateFinished);
 
     emulator->syscall_debug << misc::fmt(
@@ -698,7 +699,7 @@ int Context::ExecuteSyscall_waitpid() {
     throw misc::Panic("Only supported for pid=-1 or pid > 0");
 
   // Look for a zombie child.
-  Context* child = getZombie(pid);
+  Context *child = getZombie(pid);
 
   // If there is no child and the flag WNOHANG was not specified,
   // we get suspended until the specified child finishes.
@@ -712,7 +713,7 @@ int Context::ExecuteSyscall_waitpid() {
   // Context is not suspended. WNOHANG was specified, or some child
   // was found in the zombie list.
   if (child) {
-    if (status_ptr) memory->Write(status_ptr, 4, (char*)&child->exit_code);
+    if (status_ptr) memory->Write(status_ptr, 4, (char *)&child->exit_code);
     child->setState(StateFinished);
     return child->getId();
   }
@@ -759,7 +760,7 @@ int Context::ExecuteSyscall_unlink() {
 //
 
 // A note
-const char* execve_note =
+const char *execve_note =
     "A system call 'execve' is trying to run a command "
     "prefixed with '/bin/sh -c'. This is usually the result of the "
     "execution of the 'system()' function from the guest "
@@ -798,7 +799,7 @@ int Context::ExecuteSyscall_execve() {
   for (;;) {
     // Argument pointer
     unsigned arg_ptr;
-    memory->Read(argv + arguments.size() * 4, 4, (char*)&arg_ptr);
+    memory->Read(argv + arguments.size() * 4, 4, (char *)&arg_ptr);
 
     // Null-terminated array, done if null found
     if (!arg_ptr) break;
@@ -817,7 +818,7 @@ int Context::ExecuteSyscall_execve() {
   for (int i = 0;; i++) {
     // Read pointer to environment variable
     unsigned env_ptr;
-    memory->Read(envp + i * 4, 4, (char*)&env_ptr);
+    memory->Read(envp + i * 4, 4, (char *)&env_ptr);
 
     // Null-terminated array, done if null found
     if (!env_ptr) break;
@@ -911,7 +912,7 @@ int Context::ExecuteSyscall_time() {
 
   // Host call
   int t = time(NULL);
-  if (time_ptr) memory->Write(time_ptr, 4, (char*)&t);
+  if (time_ptr) memory->Write(time_ptr, 4, (char *)&t);
 
   // Return
   return t;
@@ -982,7 +983,7 @@ int Context::ExecuteSyscall_lseek() {
       guest_fd, offset, origin);
 
   // File descriptor
-  comm::FileDescriptor* file_descriptor =
+  comm::FileDescriptor *file_descriptor =
       file_table->getFileDescriptor(guest_fd);
   if (!file_descriptor) return -EBADF;
 
@@ -1143,7 +1144,7 @@ int Context::ExecuteSyscall_kill() {
 
   // Find context. We assume program correctness, so error out if
   // context is not found, rather than return error code.
-  Context* context = emulator->getContext(pid);
+  Context *context = emulator->getContext(pid);
   if (!context) throw Error(misc::fmt("%s: invalid pid %d", __FUNCTION__, pid));
 
   // Send signal
@@ -1230,7 +1231,7 @@ int Context::ExecuteSyscall_dup() {
   emulator->syscall_debug << misc::fmt("  guest_fd=%d\n", guest_fd);
 
   // Check that file descriptor is valid.
-  comm::FileDescriptor* desc = file_table->getFileDescriptor(guest_fd);
+  comm::FileDescriptor *desc = file_table->getFileDescriptor(guest_fd);
   if (!desc) return -EBADF;
   int host_fd = desc->getHostIndex();
   emulator->syscall_debug << misc::fmt("  host_fd=%d\n", host_fd);
@@ -1240,7 +1241,7 @@ int Context::ExecuteSyscall_dup() {
   if (dup_host_fd == -1) return -errno;
 
   // Create a new entry in the file descriptor table.
-  comm::FileDescriptor* dup_desc = file_table->newFileDescriptor(
+  comm::FileDescriptor *dup_desc = file_table->newFileDescriptor(
       comm::FileDescriptor::TypeRegular, dup_host_fd, desc->getPath(),
       desc->getFlags());
   int dup_guest_fd = dup_desc->getGuestIndex();
@@ -1266,9 +1267,9 @@ int Context::ExecuteSyscall_pipe() {
                                        host_fd[0], host_fd[1]);
 
   // Create guest pipe
-  comm::FileDescriptor* read_desc = file_table->newFileDescriptor(
+  comm::FileDescriptor *read_desc = file_table->newFileDescriptor(
       comm::FileDescriptor::TypePipe, host_fd[0], "", O_RDONLY);
-  comm::FileDescriptor* write_desc = file_table->newFileDescriptor(
+  comm::FileDescriptor *write_desc = file_table->newFileDescriptor(
       comm::FileDescriptor::TypePipe, host_fd[1], "", O_WRONLY);
   int guest_read_fd = read_desc->getGuestIndex();
   int guest_write_fd = write_desc->getGuestIndex();
@@ -1276,8 +1277,8 @@ int Context::ExecuteSyscall_pipe() {
                                        guest_read_fd, guest_write_fd);
 
   // Return file descriptors.
-  memory->Write(fd_ptr, 4, (char*)&guest_read_fd);
-  memory->Write(fd_ptr + 4, 4, (char*)&guest_write_fd);
+  memory->Write(fd_ptr, 4, (char *)&guest_read_fd);
+  memory->Write(fd_ptr + 4, 4, (char *)&guest_write_fd);
   return 0;
 }
 
@@ -1311,7 +1312,7 @@ int Context::ExecuteSyscall_times() {
     sim_tms.cstime = tms.tms_cstime;
 
     // Write to memory
-    memory->Write(tms_ptr, sizeof(SimTms), (char*)&sim_tms);
+    memory->Write(tms_ptr, sizeof(SimTms), (char *)&sim_tms);
   }
 
   // Return
@@ -1439,13 +1440,13 @@ int Context::ExecuteSyscall_ioctl() {
                                        guest_fd, cmd, arg);
 
   // File descriptor
-  comm::FileDescriptor* desc = file_table->getFileDescriptor(guest_fd);
+  comm::FileDescriptor *desc = file_table->getFileDescriptor(guest_fd);
   if (!desc) return -EBADF;
 
   // Check if this is communication with a Multi2Sim driver
   if (desc->getType() == comm::FileDescriptor::TypeDevice) {
     // Get the driver
-    comm::Driver* driver = desc->getDriver();
+    comm::Driver *driver = desc->getDriver();
     assert(driver);
 
     // Invoke the driver call
@@ -1630,7 +1631,7 @@ int Context::ExecuteSyscall_setrlimit() {
 
   // Read structure
   struct sim_rlimit sim_rlimit;
-  memory->Read(rlim_ptr, sizeof(struct sim_rlimit), (char*)&sim_rlimit);
+  memory->Read(rlim_ptr, sizeof(struct sim_rlimit), (char *)&sim_rlimit);
   emulator->syscall_debug << misc::fmt("  rlim->cur=0x%x, rlim->max=0x%x\n",
                                        sim_rlimit.cur, sim_rlimit.max);
 
@@ -1687,14 +1688,14 @@ int Context::ExecuteSyscall_gettimeofday() {
 
   // Write time value
   if (tv_ptr) {
-    memory->Write(tv_ptr, 4, (char*)&tv.tv_sec);
-    memory->Write(tv_ptr + 4, 4, (char*)&tv.tv_usec);
+    memory->Write(tv_ptr, 4, (char *)&tv.tv_sec);
+    memory->Write(tv_ptr + 4, 4, (char *)&tv.tv_usec);
   }
 
   // Write time zone
   if (tz_ptr) {
-    memory->Write(tz_ptr, 4, (char*)&tz.tz_minuteswest);
-    memory->Write(tz_ptr + 4, 4, (char*)&tz.tz_dsttime);
+    memory->Write(tz_ptr, 4, (char *)&tz.tz_minuteswest);
+    memory->Write(tz_ptr + 4, 4, (char *)&tz.tz_dsttime);
   }
 
   // Return
@@ -1761,9 +1762,9 @@ int Context::ExecuteSyscall_readlink() {
                                        path_ptr, buf, bufsz);
 
   /* Read path */
-  //	len = mem_read_string(mem, path_ptr, sizeof path, path);
-  //	if (len == sizeof path)
-  //		fatal("%s: buffer too small", __FUNCTION__);
+  //  len = mem_read_string(mem, path_ptr, sizeof path, path);
+  //  if (len == sizeof path)
+  //    fatal("%s: buffer too small", __FUNCTION__);
   path = memory->ReadString(path_ptr);
 
   /* Get full path */
@@ -1854,7 +1855,7 @@ int Context::SyscallMmapAux(unsigned addr, unsigned len, int prot, int flags,
   assert(MAP_ANONYMOUS == 0x20);
 
   // Translate file descriptor
-  comm::FileDescriptor* desc = file_table->getFileDescriptor(guest_fd);
+  comm::FileDescriptor *desc = file_table->getFileDescriptor(guest_fd);
   int host_fd = desc ? desc->getHostIndex() : -1;
   if (guest_fd > 0 && host_fd < 0)
     throw Error(misc::fmt("mmap: Invalid guest descriptor (%d)", guest_fd));
@@ -1935,12 +1936,12 @@ int Context::ExecuteSyscall_mmap() {
   unsigned args_ptr = regs.getEbx();
   unsigned addr, len;
   int prot, flags, guest_fd, offset;
-  memory->Read(args_ptr, 4, (char*)&addr);
-  memory->Read(args_ptr + 4, 4, (char*)&len);
-  memory->Read(args_ptr + 8, 4, (char*)&prot);
-  memory->Read(args_ptr + 12, 4, (char*)&flags);
-  memory->Read(args_ptr + 16, 4, (char*)&guest_fd);
-  memory->Read(args_ptr + 20, 4, (char*)&offset);
+  memory->Read(args_ptr, 4, (char *)&addr);
+  memory->Read(args_ptr + 4, 4, (char *)&len);
+  memory->Read(args_ptr + 8, 4, (char *)&prot);
+  memory->Read(args_ptr + 12, 4, (char *)&flags);
+  memory->Read(args_ptr + 16, 4, (char *)&guest_fd);
+  memory->Read(args_ptr + 20, 4, (char *)&offset);
   emulator->syscall_debug << misc::fmt("  args_ptr=0x%x\n", args_ptr);
   emulator->syscall_debug << misc::fmt(
       "  addr=0x%x, len=%u, prot=0x%x, "
@@ -2193,7 +2194,7 @@ int Context::ExecuteSyscall_sigreturn() {
 
 int Context::ExecuteSyscall_clone() {
   // Prototype: long sys_clone(unsigned long clone_flags, unsigned long newsp,
-  // 	int __user *parent_tid, int unused, int __user *child_tid);
+  //  int __user *parent_tid, int unused, int __user *child_tid);
   // There is an unused parameter, that's why we read child_tidptr from edi
   // instead of esi.
 
@@ -2226,7 +2227,7 @@ int Context::ExecuteSyscall_clone() {
                                 clone_flags_map.MapFlags(flags).c_str()));
 
   // Flag CLONE_VM
-  Context* context = emulator->newContext();
+  Context *context = emulator->newContext();
   if (flags & SIM_CLONE_VM) {
     // CLONE_FS, CLONE_FILES, CLONE_SIGHAND must be there, too
     if ((flags & (SIM_CLONE_FS | SIM_CLONE_FILES | SIM_CLONE_SIGHAND)) !=
@@ -2259,11 +2260,11 @@ int Context::ExecuteSyscall_clone() {
   // Flag CLONE_PARENT_SETTID
   int child_id = context->getId();
   if (flags & SIM_CLONE_PARENT_SETTID)
-    memory->Write(parent_tid_ptr, 4, (char*)&child_id);
+    memory->Write(parent_tid_ptr, 4, (char *)&child_id);
 
   // Flag CLONE_CHILD_SETTID
   if (flags & SIM_CLONE_CHILD_SETTID)
-    context->memory->Write(child_tid_ptr, 4, (char*)&child_id);
+    context->memory->Write(child_tid_ptr, 4, (char *)&child_id);
 
   // Flag CLONE_CHILD_CLEARTID
   if (flags & SIM_CLONE_CHILD_CLEARTID)
@@ -2275,7 +2276,7 @@ int Context::ExecuteSyscall_clone() {
     emulator->syscall_debug << misc::fmt("  puinfo=0x%x\n", uinfo_ptr);
 
     struct sim_user_desc uinfo;
-    memory->Read(uinfo_ptr, sizeof(struct sim_user_desc), (char*)&uinfo);
+    memory->Read(uinfo_ptr, sizeof(struct sim_user_desc), (char *)&uinfo);
     emulator->syscall_debug
         << misc::fmt("  entry_number=0x%x, base_addr=0x%x, limit=0x%x\n",
                      uinfo.entry_number, uinfo.base_addr, uinfo.limit);
@@ -2291,7 +2292,7 @@ int Context::ExecuteSyscall_clone() {
     if (uinfo.limit_in_pages) uinfo.limit <<= 12;
 
     uinfo.entry_number = 6;
-    memory->Write(uinfo_ptr, 4, (char*)&uinfo.entry_number);
+    memory->Write(uinfo_ptr, 4, (char *)&uinfo.entry_number);
 
     context->glibc_segment_base = uinfo.base_addr;
     context->glibc_segment_limit = uinfo.limit;
@@ -2347,7 +2348,7 @@ int Context::ExecuteSyscall_newuname() {
                                        sim_utsname.domainname);
 
   // Return structure
-  memory->Write(utsname_ptr, sizeof sim_utsname, (char*)&sim_utsname);
+  memory->Write(utsname_ptr, sizeof sim_utsname, (char *)&sim_utsname);
   return 0;
 }
 
@@ -2493,7 +2494,7 @@ int Context::ExecuteSyscall_llseek() {
                                        (long long)offset);
 
   // Check file descriptor
-  comm::FileDescriptor* desc = file_table->getFileDescriptor(fd);
+  comm::FileDescriptor *desc = file_table->getFileDescriptor(fd);
   if (!desc) return -EBADF;
 
   // Get host file descriptor
@@ -2509,7 +2510,7 @@ int Context::ExecuteSyscall_llseek() {
   if (offset == -1) return -errno;
 
   // Copy offset to memory
-  if (result_ptr) memory->Write(result_ptr, 8, (char*)&offset);
+  if (result_ptr) memory->Write(result_ptr, 8, (char *)&offset);
 
   // Success
   return 0;
@@ -2578,7 +2579,7 @@ int Context::ExecuteSyscall_writev() {
       vlen);
 
   // Check file descriptor
-  comm::FileDescriptor* desc = file_table->getFileDescriptor(guest_fd);
+  comm::FileDescriptor *desc = file_table->getFileDescriptor(guest_fd);
   if (!desc) return -EBADF;
   int host_fd = desc->getHostIndex();
   emulator->syscall_debug << misc::fmt("  host_fd=%d\n", host_fd);
@@ -2591,12 +2592,12 @@ int Context::ExecuteSyscall_writev() {
   int total_len = 0;
   for (unsigned v = 0; v < vlen; v++) {
     // Read io vector element
-    memory->Read(iovec_ptr, 4, (char*)&iov_base);
-    memory->Read(iovec_ptr + 4, 4, (char*)&iov_len);
+    memory->Read(iovec_ptr, 4, (char *)&iov_base);
+    memory->Read(iovec_ptr + 4, 4, (char *)&iov_len);
     iovec_ptr += 8;
 
     // Read buffer from memory and write it to file
-    char* buf = (char*)malloc(iov_len);
+    char *buf = (char *)malloc(iov_len);
     memory->Read(iov_base, iov_len, buf);
     len = write(host_fd, buf, iov_len);
     if (len == -1) {
@@ -2645,12 +2646,12 @@ int Context::ExecuteSyscall_sysctl() {
 
   // Access arguments in memory
   struct sysctl_args args;
-  memory->Read(args_ptr, sizeof args, (char*)&args);
+  memory->Read(args_ptr, sizeof args, (char *)&args);
   emulator->syscall_debug << misc::fmt("    pname=0x%x\n", args.pname);
   emulator->syscall_debug << misc::fmt("    nlen=%d\n      ", args.nlen);
   for (unsigned i = 0; i < args.nlen; i++) {
     unsigned aux;
-    memory->Read(args.pname + i * 4, 4, (char*)&aux);
+    memory->Read(args.pname + i * 4, 4, (char *)&aux);
     emulator->syscall_debug << misc::fmt("name[%d]=%d ", i, aux);
   }
   emulator->syscall_debug << misc::fmt("\n    poldval=0x%x\n", args.poldval);
@@ -2668,8 +2669,8 @@ int Context::ExecuteSyscall_sysctl() {
 
   // Return
   unsigned zero = 0;
-  memory->Write(args.oldlenp, 4, (char*)&zero);
-  memory->Write(args.poldval, 1, (char*)&zero);
+  memory->Write(args.oldlenp, 4, (char *)&zero);
+  memory->Write(args.poldval, 1, (char *)&zero);
   return 0;
 }
 
@@ -2710,7 +2711,7 @@ int Context::ExecuteSyscall_sched_setparam() {
 
   // Read priority
   int sched_priority;
-  memory->Read(param_ptr, 4, (char*)&sched_priority);
+  memory->Read(param_ptr, 4, (char *)&sched_priority);
   emulator->syscall_debug << misc::fmt("    param.sched_priority=%d\n",
                                        sched_priority);
 
@@ -2751,7 +2752,7 @@ int Context::ExecuteSyscall_sched_getparam() {
         "current context");
 
   // Return scheduling priority
-  memory->Write(param_ptr, 4, (char*)&sched_priority);
+  memory->Write(param_ptr, 4, (char *)&sched_priority);
   emulator->syscall_debug << misc::fmt("  returning sched priority %d\n",
                                        sched_priority);
 
@@ -2772,7 +2773,7 @@ int Context::ExecuteSyscall_sched_setscheduler() {
 
   // Read scheduler info
   struct sched_param param;
-  memory->Read(param_ptr, sizeof(struct sched_param), (char*)&param);
+  memory->Read(param_ptr, sizeof(struct sched_param), (char *)&param);
   int priority = param.sched_priority;
   emulator->syscall_debug << misc::fmt("  param_ptr=0x%x (priority = %d)\n",
                                        param_ptr, param.sched_priority);
@@ -2819,7 +2820,7 @@ int Context::ExecuteSyscall_sched_setscheduler() {
   }
 
   // Find context referred by pid.
-  Context* context = emulator->getContext(pid);
+  Context *context = emulator->getContext(pid);
   if (!context)
     throw Error(misc::fmt("%s: invalid pid (%d)", __FUNCTION__, pid));
 
@@ -2931,14 +2932,14 @@ bool Context::SyscallNanosleepCanWakeup() {
   if (host_thread_suspend_active) return false;
 
   // Get current time
-  esim::Engine* esim = esim::Engine::getInstance();
+  esim::Engine *esim = esim::Engine::getInstance();
   long long now = esim->getRealTime();
 
   // Timeout expired
   unsigned rmtp = regs.getEcx();
   long long zero = 0;
   if (syscall_nanosleep_wakeup_time <= now) {
-    if (rmtp) memory->Write(rmtp, 8, (char*)&zero);
+    if (rmtp) memory->Write(rmtp, 8, (char *)&zero);
     regs.setEax(0);
     emulator->syscall_debug << misc::fmt(
         "[%s] Syscall 'nanosleep' - "
@@ -2956,8 +2957,8 @@ bool Context::SyscallNanosleepCanWakeup() {
       long long diff = syscall_nanosleep_wakeup_time - now;
       unsigned sec = diff / 1000000;
       unsigned usec = diff % 1000000 * 1000;
-      memory->Write(rmtp, 4, (char*)&sec);
-      memory->Write(rmtp + 4, 4, (char*)&usec);
+      memory->Write(rmtp, 4, (char *)&sec);
+      memory->Write(rmtp + 4, 4, (char *)&usec);
     }
     regs.setEax(-EINTR);
     emulator->syscall_debug << misc::fmt(
@@ -2988,14 +2989,14 @@ int Context::ExecuteSyscall_nanosleep() {
   emulator->syscall_debug << misc::fmt("  rqtp=0x%x, rmtp=0x%x\n", rqtp, rmtp);
 
   // Get current time
-  esim::Engine* esim = esim::Engine::getInstance();
+  esim::Engine *esim = esim::Engine::getInstance();
   long long now = esim->getRealTime();
 
   // Read structure
   unsigned sec;
   unsigned nsec;
-  memory->Read(rqtp, 4, (char*)&sec);
-  memory->Read(rqtp + 4, 4, (char*)&nsec);
+  memory->Read(rqtp, 4, (char *)&sec);
+  memory->Read(rqtp + 4, 4, (char *)&nsec);
   long long total = (long long)sec * 1000000 + (nsec / 1000);
   emulator->syscall_debug << misc::fmt("  sleep time (us): %llu\n", total);
 
@@ -3108,12 +3109,12 @@ bool Context::SyscallPollCanWakeup() {
   if (host_thread_suspend_active) return false;
 
   // Current time
-  esim::Engine* esim = esim::Engine::getInstance();
+  esim::Engine *esim = esim::Engine::getInstance();
   long long now = esim->getRealTime();
 
   // Get arguments
   unsigned prevents = regs.getEbx() + 6;
-  comm::FileDescriptor* desc = file_table->getFileDescriptor(syscall_poll_fd);
+  comm::FileDescriptor *desc = file_table->getFileDescriptor(syscall_poll_fd);
   if (!desc) throw misc::Panic("Invalid file descriptor");
 
   // Context received a signal
@@ -3140,7 +3141,7 @@ bool Context::SyscallPollCanWakeup() {
   // POLLOUT event available
   if (syscall_poll_events & host_fds.revents & POLLOUT) {
     revents = POLLOUT;
-    memory->Write(prevents, 2, (char*)&revents);
+    memory->Write(prevents, 2, (char *)&revents);
     regs.setEax(1);
     emulator->syscall_debug << misc::fmt(
         "[%s] Syscall poll - "
@@ -3154,7 +3155,7 @@ bool Context::SyscallPollCanWakeup() {
   // POLLIN event available
   if (syscall_poll_events & host_fds.revents & POLLIN) {
     revents = POLLIN;
-    memory->Write(prevents, 2, (char*)&revents);
+    memory->Write(prevents, 2, (char *)&revents);
     regs.setEax(1);
     emulator->syscall_debug << misc::fmt(
         "[%s] Syscall poll - "
@@ -3168,7 +3169,7 @@ bool Context::SyscallPollCanWakeup() {
   // Timeout expired
   if (syscall_poll_time && syscall_poll_time < now) {
     revents = 0;
-    memory->Write(prevents, 2, (char*)&revents);
+    memory->Write(prevents, 2, (char *)&revents);
     regs.setEax(0);
     emulator->syscall_debug << misc::fmt(
         "[%s] Syscall poll - "
@@ -3207,14 +3208,14 @@ int Context::ExecuteSyscall_poll() {
   if (nfds != 1) throw misc::Panic("Not suported for nfds != 1");
 
   // Read pollfd
-  memory->Read(pfds, sizeof guest_fds, (char*)&guest_fds);
+  memory->Read(pfds, sizeof guest_fds, (char *)&guest_fds);
   int guest_fd = guest_fds.fd;
   emulator->syscall_debug << misc::fmt(
       "  guest_fd=%d, events=%s\n", guest_fd,
       poll_event_map.MapFlags(guest_fds.events).c_str());
 
   // Get file descriptor
-  comm::FileDescriptor* desc = file_table->getFileDescriptor(guest_fd);
+  comm::FileDescriptor *desc = file_table->getFileDescriptor(guest_fd);
   if (!desc) return -EBADF;
   int host_fd = desc->getHostIndex();
   emulator->syscall_debug << misc::fmt("  host_fd=%d\n", host_fd);
@@ -3244,7 +3245,7 @@ int Context::ExecuteSyscall_poll() {
           "  non-blocking write "
           "to file guaranteed\n");
       guest_fds.revents = POLLOUT;
-      memory->Write(pfds, sizeof guest_fds, (char*)&guest_fds);
+      memory->Write(pfds, sizeof guest_fds, (char *)&guest_fds);
       return 1;
     }
 
@@ -3254,7 +3255,7 @@ int Context::ExecuteSyscall_poll() {
           "  non-blocking read "
           "from file guaranteed\n");
       guest_fds.revents = POLLIN;
-      memory->Write(pfds, sizeof guest_fds, (char*)&guest_fds);
+      memory->Write(pfds, sizeof guest_fds, (char *)&guest_fds);
       return 1;
     }
 
@@ -3272,7 +3273,7 @@ int Context::ExecuteSyscall_poll() {
   // Calculate wakeup time
   syscall_poll_time = 0;
   if (timeout >= 0) {
-    esim::Engine* esim = esim::Engine::getInstance();
+    esim::Engine *esim = esim::Engine::getInstance();
     long long now = esim->getRealTime();
     syscall_poll_time = now + (long long)timeout * 1000;
   }
@@ -3351,13 +3352,13 @@ int Context::ExecuteSyscall_rt_sigaction() {
 
   // Store previous signal handler
   if (old_act_ptr) {
-    SignalHandler* handler = signal_handler_table->getSignalHandler(sig);
+    SignalHandler *handler = signal_handler_table->getSignalHandler(sig);
     handler->WriteToMemory(memory.get(), old_act_ptr);
   }
 
   // Make new sigaction effective
   if (act_ptr) {
-    SignalHandler* handler = signal_handler_table->getSignalHandler(sig);
+    SignalHandler *handler = signal_handler_table->getSignalHandler(sig);
     *handler = act;
   }
 
@@ -3419,7 +3420,7 @@ int Context::ExecuteSyscall_rt_sigprocmask() {
   }
 
   // Return old set
-  if (old_set_ptr) memory->Write(old_set_ptr, 8, (char*)&old_set);
+  if (old_set_ptr) memory->Write(old_set_ptr, 8, (char *)&old_set);
 
   // A change in the signal mask can cause pending signals to be
   // able to execute, so check this.
@@ -3505,7 +3506,115 @@ int Context::ExecuteSyscall_rt_sigsuspend() {
 // System call 'pread64'
 //
 
-int Context::ExecuteSyscall_pread64() { __UNIMPLEMENTED__ }
+void Context::SyscallPread64Wakeup() {}
+
+bool Context::SyscallPread64CanWakeup() {
+  // If the host thread is still running for this context, do nothing.
+  if (host_thread_suspend_active) return false;
+
+  // Context received a signal
+  SignalSet pending_unblocked =
+      signal_mask_table.getPending() & ~signal_mask_table.getBlocked();
+  if (pending_unblocked.Any()) {
+    CheckSignalHandlerIntr();
+    emulator->syscall_debug << misc::fmt(
+        "[%s] Syscall 'read' - "
+        "interrupted by signal\n",
+        getName().c_str());
+    return true;
+  }
+
+  // Get file descriptor
+  comm::FileDescriptor *desc = file_table->getFileDescriptor(syscall_read_fd);
+  if (!desc) throw misc::Panic("Invalid file descriptor");
+
+  // Check if data is ready in file by polling it
+  struct pollfd host_fds;
+  host_fds.fd = desc->getHostIndex();
+  host_fds.events = POLLIN;
+  int err = poll(&host_fds, 1, 0);
+  if (err < 0) throw misc::Panic("Unexpected error in host call to 'poll'");
+
+  // If data is ready, perform host 'read' call and wake up
+  if (host_fds.revents) {
+    unsigned pbuf = regs.getEcx();
+    int count = regs.getEdx();
+    auto buf = misc::new_unique_array<char>(count);
+    off_t offset = regs.getEsi();
+
+    count = pread64(desc->getHostIndex(), buf.get(), count, offset);
+    if (count < 0) throw misc::Panic("Unexpected error in host 'read'");
+
+    regs.setEax(count);
+    memory->Write(pbuf, count, buf.get());
+
+    emulator->syscall_debug << misc::fmt(
+        "[%s] Syscall 'read' - "
+        "continue\n",
+        getName().c_str());
+    emulator->syscall_debug << misc::fmt("  return=0x%x\n", regs.getEax());
+    return true;
+  }
+
+  // Data is not ready. Launch host thread again
+  host_thread_suspend_active = true;
+  if (pthread_create(&host_thread_suspend, nullptr, &Context::HostThreadSuspend,
+                     this))
+    throw misc::Panic("Could not launch host thread");
+  return false;
+}
+
+int Context::ExecuteSyscall_pread64() {
+  // Arguments
+  int guest_fd = regs.getEbx();
+  unsigned buf_ptr = regs.getEcx();
+  unsigned count = regs.getEdx();
+  unsigned offset64 = regs.getEsi();
+  emulator->syscall_debug << misc::fmt(
+      "  guest_fd=%d, buf_ptr=0x%x, count=0x%x, offset64=0x%x\n", guest_fd,
+      buf_ptr, count, offset64);
+
+  // Get file descriptor
+  comm::FileDescriptor *desc = file_table->getFileDescriptor(guest_fd);
+  if (!desc) return -EBADF;
+  int host_fd = desc->getHostIndex();
+  emulator->syscall_debug << misc::fmt("  host_fd=%d\n", host_fd);
+
+  // Poll the file descriptor to check if read is blocking
+  auto buf = misc::new_unique_array<char>(count);
+  struct pollfd fds;
+  fds.fd = host_fd;
+  fds.events = POLLIN;
+  int err = poll(&fds, 1, 0);
+  if (err < 0) throw misc::Panic("Error executing 'poll'");
+
+  // Non-blocking read
+  if (fds.revents || (desc->getFlags() & O_NONBLOCK)) {
+    // Host system call
+    err = pread64(host_fd, buf.get(), count, offset64);
+    if (err == -1) return -errno;
+
+    // Write in guest memory
+    if (err > 0) {
+      memory->Write(buf_ptr, err, buf.get());
+      emulator->syscall_debug << misc::StringBinaryBuffer(buf.get(), count, 40);
+    }
+
+    // Return number of read bytes
+    return err;
+  }
+
+  // Blocking read - suspend thread
+  emulator->syscall_debug << misc::fmt("  blocking read - process suspended\n");
+  syscall_read_fd = guest_fd;
+  Suspend(&Context::SyscallPread64CanWakeup, &Context::SyscallPread64Wakeup,
+          StateRead);
+  emulator->ProcessEventsSchedule();
+
+  // Free allocated buffer. Return value doesn't matter,
+  // it will be overwritten when context wakes up from blocking call.
+  return 0;
+}
 
 //
 // System call 'pwrite64'
@@ -3623,7 +3732,7 @@ int Context::ExecuteSyscall_getrlimit() {
   }
 
   // Return structure
-  memory->Write(rlim_ptr, sizeof(struct sim_rlimit), (char*)&sim_rlimit);
+  memory->Write(rlim_ptr, sizeof(struct sim_rlimit), (char *)&sim_rlimit);
   emulator->syscall_debug << misc::fmt("  ret: cur=0x%x, max=0x%x\n",
                                        sim_rlimit.cur, sim_rlimit.max);
 
@@ -3713,8 +3822,8 @@ struct sim_stat64_t {
   unsigned long long ino;     // 88 8
 } __attribute__((packed));
 
-static void sys_stat_host_to_guest(struct sim_stat64_t* guest,
-                                   struct stat* host) {
+static void sys_stat_host_to_guest(struct sim_stat64_t *guest,
+                                   struct stat *host) {
   assert(sizeof(struct sim_stat64_t) == 96);
   memset(guest, 0, sizeof(struct sim_stat64_t));
 
@@ -3733,7 +3842,7 @@ static void sys_stat_host_to_guest(struct sim_stat64_t* guest,
   guest->ctime = host->st_ctime;
   guest->ino = host->st_ino;
 
-  Emulator* emulator = Emulator::getInstance();
+  Emulator *emulator = Emulator::getInstance();
   emulator->syscall_debug << misc::fmt("  stat64 structure:\n");
   emulator->syscall_debug << misc::fmt(
       "    dev=%lld, ino=%lld, mode=%d, nlink=%d\n", guest->dev, guest->ino,
@@ -3770,7 +3879,7 @@ int Context::ExecuteSyscall_stat64() {
   sys_stat_host_to_guest(&sim_statbuf, &statbuf);
 
   // Write result to guest memory
-  memory->Write(statbuf_ptr, sizeof(sim_statbuf), (char*)&sim_statbuf);
+  memory->Write(statbuf_ptr, sizeof(sim_statbuf), (char *)&sim_statbuf);
 
   // Success
   return 0;
@@ -3811,7 +3920,7 @@ int Context::ExecuteSyscall_lstat64() {
   sys_stat_host_to_guest(&sim_statbuf, &statbuf);
 
   // Write result to guest memory
-  memory->Write(statbuf_ptr, sizeof(sim_statbuf), (char*)&sim_statbuf);
+  memory->Write(statbuf_ptr, sizeof(sim_statbuf), (char *)&sim_statbuf);
 
   // Success
   return 0;
@@ -3840,7 +3949,7 @@ int Context::ExecuteSyscall_fstat64() {
   // Return
   struct sim_stat64_t sim_statbuf;
   sys_stat_host_to_guest(&sim_statbuf, &statbuf);
-  memory->Write(statbuf_ptr, sizeof sim_statbuf, (char*)&sim_statbuf);
+  memory->Write(statbuf_ptr, sizeof sim_statbuf, (char *)&sim_statbuf);
   return 0;
 }
 
@@ -3990,7 +4099,53 @@ int Context::ExecuteSyscall_madvise() {
 // System call 'getdents64'
 //
 
-int Context::ExecuteSyscall_getdents64() { __UNIMPLEMENTED__ }
+struct sim_dirent64 {
+  __ino64_t d_ino;
+  __off64_t d_off;
+  unsigned short int d_reclen;
+  unsigned char d_type;
+  char d_name[256];
+};
+
+static void sys_dirent64_host_to_guest(struct sim_dirent64 *guest,
+                                       struct dirent64 *host) {
+  guest->d_ino = host->d_ino;
+  guest->d_off = host->d_off;
+  guest->d_reclen = host->d_reclen;
+  guest->d_type = host->d_type;
+  strcpy(guest->d_name, host->d_name);
+
+  Emulator *emulator = Emulator::getInstance();
+  emulator->syscall_debug << misc::fmt("  dirent64 structure:\n");
+  emulator->syscall_debug << misc::fmt(
+      "  d_ino=%ld, d_off=%ld, d_reclen=%d, d_type=%c\n", guest->d_ino,
+      guest->d_off, guest->d_reclen, guest->d_type);
+  emulator->syscall_debug << misc::fmt("  d_name=%s\n", guest->d_name);
+}
+
+int Context::ExecuteSyscall_getdents64() {
+  // Arguments
+  int fd = regs.getEbx();
+  unsigned int dirp = regs.getEcx();
+  int count = regs.getEdx();
+  emulator->syscall_debug << misc::fmt("  fd=%d, dirp=0x%x, count=%d\n", fd,
+                                       dirp, count);
+
+  // Get host descriptor
+  int host_fd = file_table->getHostIndex(fd);
+  emulator->syscall_debug << misc::fmt("  host_fd=%d\n", host_fd);
+
+  // Host call
+  struct dirent64 dir;
+  int err = syscall(SYS_getdents64, host_fd, &dir, count);
+  if (err == -1) return -errno;
+
+  // Return
+  struct sim_dirent64 sim_dir;
+  sys_dirent64_host_to_guest(&sim_dir, &dir);
+  memory->Write(dirp, sizeof(sim_dir), (char *)&sim_dir);
+  return 0;
+}
 
 //
 // System call 'fcntl64'
@@ -4013,7 +4168,7 @@ int Context::ExecuteSyscall_fcntl64() {
                                        fcntl_cmd_map.MapValue(cmd));
 
   // Get file descriptor table entry
-  comm::FileDescriptor* desc = file_table->getFileDescriptor(guest_fd);
+  comm::FileDescriptor *desc = file_table->getFileDescriptor(guest_fd);
   if (!desc) return -EBADF;
   if (desc->getHostIndex() < 0)
     throw misc::Panic("Unsupported for this file type");
@@ -4226,7 +4381,7 @@ int Context::ExecuteSyscall_futex() {
   // 'FUTEX_CLOCK_REALTIME' from 'op'.
   unsigned cmd = op & ~(256 | 128);
   unsigned futex;
-  memory->Read(addr1, 4, (char*)&futex);
+  memory->Read(addr1, 4, (char *)&futex);
   emulator->syscall_debug << misc::fmt("  futex=%d, cmd=%d (%s)\n", futex, cmd,
                                        futex_cmd_map.MapValue(cmd));
 
@@ -4249,8 +4404,8 @@ int Context::ExecuteSyscall_futex() {
             "Timeout not supported");
 
         // Unreachable
-        memory->Read(timeout_ptr, 4, (char*)&timeout_sec);
-        memory->Read(timeout_ptr + 4, 4, (char*)&timeout_usec);
+        memory->Read(timeout_ptr, 4, (char *)&timeout_sec);
+        memory->Read(timeout_ptr + 4, 4, (char *)&timeout_usec);
         emulator->syscall_debug << misc::fmt("  timeout={sec %d, usec %d}\n",
                                              timeout_sec, timeout_usec);
       } else {
@@ -4304,7 +4459,7 @@ int Context::ExecuteSyscall_futex() {
       for (auto it = emulator->getSuspendedContextsBegin(),
                 e = emulator->getSuspendedContextsEnd();
            it != e; ++it) {
-        Context* context = *it;
+        Context *context = *it;
         if (context->getState(StateFutex) && context->wakeup_futex == addr1) {
           context->wakeup_futex = addr2;
           requeued++;
@@ -4335,7 +4490,7 @@ int Context::ExecuteSyscall_futex() {
       oparg = (val3 >> 12) & 0xfff;
       cmparg = val3 & 0xfff;
 
-      memory->Read(addr2, 4, (char*)&oldval);
+      memory->Read(addr2, 4, (char *)&oldval);
       switch (op) {
         case 0:  // FUTEX_OP_SET
           newval = oparg;
@@ -4359,7 +4514,7 @@ int Context::ExecuteSyscall_futex() {
                         "invalid operation (%d)",
                         op));
       }
-      memory->Write(addr2, 4, (char*)&newval);
+      memory->Write(addr2, 4, (char *)&newval);
 
       ret = FutexWake(addr1, val1, 0xffffffff);
 
@@ -4442,7 +4597,7 @@ int Context::ExecuteSyscall_sched_setaffinity() {
 
   // Find context associated with 'pid'. If the value given in 'pid' is
   // zero, the current context is used.
-  Context* target_context = pid ? emulator->getContext(pid) : this;
+  Context *target_context = pid ? emulator->getContext(pid) : this;
   if (!target_context) return -ESRCH;
 
   // Count number of effective valid bits in the mask.
@@ -4502,7 +4657,7 @@ int Context::ExecuteSyscall_sched_getaffinity() {
 
   // Find context associated with 'pid'. If the value given in 'pid' is
   // zero, the current context is used.
-  Context* target_context = pid ? emulator->getContext(pid) : this;
+  Context *target_context = pid ? emulator->getContext(pid) : this;
   if (!target_context) return -ESRCH;
 
   // Allocate mask
@@ -4540,7 +4695,7 @@ int Context::ExecuteSyscall_set_thread_area() {
 
   // Read structure
   struct sim_user_desc uinfo;
-  memory->Read(uinfo_ptr, sizeof uinfo, (char*)&uinfo);
+  memory->Read(uinfo_ptr, sizeof uinfo, (char *)&uinfo);
   emulator->syscall_debug << misc::fmt(
       "  entry_number=0x%x, base_addr=0x%x, limit=0x%x\n", uinfo.entry_number,
       uinfo.base_addr, uinfo.limit);
@@ -4565,7 +4720,7 @@ int Context::ExecuteSyscall_set_thread_area() {
     glibc_segment_base = uinfo.base_addr;
     glibc_segment_limit = uinfo.limit;
     uinfo.entry_number = 6;
-    memory->Write(uinfo_ptr, 4, (char*)&uinfo.entry_number);
+    memory->Write(uinfo_ptr, 4, (char *)&uinfo.entry_number);
   } else {
     // Must be entry 6
     if (uinfo.entry_number != 6)
@@ -4761,12 +4916,12 @@ int Context::ExecuteSyscall_clock_gettime() {
   // Arguments
   unsigned clk_id = regs.getEbx();
   unsigned ts_ptr = regs.getEcx();
-  const char* clk_id_str = x86_sys_clock_gettime_clk_id_map.MapValue(clk_id);
+  const char *clk_id_str = x86_sys_clock_gettime_clk_id_map.MapValue(clk_id);
   emulator->syscall_debug << misc::fmt("  clk_id=0x%x (%s), ts_ptr=0x%x\n",
                                        clk_id, clk_id_str, ts_ptr);
 
   // Event-driven simulator engine
-  esim::Engine* esim_engine = esim::Engine::getInstance();
+  esim::Engine *esim_engine = esim::Engine::getInstance();
 
   // Initialize
   sim_ts.sec = 0;
@@ -4829,7 +4984,7 @@ int Context::ExecuteSyscall_clock_gettime() {
   emulator->syscall_debug << misc::fmt("\tts.tv_nsec = %u\n", sim_ts.nsec);
 
   // Write to guest memory
-  memory->Write(ts_ptr, sizeof sim_ts, (const char*)&sim_ts);
+  memory->Write(ts_ptr, sizeof sim_ts, (const char *)&sim_ts);
   return 0;
 }
 
@@ -4847,8 +5002,8 @@ int Context::ExecuteSyscall_clock_getres() {
   // Return
   unsigned tv_sec = 0;
   unsigned tv_nsec = 1;
-  memory->Write(pres, 4, (char*)&tv_sec);
-  memory->Write(pres + 4, 4, (char*)&tv_nsec);
+  memory->Write(pres, 4, (char *)&tv_sec);
+  memory->Write(pres + 4, 4, (char *)&tv_nsec);
   return 0;
 }
 
@@ -4886,7 +5041,7 @@ int Context::ExecuteSyscall_tgkill() {
   if (tgid == -1) throw misc::Panic("Not supported for tgid = -1");
 
   // Find context referred by pid.
-  Context* context = emulator->getContext(pid);
+  Context *context = emulator->getContext(pid);
   if (!context) throw Error(misc::fmt("Invalid pid (%d)", pid));
 
   // Send signal
@@ -5086,7 +5241,7 @@ int Context::ExecuteSyscall_openat() {
   // The dynamic linker uses the 'open' system call to open shared libraries.
   // We need to intercept here attempts to access runtime libraries and
   // redirect them to our own Multi2Sim runtimes.
-  comm::RuntimePool* runtime_pool = comm::RuntimePool::getInstance();
+  comm::RuntimePool *runtime_pool = comm::RuntimePool::getInstance();
   std::string runtime_redirect_path;
   if (runtime_pool->Redirect(full_path, runtime_redirect_path))
     full_path = runtime_redirect_path;
@@ -5100,7 +5255,7 @@ int Context::ExecuteSyscall_openat() {
   if (host_fd == -1) return -errno;
 
   // File opened, create a new file descriptor.
-  comm::FileDescriptor* descriptor = file_table->newFileDescriptor(
+  comm::FileDescriptor *descriptor = file_table->newFileDescriptor(
       comm::FileDescriptor::TypeRegular, host_fd, full_path, flags);
 
   // Debug
