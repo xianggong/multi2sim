@@ -861,6 +861,44 @@ void WorkItem::ISA_S_OR_B64_Impl(Instruction *instruction) {
 
 // D.u = S0.u ^ S1.u. scc = 1 if result is non-zero.
 #define INST INST_SOP2
+void WorkItem::ISA_S_XOR_B32_Impl(Instruction *instruction) {
+  Instruction::Register s0;
+  Instruction::Register s1;
+  Instruction::Register result;
+  Instruction::Register nonzero;
+
+  // Load operands from registers or as a literal constant.
+  assert(!(INST.ssrc0 == 0xFF && INST.ssrc1 == 0xFF));
+  if (INST.ssrc0 == 0xFF)
+    s0.as_uint = INST.lit_cnst;
+  else
+    s0.as_uint = ReadSReg(INST.ssrc0);
+  if (INST.ssrc1 == 0xFF)
+    s1.as_uint = INST.lit_cnst;
+  else
+    s1.as_uint = ReadSReg(INST.ssrc1);
+
+  /* Bitwise XOR the two operands and determine if the result is
+   * non-zero. */
+  result.as_uint = s0.as_uint ^ s1.as_uint;
+  nonzero.as_uint = !!result.as_uint;
+
+  // Write the results.
+  // Store the data in the destination register
+  WriteSReg(INST.sdst, result.as_uint);
+  // Store the data in the destination register
+  WriteSReg(Instruction::RegisterScc, nonzero.as_uint);
+
+  // Print isa debug information.
+  if (Emulator::isa_debug) {
+    Emulator::isa_debug << misc::fmt("S%u<=(0x%x) ", INST.sdst, result.as_uint);
+    Emulator::isa_debug << misc::fmt("scc<=(%u) ", nonzero.as_uint);
+  }
+}
+#undef INST
+
+// D.u = S0.u ^ S1.u. scc = 1 if result is non-zero.
+#define INST INST_SOP2
 void WorkItem::ISA_S_XOR_B64_Impl(Instruction *instruction) {
   // Assert no literal constants for a 64 bit instruction.
   assert(!(INST.ssrc0 == 0xFF || INST.ssrc1 == 0xFF));
@@ -1222,7 +1260,14 @@ void WorkItem::ISA_S_MOVK_I32_Impl(Instruction *instruction) {
 }
 #undef INST
 
-//
+// SCC = (D.u == SIMM16).
+#define INST INST_SOPK
+void WorkItem::ISA_S_CMPK_EQ_U32_Impl(Instruction *instruction) {
+  ISAUnimplemented(instruction);
+}
+#undef INST
+
+// D.u = SCC = (D.u <= SIMM16).
 #define INST INST_SOPK
 void WorkItem::ISA_S_CMPK_LE_U32_Impl(Instruction *instruction) {
   ISAUnimplemented(instruction);
@@ -1302,6 +1347,14 @@ void WorkItem::ISA_S_MULK_I32_Impl(Instruction *instruction) {
     Emulator::isa_debug << misc::fmt("S%u<=(%d)", INST.sdst, product.as_int);
     Emulator::isa_debug << misc::fmt("scc<=(%u)", ovf.as_uint);
   }
+}
+#undef INST
+
+// D.u = hardware register. Read some or all of a hardware register into the
+// LSBs of D.
+#define INST INST_SOPK
+void WorkItem::ISA_S_GETREG_B32_Impl(Instruction *instruction) {
+  ISAUnimplemented(instruction);
 }
 #undef INST
 
@@ -1453,6 +1506,58 @@ void WorkItem::ISA_S_AND_SAVEEXEC_B64_Impl(Instruction *instruction) {
    * is non-zero. */
   exec_new_lo.as_uint = s0_lo.as_uint & exec_lo.as_uint;
   exec_new_hi.as_uint = s0_hi.as_uint & exec_hi.as_uint;
+  nonzero.as_uint = exec_new_lo.as_uint || exec_new_hi.as_uint;
+
+  // Write the results.
+  // Store the data in the destination register
+  WriteSReg(INST.sdst, exec_lo.as_uint);
+  // Store the data in the destination register
+  WriteSReg(INST.sdst + 1, exec_hi.as_uint);
+  // Store the data in the destination register
+  WriteSReg(Instruction::RegisterExec, exec_new_lo.as_uint);
+  // Store the data in the destination register
+  WriteSReg(Instruction::RegisterExec + 1, exec_new_hi.as_uint);
+  // Store the data in the destination register
+  WriteSReg(Instruction::RegisterScc, nonzero.as_uint);
+
+  // Print isa debug information.
+  if (Emulator::isa_debug) {
+    Emulator::isa_debug << misc::fmt("S%u<=(0x%x) ", INST.sdst,
+                                     exec_lo.as_uint);
+    Emulator::isa_debug << misc::fmt("S%u<=(0x%x) ", INST.sdst + 1,
+                                     exec_hi.as_uint);
+    Emulator::isa_debug << misc::fmt("exec_lo<=(0x%x) ", exec_new_lo.as_uint);
+    Emulator::isa_debug << misc::fmt("exec_hi<=(0x%x) ", exec_new_hi.as_uint);
+    Emulator::isa_debug << misc::fmt("scc<=(%u)", nonzero.as_uint);
+  }
+}
+#undef INST
+
+/* D.u = EXEC, EXEC = S0.u | EXEC. scc = 1 if the new value of EXEC is
+ * non-zero. */
+#define INST INST_SOP1
+void WorkItem::ISA_S_OR_SAVEEXEC_B64_Impl(Instruction *instruction) {
+  // Assert no literal constant with a 64 bit instruction.
+  assert(!(INST.ssrc0 == 0xFF));
+
+  Instruction::Register exec_lo;
+  Instruction::Register exec_hi;
+  Instruction::Register s0_lo;
+  Instruction::Register s0_hi;
+  Instruction::Register exec_new_lo;
+  Instruction::Register exec_new_hi;
+  Instruction::Register nonzero;
+
+  // Load operands from registers.
+  exec_lo.as_uint = ReadSReg(Instruction::RegisterExec);
+  exec_hi.as_uint = ReadSReg(Instruction::RegisterExec + 1);
+  s0_lo.as_uint = ReadSReg(INST.ssrc0);
+  s0_hi.as_uint = ReadSReg(INST.ssrc0 + 1);
+
+  /* Bitwise OR exec and the first operand and determine if the result
+   * is non-zero. */
+  exec_new_lo.as_uint = s0_lo.as_uint | exec_lo.as_uint;
+  exec_new_hi.as_uint = s0_hi.as_uint | exec_hi.as_uint;
   nonzero.as_uint = exec_new_lo.as_uint || exec_new_hi.as_uint;
 
   // Write the results.
@@ -3270,6 +3375,34 @@ void WorkItem::ISA_V_MADMK_F32_Impl(Instruction *instruction) {
 
   // Calculate the result
   dst.as_float = s0.as_float * K.as_float + s1.as_float;
+
+  // Write the results.
+  WriteVReg(INST.vdst, dst.as_uint);
+
+  // Print isa debug information.
+  if (Emulator::isa_debug) {
+    Emulator::isa_debug << misc::fmt("t%d: V%u<=(%f) (%f * %f + %f)", id,
+                                     INST.vdst, dst.as_float, s0.as_float,
+                                     K.as_float, s1.as_float);
+  }
+}
+#undef INST
+
+// D.f = S0.f * S1.f + K; K is a 32-bit inline constant.
+#define INST INST_VOP2
+void WorkItem::ISA_V_MADAK_F32_Impl(Instruction *instruction) {
+  Instruction::Register s0;
+  Instruction::Register s1;
+  Instruction::Register K;
+  Instruction::Register dst;
+
+  // Load operands from registers or as a literal constant.
+  s0.as_uint = ReadReg(INST.src0);
+  s1.as_uint = ReadVReg(INST.vsrc1);
+  K.as_uint = INST.lit_cnst;
+
+  // Calculate the result
+  dst.as_float = s0.as_float * s1.as_float + K.as_float;
 
   // Write the results.
   WriteVReg(INST.vdst, dst.as_uint);
@@ -6792,6 +6925,12 @@ void WorkItem::ISA_BUFFER_STORE_BYTE_Impl(Instruction *instruction) {
 #undef INST
 
 #define INST INST_MUBUF
+void WorkItem::ISA_BUFFER_STORE_SHORT_Impl(Instruction *instruction) {
+  ISAUnimplemented(instruction);
+}
+#undef INST
+
+#define INST INST_MUBUF
 void WorkItem::ISA_BUFFER_STORE_DWORD_Impl(Instruction *instruction) {
   assert(!INST.addr64);
   assert(!INST.slc);
@@ -6929,6 +7068,12 @@ void WorkItem::ISA_BUFFER_ATOMIC_ADD_Impl(Instruction *instruction) {
     Emulator::isa_debug << misc::fmt("t%d: V%u<=(%u)(%d) ", id, INST.vdata,
                                      addr, value.as_int);
   }
+}
+#undef INST
+
+#define INST INST_MUBUF
+void WorkItem::ISA_BUFFER_ATOMIC_SMIN_Impl(Instruction *instruction) {
+  ISAUnimplemented(instruction);
 }
 #undef INST
 
