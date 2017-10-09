@@ -290,9 +290,12 @@ void ScalarUnit::Complete() {
       compute_unit->sum_cycle_scalar_memory_instructions += uop->cycle_length;
 
       compute_unit->min_cycle_scalar_memory_instructions =
-          compute_unit->min_cycle_scalar_memory_instructions < uop->cycle_length
-              ? compute_unit->min_cycle_scalar_memory_instructions
-              : uop->cycle_length;
+          compute_unit->min_cycle_scalar_memory_instructions == 0
+              ? uop->cycle_length
+              : compute_unit->min_cycle_scalar_memory_instructions <
+                        uop->cycle_length
+                    ? compute_unit->min_cycle_scalar_memory_instructions
+                    : uop->cycle_length;
 
       compute_unit->max_cycle_scalar_memory_instructions =
           compute_unit->max_cycle_scalar_memory_instructions > uop->cycle_length
@@ -302,9 +305,12 @@ void ScalarUnit::Complete() {
       compute_unit->sum_cycle_scalar_alu_instructions += uop->cycle_length;
 
       compute_unit->min_cycle_scalar_alu_instructions =
-          compute_unit->min_cycle_scalar_alu_instructions < uop->cycle_length
-              ? compute_unit->min_cycle_scalar_alu_instructions
-              : uop->cycle_length;
+          compute_unit->min_cycle_scalar_alu_instructions == 0
+              ? uop->cycle_length
+              : compute_unit->min_cycle_scalar_alu_instructions <
+                        uop->cycle_length
+                    ? compute_unit->min_cycle_scalar_alu_instructions
+                    : uop->cycle_length;
 
       compute_unit->max_cycle_scalar_alu_instructions =
           compute_unit->max_cycle_scalar_alu_instructions > uop->cycle_length

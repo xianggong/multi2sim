@@ -26,10 +26,8 @@
 namespace SI {
 
 std::map<StageStatus, std::string> stage_status_map = {
-	std::make_pair(Idle, "i"),
-	std::make_pair(Active, "a"),
-	std::make_pair(Stall, "s")
-};
+    std::make_pair(Idle, "i"), std::make_pair(Active, "a"),
+    std::make_pair(Stall, "s")};
 
 void ExecutionUnit::Issue(std::unique_ptr<Uop> uop) {
   // Spend issue latency
@@ -59,8 +57,9 @@ void ExecutionUnit::updateCounter() {
       ExecutionStatus == Idle && WriteStatus == Idle) {
     count_idle_cycles++;
     return;
-  } else  // ExecutionUnit is active when not idle, including stalls
+  } else {
     count_active_or_stall_cycles++;
+  }
 
   bool isAnyStageActive = IssueStatus == Active || DecodeStatus == Active ||
                           ReadStatus == Active || ExecutionStatus == Active ||
@@ -73,8 +72,9 @@ void ExecutionUnit::updateCounter() {
       count_active_and_stall_cycles++;
     else
       count_stall_only_cycles++;
-  } else
+  } else {
     count_active_only_cycles++;
+  }
 }
 
 std::string ExecutionUnit::getUtilization(std::string ExecutionUnitName) {

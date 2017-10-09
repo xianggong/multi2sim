@@ -36,7 +36,10 @@ libtiming_a_SOURCES = \
 	VectorMemoryUnit.h \
 	\
 	WavefrontPool.cc \
-	WavefrontPool.h
+	WavefrontPool.h \
+	\
+	Statistics.cc \
+	Statistics.h
 
 
 AM_CPPFLAGS = @M2S_INCLUDES@

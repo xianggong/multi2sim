@@ -159,9 +159,11 @@ void LdsUnit::Complete() {
     compute_unit->sum_cycle_lds_instructions += uop->cycle_length;
 
     compute_unit->min_cycle_lds_instructions =
-        compute_unit->min_cycle_lds_instructions < uop->cycle_length
-            ? compute_unit->min_cycle_lds_instructions
-            : uop->cycle_length;
+        compute_unit->min_cycle_lds_instructions == 0
+            ? uop->cycle_length
+            : compute_unit->min_cycle_lds_instructions < uop->cycle_length
+                  ? compute_unit->min_cycle_lds_instructions
+                  : uop->cycle_length;
 
     compute_unit->max_cycle_lds_instructions =
         compute_unit->max_cycle_lds_instructions > uop->cycle_length
@@ -630,7 +632,7 @@ void LdsUnit::Decode() {
     DecodeStatus = Active;
 
     // if (si_spatial_report_active)
-    //	SIComputeUnitReportNewLDSInst(lds->compute_unit);
+    //  SIComputeUnitReportNewLDSInst(lds->compute_unit);
 
     // Trace
     Timing::trace << misc::fmt(

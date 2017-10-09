@@ -165,9 +165,12 @@ void VectorMemoryUnit::Complete() {
     compute_unit->sum_cycle_vector_memory_instructions += uop->cycle_length;
 
     compute_unit->min_cycle_vector_memory_instructions =
-        compute_unit->min_cycle_vector_memory_instructions < uop->cycle_length
-            ? compute_unit->min_cycle_vector_memory_instructions
-            : uop->cycle_length;
+        compute_unit->min_cycle_vector_memory_instructions == 0
+            ? uop->cycle_length
+            : compute_unit->min_cycle_vector_memory_instructions <
+                      uop->cycle_length
+                  ? compute_unit->min_cycle_vector_memory_instructions
+                  : uop->cycle_length;
 
     compute_unit->max_cycle_vector_memory_instructions =
         compute_unit->max_cycle_vector_memory_instructions > uop->cycle_length
@@ -454,7 +457,6 @@ void VectorMemoryUnit::Memory() {
       count_vmem_divergence++;
       continue;
     }
-
 
     // Update uop execute ready cycle for m2svis tool
     uop->execute_ready = compute_unit->getTiming()->getCycle();

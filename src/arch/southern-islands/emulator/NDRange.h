@@ -23,6 +23,7 @@
 #include <deque>
 #include <list>
 #include <memory>
+#include <string>
 
 #include <arch/common/Context.h>
 #include <arch/southern-islands/disassembler/Binary.h>
@@ -109,6 +110,10 @@ class NDRange {
 
   // Unique ND-range ID
   int id = 0;
+
+  // Unique Kernel ID
+  int kernel_id = 0;
+  std::string kernel_name;
 
   // Stage that the ND-range operates on
   Stage stage = StageCompute;
@@ -200,7 +205,7 @@ class NDRange {
   mem::Mmu::Space* address_space = nullptr;
 
   /// Constructor
-  NDRange();
+  NDRange(int kernel_id);
 
   /// Dump the state of the ND-range in a plain-text format into an output
   /// stream.
@@ -211,6 +216,9 @@ class NDRange {
     ndrange.Dump(os);
     return os;
   }
+
+  /// Get associated kernel name
+  std::string getKernelName() const { return kernel_name; }
 
   /// Get work dim
   unsigned getWorkDim() const { return work_dim; }

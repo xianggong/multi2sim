@@ -576,7 +576,7 @@ int Driver::CallNDRangeCreate(comm::Context* context, mem::Memory* memory,
         misc::fmt("%s: invalid kernel ID (%d)", __FUNCTION__, kernel_id));
 
   // Create ND-Range
-  NDRange* ndrange = emulator->addNDRange();
+  NDRange* ndrange = emulator->addNDRange(kernel_id);
   debug << misc::fmt("\tcreated ndrange %d\n", ndrange->getId());
 
   // Initialize from kernel binary encoding dictionary

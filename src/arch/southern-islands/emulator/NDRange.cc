@@ -53,7 +53,7 @@ const int NDRange::ConstBuf1Size;
 
 const int NDRange::TotalConstBufSize;
 
-NDRange::NDRange() {
+NDRange::NDRange(int kernel_id) {
   // For efficiency, store emulator instance
   emulator = Emulator::getInstance();
 
@@ -63,6 +63,11 @@ NDRange::NDRange() {
 
   // Assign ID
   id = emulator->getNewNDRangeID();
+
+  // Set kernel ID
+  this->kernel_id = kernel_id;
+  auto kernel = Driver::getInstance()->getKernelById(kernel_id);
+  this->kernel_name = kernel->getName();
 
   // Initialize instruction memor - FIXME to be removed if allocated
   // statically.
@@ -347,8 +352,7 @@ unsigned NDRange::GetSecondPC() const {
     if (format == Instruction::FormatSOPP && bytes->sopp.op == 1)
 
       // Second PC starts right after S_ENDPGM
-      if (rel_addr + size < getInstructionBufferSize())
-        return rel_addr + size;
+      if (rel_addr + size < getInstructionBufferSize()) return rel_addr + size;
 
     buffer += size;
     rel_addr += size;

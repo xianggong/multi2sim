@@ -216,7 +216,7 @@ class Emulator : public comm::Emulator {
 
   /// Create a new ND-range and add a new ND-range to the list of
   /// allocated ND-ranges.
-  NDRange* addNDRange();
+  NDRange* addNDRange(int kernel_id);
 
   /// Remove an ND-range from the list of allocated ND-ranges and free it.
   /// All other references to this ND-range are invalidated.

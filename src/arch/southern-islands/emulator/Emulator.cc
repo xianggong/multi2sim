@@ -355,9 +355,10 @@ void Emulator::ProcessOptions() {
   scheduler_debug.setPath(scheduler_debug_file);
 }
 
-NDRange* Emulator::addNDRange() {
+NDRange* Emulator::addNDRange(int kernel_id) {
   // Create ND-range and add it to the list of ND-ranges
-  auto it = ndranges.emplace(ndranges.end(), misc::new_unique<NDRange>());
+  auto it =
+      ndranges.emplace(ndranges.end(), misc::new_unique<NDRange>(kernel_id));
   NDRange* ndrange = ndranges.back().get();
 
   // Save iterator to the position in the ND-range list

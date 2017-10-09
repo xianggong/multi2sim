@@ -23,6 +23,7 @@
 #include <memory/System.h>
 
 #include "ComputeUnit.h"
+#include "Statistics.h"
 #include "Timing.h"
 
 namespace SI {
@@ -1001,6 +1002,9 @@ void Timing::DumpSummary(std::ostream& os) const {
   double cycles_per_second =
       time_in_seconds > 0.0 ? (double)getCycle() / time_in_seconds : 0.0;
   os << misc::fmt("CyclesPerSecond = %.0f\n", cycles_per_second);
+
+  Statistics* statistics = Statistics::getInstance();
+  os << *statistics;
 }
 
 void Timing::DumpReport() const {

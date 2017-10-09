@@ -25,6 +25,7 @@
 #include <memory/Module.h>
 
 #include "ComputeUnit.h"
+#include "Statistics.h"
 #include "Timing.h"
 #include "WavefrontPool.h"
 
@@ -277,7 +278,8 @@ void ComputeUnit::Fetch(FetchBuffer* fetch_buffer,
     // Create uop
     auto uop = misc::new_unique<Uop>(
         wavefront, wavefront_pool_entry, timing->getCycle(),
-        wavefront->getWorkGroup(), fetch_buffer->getId());
+        wavefront->getWorkGroup(), fetch_buffer->getId(),
+        wavefront->getWorkGroup()->getNDRange()->getId());
     uop->vector_memory_read = wavefront->vector_memory_read;
     uop->vector_memory_write = wavefront->vector_memory_write;
     uop->vector_memory_atomic = wavefront->vector_memory_atomic;
@@ -830,6 +832,13 @@ void ComputeUnit::Run() {
 
   // Update overlapping counter
   UpdateAluMemOverlapCounter();
+
+  // Update statistics
+  auto stats = Statistics::getInstance();
+  if (timing->getCycle() % stats->getSamplingInterval() == 0) {
+    // std::cout << "CU" << getIndex() << " : " << timing->getCycle() << "\n";
+    stats->Sampling(this, timing->getCycle());
+  }
 }
 
 void ComputeUnit::Dump(std::ostream& os) const {

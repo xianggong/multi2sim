@@ -145,9 +145,11 @@ void SimdUnit::Complete() {
     compute_unit->sum_cycle_simd_instructions += uop->cycle_length;
 
     compute_unit->min_cycle_simd_instructions =
-        compute_unit->min_cycle_simd_instructions < uop->cycle_length
-            ? compute_unit->min_cycle_simd_instructions
-            : uop->cycle_length;
+        compute_unit->min_cycle_simd_instructions == 0
+            ? uop->cycle_length
+            : compute_unit->min_cycle_simd_instructions < uop->cycle_length
+                  ? compute_unit->min_cycle_simd_instructions
+                  : uop->cycle_length;
 
     compute_unit->max_cycle_simd_instructions =
         compute_unit->max_cycle_simd_instructions > uop->cycle_length

@@ -290,22 +290,22 @@ class ComputeUnit {
   long long sum_cycle_lds_instructions = 0;
 
   // Min cycle of issued branch instructions
-  long long min_cycle_branch_instructions = LLONG_MAX;
+  long long min_cycle_branch_instructions = 0;
 
   // Min cycle of issued scalar memory instructions
-  long long min_cycle_scalar_memory_instructions = LLONG_MAX;
+  long long min_cycle_scalar_memory_instructions = 0;
 
   // Min cycle of issued scalar ALU instructions
-  long long min_cycle_scalar_alu_instructions = LLONG_MAX;
+  long long min_cycle_scalar_alu_instructions = 0;
 
   // Min cycle of issued SIMD instructions
-  long long min_cycle_simd_instructions = LLONG_MAX;
+  long long min_cycle_simd_instructions = 0;
 
   // Min cycle of issued vector memory instructions
-  long long min_cycle_vector_memory_instructions = LLONG_MAX;
+  long long min_cycle_vector_memory_instructions = 0;
 
   // Min cycle of issued LDS instructions
-  long long min_cycle_lds_instructions = LLONG_MAX;
+  long long min_cycle_lds_instructions = 0;
 
   // Max cycle of issued branch instructions
   long long max_cycle_branch_instructions = 0;
@@ -339,7 +339,6 @@ class ComputeUnit {
 
   // // Count of WFs executing the 1st Twin Kernel
   // long long num_wf_second_twin_kernel = 0;
-
 };
 }
 

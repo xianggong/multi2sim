@@ -21,6 +21,7 @@
 #include <arch/southern-islands/emulator/NDRange.h>
 
 #include "Gpu.h"
+#include "Statistics.h"
 #include "Timing.h"
 
 namespace SI {
@@ -107,8 +108,7 @@ void Gpu::MapNDRange(NDRange* ndrange) {
   char* env = getenv("M2S_WG_LIMIT");
   if (env) {
     int wg_limit = atoi(env);
-    if (wg_limit > work_groups_per_compute_unit)
-    {
+    if (wg_limit > work_groups_per_compute_unit) {
       Emulator::scheduler_debug
           << misc::fmt("Manual limit > Hardware limit, aborting...\n");
       exit(-1);
@@ -130,6 +130,12 @@ void Gpu::MapNDRange(NDRange* ndrange) {
 
   // Map ndrange
   mapped_ndrange = ndrange;
+
+  // Update statistics
+  auto statistics = Statistics::getInstance();
+  auto timing = Timing::getInstance();
+  statistics->setNDRangeCycle(ndrange->getId(), timing->getCycle(),
+                              NDRANGE_MAPPED);
 }
 
 void Gpu::UnmapNDRange(NDRange* ndrange) {
@@ -139,6 +145,12 @@ void Gpu::UnmapNDRange(NDRange* ndrange) {
   // Erase every workgroup in each compute unit, setting the
   // work_groups size to 0
   for (auto& compute_unit : compute_units) compute_unit->Reset();
+
+  // Update statistics
+  auto statistics = Statistics::getInstance();
+  auto timing = Timing::getInstance();
+  statistics->setNDRangeCycle(ndrange->getId(), timing->getCycle(),
+                              NDRANGE_UNMAPPED);
 }
 
 void Gpu::CalcGetWorkGroupsPerWavefrontPool(int work_items_per_work_group,

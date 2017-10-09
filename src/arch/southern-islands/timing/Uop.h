@@ -77,10 +77,17 @@ class Uop {
   // Unique identifier of the associated wavefront pool
   int wavefront_pool_id;
 
+  // Unique identifier of the associated ndrange
+  unsigned ndrange_id;
+
  public:
   /// Constructor
   Uop(Wavefront* wavefront, WavefrontPoolEntry* wavefront_pool_entry,
-      long long cycle_created, WorkGroup* work_group, int wavefront_pool_id);
+      long long cycle_created, WorkGroup* work_group, int wavefront_pool_id,
+      unsigned ndrange_id);
+
+  /// Destructor
+  ~Uop();
 
   /// Flags updated during instruction execution
   bool vector_memory_read;
