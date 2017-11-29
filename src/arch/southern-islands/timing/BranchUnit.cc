@@ -45,7 +45,7 @@ void BranchUnit::Run() {
   Read();
   Decode();
 
-  updateCounter();
+  updateCounter("BRCH");
 }
 
 std::string BranchUnit::getStatus() const {
@@ -107,7 +107,7 @@ bool BranchUnit::isValidUop(Uop* uop) const {
 void BranchUnit::Issue(std::unique_ptr<Uop> uop) {
   // One more instruction of this kind
   ComputeUnit* compute_unit = getComputeUnit();
-  compute_unit->num_branch_instructions++;
+  compute_unit->stats.num_lds_insts_++;
 
   // Issue it
   ExecutionUnit::Issue(std::move(uop));
@@ -144,19 +144,7 @@ void BranchUnit::Complete() {
     Timing::m2svis << uop->getLifeCycleInCSV("branch");
 
     // Update compute unit statistics
-    compute_unit->sum_cycle_branch_instructions += uop->cycle_length;
-
-    compute_unit->min_cycle_branch_instructions =
-        compute_unit->min_cycle_branch_instructions == 0
-            ? uop->cycle_length
-            : compute_unit->min_cycle_branch_instructions < uop->cycle_length
-                  ? compute_unit->min_cycle_branch_instructions
-                  : uop->cycle_length;
-
-    compute_unit->max_cycle_branch_instructions =
-        compute_unit->max_cycle_branch_instructions > uop->cycle_length
-            ? compute_unit->max_cycle_branch_instructions
-            : uop->cycle_length;
+    statistics.Update(uop, compute_unit->getTiming()->getCycle());
 
     // Update pipeline stage status
     WriteStatus = Active;
@@ -216,7 +204,7 @@ void BranchUnit::Write() {
       // Update pipeline stage status
       WriteStatus = Stall;
 
-      count_stall_write++;
+      stats.num_stall_write_++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -242,7 +230,7 @@ void BranchUnit::Write() {
       // Update pipeline stage status
       WriteStatus = Stall;
 
-      count_stall_write++;
+      stats.num_stall_write_++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -318,7 +306,7 @@ void BranchUnit::Execute() {
       // Update pipeline stage status
       ExecutionStatus = Stall;
 
-      count_stall_execution++;
+      stats.num_stall_execution_++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -344,7 +332,7 @@ void BranchUnit::Execute() {
       // Update pipeline stage status
       ExecutionStatus = Stall;
 
-      count_stall_execution++;
+      stats.num_stall_execution_++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -420,7 +408,7 @@ void BranchUnit::Read() {
       // Update pipeline stage status
       ReadStatus = Stall;
 
-      count_stall_read++;
+      stats.num_stall_read_++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -446,7 +434,7 @@ void BranchUnit::Read() {
       // Update pipeline stage status
       ReadStatus = Stall;
 
-      count_stall_read++;
+      stats.num_stall_read_++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -522,7 +510,7 @@ void BranchUnit::Decode() {
       // Update pipeline stage status
       DecodeStatus = Stall;
 
-      count_stall_decode++;
+      stats.num_stall_decode_++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -548,7 +536,7 @@ void BranchUnit::Decode() {
       // Update pipeline stage status
       DecodeStatus = Stall;
 
-      count_stall_decode++;
+      stats.num_stall_decode_++;
 
       // Trace
       Timing::trace << misc::fmt(

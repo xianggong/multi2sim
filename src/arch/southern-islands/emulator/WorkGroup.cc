@@ -96,16 +96,6 @@ WorkGroup::WorkGroup(NDRange* ndrange, unsigned id) {
   work_item_gidy_start = id_3d[1] * ndrange->getLocalSize(1);
   work_item_gidz_start = id_3d[2] * ndrange->getLocalSize(2);
 
-  // For NDRange created for Pixel Shader, we need to initialize LDS
-  switch (ndrange->getStage()) {
-    case NDRange::StagePixelShader:
-      // FIXME:Initialize LDS(Parameter Cache)
-      break;
-
-    default:
-      break;
-  }
-
   // Initialize work-item metadata
   lid = 0;
   tid = id * work_items_per_group;
@@ -173,75 +163,25 @@ WorkGroup::WorkGroup(NDRange* ndrange, unsigned id) {
     // Set PC
     wavefront->setPC(0);
 
-    switch (ndrange->getStage()) {
-      // Save work-group IDs in scalar registers
-      case NDRange::StageCompute:
-
-        wavefront->setSregUint(ndrange->getWorkgroupIdSreg(),
-                               wavefront->getWorkGroup()->getId3D(0));
-        wavefront->setSregUint(ndrange->getWorkgroupIdSreg() + 1,
-                               wavefront->getWorkGroup()->getId3D(1));
-        wavefront->setSregUint(ndrange->getWorkgroupIdSreg() + 2,
-                               wavefront->getWorkGroup()->getId3D(2));
-        break;
-
-      // Currently hard coded as LDS is exclusive to each primitive.
-      // Primitives should share LDS module and use different offset
-      case NDRange::StagePixelShader:
-
-        wavefront->setSregUint(ndrange->getWorkgroupIdSreg(), 0x0);
-        break;
-
-      default:
-
-        // Save work-group IDs in scalar registers
-        wavefront->setSregUint(ndrange->getWorkgroupIdSreg(),
-                               wavefront->getWorkGroup()->getId3D(0));
-        wavefront->setSregUint(ndrange->getWorkgroupIdSreg() + 1,
-                               wavefront->getWorkGroup()->getId3D(1));
-        wavefront->setSregUint(ndrange->getWorkgroupIdSreg() + 2,
-                               wavefront->getWorkGroup()->getId3D(2));
-        break;
-    }
+    // Save work-group IDs in scalar registers
+    wavefront->setSregUint(ndrange->getWorkgroupIdSreg(),
+                           wavefront->getWorkGroup()->getId3D(0));
+    wavefront->setSregUint(ndrange->getWorkgroupIdSreg() + 1,
+                           wavefront->getWorkGroup()->getId3D(1));
+    wavefront->setSregUint(ndrange->getWorkgroupIdSreg() + 2,
+                           wavefront->getWorkGroup()->getId3D(2));
 
     for (auto wi_i = wavefront->getWorkItemsBegin(),
               wi_e = wavefront->getWorkItemsEnd();
          wi_i != wi_e; ++wi_i) {
       // Store work-item IDs in vector registers
       work_item = (*wi_i).get();
-
-      switch (ndrange->getStage()) {
-        // OpenCL convention
-        case NDRange::StageCompute:
-          // V0
-          work_item->WriteVReg(0, work_item->getLocalId3D(0));
-          // V1
-          work_item->WriteVReg(1, work_item->getLocalId3D(1));
-          // V2
-          work_item->WriteVReg(2, work_item->getLocalId3D(2));
-          break;
-
-        // Vertex shader initialization convention
-        case NDRange::StageVertexShader:
-          // VSes load VGPR0 with the thread's vertex index
-          work_item->WriteVReg(0, work_item->getId());
-          break;
-
-        // Pixel shader initialization convention
-        case NDRange::StagePixelShader:
-          // FIXME
-          break;
-
-        // Default is OpenCL convention
-        default:
-          // V0
-          work_item->WriteVReg(0, work_item->getLocalId3D(0));
-          // V1
-          work_item->WriteVReg(1, work_item->getLocalId3D(1));
-          // V2
-          work_item->WriteVReg(2, work_item->getLocalId3D(2));
-          break;
-      }
+      // V0
+      work_item->WriteVReg(0, work_item->getLocalId3D(0));
+      // V1
+      work_item->WriteVReg(1, work_item->getLocalId3D(1));
+      // V2
+      work_item->WriteVReg(2, work_item->getLocalId3D(2));
     }
 
     // Initialize sreg pointers to internal data structures

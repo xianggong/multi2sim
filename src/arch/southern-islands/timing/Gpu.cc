@@ -21,7 +21,6 @@
 #include <arch/southern-islands/emulator/NDRange.h>
 
 #include "Gpu.h"
-#include "Statistics.h"
 #include "Timing.h"
 
 namespace SI {
@@ -131,11 +130,13 @@ void Gpu::MapNDRange(NDRange* ndrange) {
   // Map ndrange
   mapped_ndrange = ndrange;
 
-  // Update statistics
-  auto statistics = Statistics::getInstance();
-  auto timing = Timing::getInstance();
-  statistics->setNDRangeCycle(ndrange->getId(), timing->getCycle(),
-                              NDRANGE_MAPPED);
+  // Update info if statistics enables
+  if (!Timing::statistics_prefix.empty()) {
+    auto stats = addNDRangeStats(ndrange->getId());
+    if (stats) {
+      stats->setCycle(Timing::getInstance()->getCycle(), EVENT_MAPPED);
+    }
+  }
 }
 
 void Gpu::UnmapNDRange(NDRange* ndrange) {
@@ -146,11 +147,21 @@ void Gpu::UnmapNDRange(NDRange* ndrange) {
   // work_groups size to 0
   for (auto& compute_unit : compute_units) compute_unit->Reset();
 
-  // Update statistics
-  auto statistics = Statistics::getInstance();
-  auto timing = Timing::getInstance();
-  statistics->setNDRangeCycle(ndrange->getId(), timing->getCycle(),
-                              NDRANGE_UNMAPPED);
+  // Update info if statistics enables
+  if (!Timing::statistics_prefix.empty()) {
+    auto stats = getNDRangeStatsById(ndrange->getId());
+    if (stats) {
+      stats->setCycle(Timing::getInstance()->getCycle(), EVENT_UNMAPPED);
+
+      // Dump
+      misc::Debug ndrange_stats;
+      std::string ndrange_stats_filename =
+          Timing::statistics_prefix + "_ndrange.stats";
+      ndrange_stats.setPath(ndrange_stats_filename);
+      ndrange_stats << ndrange->getKernelName() << " "
+                    << std::to_string(ndrange->getId()) << ": " << *stats;
+    }
+  }
 }
 
 void Gpu::CalcGetWorkGroupsPerWavefrontPool(int work_items_per_work_group,

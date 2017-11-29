@@ -51,7 +51,7 @@ void ScalarUnit::Run() {
   ScalarUnit::Read();
   ScalarUnit::Decode();
 
-  updateCounter();
+  updateCounter("SCLR");
 }
 
 std::string ScalarUnit::getStatus() const {
@@ -126,12 +126,12 @@ void ScalarUnit::Issue(std::unique_ptr<Uop> uop) {
     uop->getWavefrontPoolEntry()->ready_next_cycle = true;
 
     // Keep track of statistics
-    compute_unit->num_scalar_memory_instructions++;
+    compute_unit->stats.num_scalar_memory_insts_++;
     uop->getWavefrontPoolEntry()->lgkm_cnt++;
   } else {
     // Scalar ALU instructions must complete before the next
     // instruction can be fetched.
-    compute_unit->num_scalar_alu_instructions++;
+    compute_unit->stats.num_scalar_alu_insts_++;
   }
 
   // Issue it
@@ -175,7 +175,7 @@ void ScalarUnit::Complete() {
       // Update pipeline stage status
       WriteStatus = Stall;
 
-      count_stall_write++;
+      stats.num_stall_write_++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -286,37 +286,7 @@ void ScalarUnit::Complete() {
     Timing::m2svis << uop->getLifeCycleInCSV("scalar");
 
     // Update compute unit statistics
-    if (uop->scalar_memory_read) {
-      compute_unit->sum_cycle_scalar_memory_instructions += uop->cycle_length;
-
-      compute_unit->min_cycle_scalar_memory_instructions =
-          compute_unit->min_cycle_scalar_memory_instructions == 0
-              ? uop->cycle_length
-              : compute_unit->min_cycle_scalar_memory_instructions <
-                        uop->cycle_length
-                    ? compute_unit->min_cycle_scalar_memory_instructions
-                    : uop->cycle_length;
-
-      compute_unit->max_cycle_scalar_memory_instructions =
-          compute_unit->max_cycle_scalar_memory_instructions > uop->cycle_length
-              ? compute_unit->max_cycle_scalar_memory_instructions
-              : uop->cycle_length;
-    } else {
-      compute_unit->sum_cycle_scalar_alu_instructions += uop->cycle_length;
-
-      compute_unit->min_cycle_scalar_alu_instructions =
-          compute_unit->min_cycle_scalar_alu_instructions == 0
-              ? uop->cycle_length
-              : compute_unit->min_cycle_scalar_alu_instructions <
-                        uop->cycle_length
-                    ? compute_unit->min_cycle_scalar_alu_instructions
-                    : uop->cycle_length;
-
-      compute_unit->max_cycle_scalar_alu_instructions =
-          compute_unit->max_cycle_scalar_alu_instructions > uop->cycle_length
-              ? compute_unit->max_cycle_scalar_alu_instructions
-              : uop->cycle_length;
-    }
+    statistics.Update(uop, compute_unit->getTiming()->getCycle());
 
     // Trace
     Timing::trace << misc::fmt(
@@ -372,7 +342,7 @@ void ScalarUnit::Write() {
         // Update pipeline status
         WriteStatus = Stall;
 
-        count_stall_write++;
+        stats.num_stall_write_++;
 
         // Trace
         Timing::trace << misc::fmt(
@@ -398,7 +368,7 @@ void ScalarUnit::Write() {
         // Update pipeline status
         WriteStatus = Stall;
 
-        count_stall_write++;
+        stats.num_stall_write_++;
 
         // Trace
         Timing::trace << misc::fmt(
@@ -454,7 +424,7 @@ void ScalarUnit::Write() {
         // Update pipeline status
         WriteStatus = Stall;
 
-        count_stall_write++;
+        stats.num_stall_write_++;
 
         // Trace
         Timing::trace << misc::fmt(
@@ -480,7 +450,7 @@ void ScalarUnit::Write() {
         // Update pipeline status
         WriteStatus = Stall;
 
-        count_stall_write++;
+        stats.num_stall_write_++;
 
         // Trace
         Timing::trace << misc::fmt(
@@ -560,7 +530,7 @@ void ScalarUnit::Execute() {
       // Update pipeline status
       ExecutionStatus = Stall;
 
-      count_stall_execution++;
+      stats.num_stall_execution_++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -586,7 +556,7 @@ void ScalarUnit::Execute() {
       // Update pipeline status
       ExecutionStatus = Stall;
 
-      count_stall_execution++;
+      stats.num_stall_execution_++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -711,7 +681,7 @@ void ScalarUnit::Read() {
       // Update pipeline status
       ReadStatus = Stall;
 
-      count_stall_read++;
+      stats.num_stall_read_++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -737,7 +707,7 @@ void ScalarUnit::Read() {
       // Update pipeline status
       ReadStatus = Stall;
 
-      count_stall_read++;
+      stats.num_stall_read_++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -812,7 +782,7 @@ void ScalarUnit::Decode() {
       // Update pipeline status
       DecodeStatus = Stall;
 
-      count_stall_decode++;
+      stats.num_stall_decode_++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -838,7 +808,7 @@ void ScalarUnit::Decode() {
       // Update pipeline status
       DecodeStatus = Stall;
 
-      count_stall_decode++;
+      stats.num_stall_decode_++;
 
       // Trace
       Timing::trace << misc::fmt(

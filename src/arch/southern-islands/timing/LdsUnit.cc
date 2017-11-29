@@ -46,7 +46,7 @@ void LdsUnit::Run() {
   LdsUnit::Read();
   LdsUnit::Decode();
 
-  LdsUnit::updateCounter();
+  LdsUnit::updateCounter("LDS ");
 }
 
 std::string LdsUnit::getStatus() const {
@@ -110,7 +110,7 @@ void LdsUnit::Issue(std::unique_ptr<Uop> uop) {
   ComputeUnit* compute_unit = getComputeUnit();
 
   // One more instruction of this kind
-  compute_unit->num_lds_instructions++;
+  compute_unit->stats.num_lds_insts_++;
   uop->getWavefrontPoolEntry()->lgkm_cnt++;
 
   // Issue it
@@ -156,19 +156,7 @@ void LdsUnit::Complete() {
     WriteStatus = Active;
 
     // Update compute unit statistics
-    compute_unit->sum_cycle_lds_instructions += uop->cycle_length;
-
-    compute_unit->min_cycle_lds_instructions =
-        compute_unit->min_cycle_lds_instructions == 0
-            ? uop->cycle_length
-            : compute_unit->min_cycle_lds_instructions < uop->cycle_length
-                  ? compute_unit->min_cycle_lds_instructions
-                  : uop->cycle_length;
-
-    compute_unit->max_cycle_lds_instructions =
-        compute_unit->max_cycle_lds_instructions > uop->cycle_length
-            ? compute_unit->max_cycle_lds_instructions
-            : uop->cycle_length;
+    statistics.Update(uop, compute_unit->getTiming()->getCycle());
 
     // Trace
     Timing::trace << misc::fmt(
@@ -224,7 +212,7 @@ void LdsUnit::Write() {
       // Update pipeline stage status
       WriteStatus = Stall;
 
-      count_stall_write++;
+      stats.num_stall_write_++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -250,7 +238,7 @@ void LdsUnit::Write() {
       // Update pipeline stage status
       WriteStatus = Stall;
 
-      count_stall_write++;
+      stats.num_stall_write_++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -334,7 +322,7 @@ void LdsUnit::Mem() {
       // Update pipeline stage status
       ExecutionStatus = Stall;
 
-      count_stall_execution++;
+      stats.num_stall_execution_++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -363,7 +351,7 @@ void LdsUnit::Mem() {
       // Update pipeline stage status
       ExecutionStatus = Stall;
 
-      count_stall_execution++;
+      stats.num_stall_execution_++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -473,7 +461,7 @@ void LdsUnit::Read() {
       // Update pipeline stage status
       ReadStatus = Stall;
 
-      count_stall_read++;
+      stats.num_stall_read_++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -496,7 +484,7 @@ void LdsUnit::Read() {
       // Update pipeline stage status
       ReadStatus = Stall;
 
-      count_stall_read++;
+      stats.num_stall_read_++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -580,7 +568,7 @@ void LdsUnit::Decode() {
       // Update pipeline stage status
       DecodeStatus = Stall;
 
-      count_stall_decode++;
+      stats.num_stall_decode_++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -606,7 +594,7 @@ void LdsUnit::Decode() {
       // Update pipeline stage status
       DecodeStatus = Stall;
 
-      count_stall_decode++;
+      stats.num_stall_decode_++;
 
       // Trace
       Timing::trace << misc::fmt(

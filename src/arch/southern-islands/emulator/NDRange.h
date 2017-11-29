@@ -47,16 +47,6 @@ struct BinaryUserElement;
 /// which can be one, two, or three dimensions.
 class NDRange {
  public:
-  /// Stage is used to determine V/SGPRs initialization convention when
-  /// creating wavefronts/workitems.
-  enum Stage {
-    StageInvalid = 0,
-    StageCompute,
-    StageVertexShader,
-    StageGeometryShader,
-    StagePixelShader
-  };
-
   //
   // Static fields
   //
@@ -114,9 +104,6 @@ class NDRange {
   // Unique Kernel ID
   int kernel_id = 0;
   std::string kernel_name;
-
-  // Stage that the ND-range operates on
-  Stage stage = StageCompute;
 
   // Work-groups allocated for this ND-Range
   std::list<std::unique_ptr<WorkGroup>> work_groups;
@@ -303,9 +290,6 @@ class NDRange {
   /// references to this work-group will be invalidates after this call.
   void RemoveWorkGroup(WorkGroup* work_group);
 
-  /// Get stage of NDRange
-  Stage getStage() const { return stage; }
-
   /// Return the number of waiting work-groups
   unsigned getNumWaitingWorkgroups() const {
     return waiting_work_groups.size();
@@ -461,9 +445,6 @@ class NDRange {
   ///        representing the local size.
   /// \param work_dim Number of dimensions in the ND-range.
   void SetupSize(unsigned* global_size, unsigned* local_size, int work_dim);
-
-  /// Set up stage of NDRange
-  void SetupStage(Stage stage) { this->stage = stage; }
 
   /// Set up content of instruction memory
   ///

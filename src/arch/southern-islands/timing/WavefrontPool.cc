@@ -20,6 +20,7 @@
 #include <arch/southern-islands/emulator/WorkGroup.h>
 
 #include "ComputeUnit.h"
+#include "Timing.h"
 #include "VectorMemoryUnit.h"
 #include "WavefrontPool.h"
 
@@ -115,6 +116,21 @@ void WavefrontPool::UnmapWavefronts(WorkGroup* work_group) {
 
     // Clear wavefront pool entry
     wavefront_pool_entries[wf_id_in_wfp]->Clear();
+
+    // Update info if statistics enables
+    if (!Timing::statistics_prefix.empty()) {
+      auto stats =
+          compute_unit->getWavefrontStatsById(wavefront->id_in_compute_unit);
+      if (stats) {
+        stats->setCycle(Timing::getInstance()->getCycle(), EVENT_UNMAPPED);
+      }
+
+      // Dump
+      compute_unit->wavefront_stats << wavefront->getId() << ": " << *stats;
+
+      // Clean up
+      compute_unit->wavefront_stats_map.erase(wavefront->id_in_compute_unit);
+    }
   }
 
   // Adjust the number of wavefronts mapped to the wavefront pool

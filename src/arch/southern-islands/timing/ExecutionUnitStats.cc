@@ -17,37 +17,16 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef SRC_ARCH_SOUTHERN_ISLANDS_TIMING_STATISTICS_H_
-#define SRC_ARCH_SOUTHERN_ISLANDS_TIMING_STATISTICS_H_
-
-#include <iostream>
-#include <string>
+#include "ExecutionUnitStats.h"
+#include "Uop.h"
 
 namespace SI {
 
-enum CycleEvent { EVENT_MAPPED = 0, EVENT_UNMAPPED, EVENT_START, EVENT_FINISH };
+void ExecutionUnitStats::Update(Uop *uop, long long cycle) {
+  len_inst_sum_ += uop->cycle_length;
 
-/// This class contains cycle statistics for the timing simulation
-class CycleStats {
-  uint64_t cycle_mapped_ = 0;
-  uint64_t cycle_unmapped_ = 0;
-  uint64_t cycle_start_ = 0;
-  uint64_t cycle_finish_ = 0;
-
- public:
-  /// Setters
-  void setCycle(uint64_t cycle, enum CycleEvent event);
-
-  /// Dump statistics
-  void Dump(std::ostream& os = std::cout) const;
-
-  /// Same as Dump()
-  friend std::ostream& operator<<(std::ostream& os, const CycleStats& info) {
-    info.Dump(os);
-    return os;
-  }
-};
-
-}  // namespace SI
-
-#endif  // SRC_ARCH_SOUTHERN_ISLANDS_TIMING_STATISTICS_H_
+  auto min = std::min(len_inst_min_, uop->cycle_length);
+  len_inst_min_ = len_inst_min_ == 0 ? uop->cycle_length : min;
+  len_inst_max_ = std::max(len_inst_max_, uop->cycle_length);
+}
+}

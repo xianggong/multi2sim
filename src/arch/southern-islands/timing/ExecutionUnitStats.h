@@ -17,37 +17,47 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef SRC_ARCH_SOUTHERN_ISLANDS_TIMING_STATISTICS_H_
-#define SRC_ARCH_SOUTHERN_ISLANDS_TIMING_STATISTICS_H_
+#ifndef SRC_ARCH_SOUTHERN_ISLANDS_TIMING_EXECITIONUNITSTATS_H_
+#define SRC_ARCH_SOUTHERN_ISLANDS_TIMING_EXECITIONUNITSTATS_H_
 
 #include <iostream>
 #include <string>
 
 namespace SI {
 
-enum CycleEvent { EVENT_MAPPED = 0, EVENT_UNMAPPED, EVENT_START, EVENT_FINISH };
+// Forward declaration
+class Uop;
 
-/// This class contains cycle statistics for the timing simulation
-class CycleStats {
-  uint64_t cycle_mapped_ = 0;
-  uint64_t cycle_unmapped_ = 0;
-  uint64_t cycle_start_ = 0;
-  uint64_t cycle_finish_ = 0;
+/// This class contains statistics for the timing simulation
+class ExecutionUnitStats {
+ public:
+  double utiliation_ = 0.0f;
+
+  long long num_inst_fetch_ = 0;
+  long long num_inst_issue_ = 0;
+  long long num_inst_write_ = 0;
+
+  long long len_inst_min_ = 0;
+  long long len_inst_max_ = 0;
+  long long len_inst_avg_ = 0;
+  long long len_inst_sum_ = 0;
 
  public:
+  /// Member functions
+  void Update(Uop* uop, long long cycle);
+
   /// Setters
-  void setCycle(uint64_t cycle, enum CycleEvent event);
 
   /// Dump statistics
   void Dump(std::ostream& os = std::cout) const;
 
   /// Same as Dump()
-  friend std::ostream& operator<<(std::ostream& os, const CycleStats& info) {
+  friend std::ostream& operator<<(std::ostream& os,
+                                  const ExecutionUnitStats& info) {
     info.Dump(os);
     return os;
   }
 };
+}
 
-}  // namespace SI
-
-#endif  // SRC_ARCH_SOUTHERN_ISLANDS_TIMING_STATISTICS_H_
+#endif  // SRC_ARCH_SOUTHERN_ISLANDS_TIMING_EXECITIONUNITSTATS_H_

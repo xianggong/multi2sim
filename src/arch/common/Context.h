@@ -54,7 +54,7 @@ class Context {
 
   /// Return the name of the context, formed of the name of the
   /// architecture, the word 'context', and its identifier.
-  const std::string& getName() const { return name; }
+  const std::string getName() const { return name; }
 
   /// Suspend the context. The context must be in a non-suspended state,
   /// or a panic exception will occur.

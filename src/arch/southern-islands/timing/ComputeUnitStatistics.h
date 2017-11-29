@@ -1,6 +1,6 @@
 /*
  *  Multi2Sim
- *  Copyright (C) 2012  Rafael Ubal (ubal@ece.neu.edu)
+ *  Copyright (C) 2015  Rafael Ubal (ubal@ece.neu.edu)
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -17,32 +17,39 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef SRC_ARCH_SOUTHERN_ISLANDS_TIMING_STATISTICS_H_
-#define SRC_ARCH_SOUTHERN_ISLANDS_TIMING_STATISTICS_H_
+#ifndef ARCH_SOUTHERN_ISLANDS_TIMING_COMPUTEUNITSTATISTICS_H_
+#define ARCH_SOUTHERN_ISLANDS_TIMING_COMPUTEUNITSTATISTICS_H_
 
 #include <iostream>
-#include <string>
 
 namespace SI {
+class ComputeUnitStats {
+ public:
+  long long end_cycle_ = 0;
 
-enum CycleEvent { EVENT_MAPPED = 0, EVENT_UNMAPPED, EVENT_START, EVENT_FINISH };
+  // Instruction counters
+  long long num_total_insts_ = 0;
+  long long num_branch_insts_ = 0;
+  long long num_scalar_memory_insts_ = 0;
+  long long num_scalar_alu_insts_ = 0;
+  long long num_simd_insts_ = 0;
+  long long num_vector_memory_insts_ = 0;
+  long long num_lds_insts_ = 0;
 
-/// This class contains cycle statistics for the timing simulation
-class CycleStats {
-  uint64_t cycle_mapped_ = 0;
-  uint64_t cycle_unmapped_ = 0;
-  uint64_t cycle_start_ = 0;
-  uint64_t cycle_finish_ = 0;
+  // Register counters
+  long long num_sreg_reads_ = 0;
+  long long num_sreg_writes_ = 0;
+  long long num_vreg_reads_ = 0;
+  long long num_vreg_writes_ = 0;
+  long long num_mapped_work_groups_ = 0;
 
  public:
-  /// Setters
-  void setCycle(uint64_t cycle, enum CycleEvent event);
-
   /// Dump statistics
   void Dump(std::ostream& os = std::cout) const;
 
   /// Same as Dump()
-  friend std::ostream& operator<<(std::ostream& os, const CycleStats& info) {
+  friend std::ostream& operator<<(std::ostream& os,
+                                  const ComputeUnitStats& info) {
     info.Dump(os);
     return os;
   }
@@ -50,4 +57,4 @@ class CycleStats {
 
 }  // namespace SI
 
-#endif  // SRC_ARCH_SOUTHERN_ISLANDS_TIMING_STATISTICS_H_
+#endif

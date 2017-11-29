@@ -25,6 +25,7 @@
 #include <memory/Module.h>
 
 #include "BranchUnit.h"
+#include "ComputeUnitStatistics.h"
 #include "FetchBuffer.h"
 #include "LdsUnit.h"
 #include "ScalarUnit.h"
@@ -55,9 +56,6 @@ class ComputeUnit {
 
   // Update the visualization states for non-issued instructions
   void UpdateFetchVisualization(FetchBuffer* fetch_buffer);
-
-  // Record count of cycles where ALU and MEM instructions overlap
-  void UpdateAluMemOverlapCounter();
 
   // Set initial PC for TwinKernel execution mode
   void SetInitialPC(WorkGroup* work_group);
@@ -210,10 +208,6 @@ class ComputeUnit {
     return os;
   }
 
-  std::string getUtilization();
-
-  std::string getInstMetrics();
-
   //
   // Public member variables
   //
@@ -235,110 +229,45 @@ class ComputeUnit {
   // Statistics
   //
 
-  // Number of total instructions
-  long long num_total_instructions = 0;
+  // Statistics container
+  std::map<unsigned, std::unique_ptr<class CycleStats>> workgroup_stats_map;
+  std::map<unsigned, std::unique_ptr<class CycleStats>> wavefront_stats_map;
 
-  // Number of issued branch instructions
-  long long num_branch_instructions = 0;
+  // Statistics files
+  misc::Debug workgroup_stats;
+  misc::Debug wavefront_stats;
 
-  // Number of issued scalar memory instructions
-  long long num_scalar_memory_instructions = 0;
+  class ComputeUnitStats stats;
 
-  // Number of issued scalar ALU instructions
-  long long num_scalar_alu_instructions = 0;
+  /// Getter for workgroup_stats_map
+  class CycleStats* getWorkgroupStatsById(unsigned workgroup_id) {
+    auto it = workgroup_stats_map.find(workgroup_id);
+    if (it != workgroup_stats_map.end()) {
+      return it->second.get();
+    }
+    return nullptr;
+  }
 
-  // Number of issued SIMD instructions
-  long long num_simd_instructions = 0;
+  /// Getter for wavefront_stats_map
+  class CycleStats* getWavefrontStatsById(unsigned wavefront_id) {
+    auto it = wavefront_stats_map.find(wavefront_id);
+    if (it != wavefront_stats_map.end()) {
+      return it->second.get();
+    }
+    return nullptr;
+  }
 
-  // Number of issued vector memory instructions
-  long long num_vector_memory_instructions = 0;
+  /// Setter for workgroup_stats_map
+  class CycleStats* addWorkgroupStats(unsigned workgroup_id) {
+    workgroup_stats_map[workgroup_id] = misc::new_unique<class CycleStats>();
+    return workgroup_stats_map[workgroup_id].get();
+  }
 
-  // Number of issued LDS instructions
-  long long num_lds_instructions = 0;
-
-  // Number of scalar registers being read from
-  long long num_sreg_reads = 0;
-
-  // Number of scalar registers being written to
-  long long num_sreg_writes = 0;
-
-  // Number of vector registers being read from
-  long long num_vreg_reads = 0;
-
-  // Number of vectorr registers being written to
-  long long num_vreg_writes = 0;
-
-  // Number of total mapped work groups for the compute unit
-  long long num_mapped_work_groups = 0;
-
-  // Accumulative cycle of issued branch instructions
-  long long sum_cycle_branch_instructions = 0;
-
-  // Accumulative cycle of issued scalar memory instructions
-  long long sum_cycle_scalar_memory_instructions = 0;
-
-  // Accumulative cycle of issued scalar ALU instructions
-  long long sum_cycle_scalar_alu_instructions = 0;
-
-  // Accumulative cycle of issued SIMD instructions
-  long long sum_cycle_simd_instructions = 0;
-
-  // Accumulative cycle of issued vector memory instructions
-  long long sum_cycle_vector_memory_instructions = 0;
-
-  // Accumulative cycle of issued LDS instructions
-  long long sum_cycle_lds_instructions = 0;
-
-  // Min cycle of issued branch instructions
-  long long min_cycle_branch_instructions = 0;
-
-  // Min cycle of issued scalar memory instructions
-  long long min_cycle_scalar_memory_instructions = 0;
-
-  // Min cycle of issued scalar ALU instructions
-  long long min_cycle_scalar_alu_instructions = 0;
-
-  // Min cycle of issued SIMD instructions
-  long long min_cycle_simd_instructions = 0;
-
-  // Min cycle of issued vector memory instructions
-  long long min_cycle_vector_memory_instructions = 0;
-
-  // Min cycle of issued LDS instructions
-  long long min_cycle_lds_instructions = 0;
-
-  // Max cycle of issued branch instructions
-  long long max_cycle_branch_instructions = 0;
-
-  // Max cycle of issued scalar memory instructions
-  long long max_cycle_scalar_memory_instructions = 0;
-
-  // Max cycle of issued scalar ALU instructions
-  long long max_cycle_scalar_alu_instructions = 0;
-
-  // Max cycle of issued SIMD instructions
-  long long max_cycle_simd_instructions = 0;
-
-  // Max cycle of issued vector memory instructions
-  long long max_cycle_vector_memory_instructions = 0;
-
-  // Max cycle of issued LDS instructions
-  long long max_cycle_lds_instructions = 0;
-
-  // Count of cycles that ALU and MEM instructions overlap
-  long long num_alu_mem_overlap_cycles = 0;
-
-  // // Count of cycles of WFs executing the 1st Twin Kernel
-  // long long num_cycle_first_twin_kernel = 0;
-
-  // // Count of WFs executing the 1st Twin Kernel
-  // long long num_wf_first_twin_kernel = 0;
-
-  // // Count of cycles of WFs executing the 2nd Twin Kernel
-  // long long num_cycle_second_twin_kernel = 0;
-
-  // // Count of WFs executing the 1st Twin Kernel
-  // long long num_wf_second_twin_kernel = 0;
+  /// Setter for wavefront_stats_map
+  class CycleStats* addWavefrontStats(unsigned wavefront_id) {
+    wavefront_stats_map[wavefront_id] = misc::new_unique<class CycleStats>();
+    return wavefront_stats_map[wavefront_id].get();
+  }
 };
 }
 

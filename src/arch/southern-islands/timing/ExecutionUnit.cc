@@ -38,6 +38,7 @@ void ExecutionUnit::Issue(std::unique_ptr<Uop> uop) {
   // Insert into issue buffer
   assert(canIssue());
   issue_buffer.push_back(std::move(uop));
+  num_instructions++;
 }
 
 void ExecutionUnit::resetStatus() {
@@ -49,16 +50,16 @@ void ExecutionUnit::resetStatus() {
   WriteStatus = Idle;
 }
 
-void ExecutionUnit::updateCounter() {
-  count_total_cycles++;
+void ExecutionUnit::updateCounter(std::string exec_unit) {
+  stats.num_total_cycles_++;
 
   // ExecutionUnit is idle when all stages are idle
   if (IssueStatus == Idle && DecodeStatus == Idle && ReadStatus == Idle &&
       ExecutionStatus == Idle && WriteStatus == Idle) {
-    count_idle_cycles++;
+    stats.num_idle_cycles_++;
     return;
   } else {
-    count_active_or_stall_cycles++;
+    stats.num_active_or_stall_cycles_++;
   }
 
   bool isAnyStageActive = IssueStatus == Active || DecodeStatus == Active ||
@@ -69,26 +70,93 @@ void ExecutionUnit::updateCounter() {
                          WriteStatus == Stall;
   if (isAnyStageStall) {
     if (isAnyStageActive)
-      count_active_and_stall_cycles++;
+      stats.num_active_and_stall_cycles_++;
     else
-      count_stall_only_cycles++;
+      stats.num_stall_only_cycles_++;
   } else {
-    count_active_only_cycles++;
+    stats.num_active_only_cycles_++;
   }
+
+  if (Timing::getInstance()->getCycle() % 1000 == 0) {
+    curr_interval_stats.num_total_cycles_ =
+        stats.num_total_cycles_ - prev_interval_stats.num_total_cycles_;
+    curr_interval_stats.num_idle_cycles_ =
+        stats.num_idle_cycles_ - prev_interval_stats.num_idle_cycles_;
+    curr_interval_stats.num_active_or_stall_cycles_ =
+        stats.num_active_or_stall_cycles_ -
+        prev_interval_stats.num_active_or_stall_cycles_;
+    curr_interval_stats.num_active_only_cycles_ =
+        stats.num_active_only_cycles_ -
+        prev_interval_stats.num_active_only_cycles_;
+    curr_interval_stats.num_active_and_stall_cycles_ =
+        stats.num_active_and_stall_cycles_ -
+        prev_interval_stats.num_active_and_stall_cycles_;
+    curr_interval_stats.num_stall_only_cycles_ =
+        stats.num_stall_only_cycles_ -
+        prev_interval_stats.num_stall_only_cycles_;
+    curr_interval_stats.num_stall_issue_ =
+        stats.num_stall_issue_ - prev_interval_stats.num_stall_issue_;
+    curr_interval_stats.num_stall_decode_ =
+        stats.num_stall_decode_ - prev_interval_stats.num_stall_decode_;
+    curr_interval_stats.num_stall_read_ =
+        stats.num_stall_read_ - prev_interval_stats.num_stall_read_;
+    curr_interval_stats.num_stall_execution_ =
+        stats.num_stall_execution_ - prev_interval_stats.num_stall_execution_;
+    curr_interval_stats.num_stall_write_ =
+        stats.num_stall_write_ - prev_interval_stats.num_stall_write_;
+    curr_interval_stats.num_vmem_divergence_ =
+        stats.num_vmem_divergence_ - prev_interval_stats.num_vmem_divergence_;
+
+    prev_interval_stats.num_total_cycles_ = stats.num_total_cycles_;
+    prev_interval_stats.num_idle_cycles_ = stats.num_idle_cycles_;
+    prev_interval_stats.num_active_or_stall_cycles_ =
+        stats.num_active_or_stall_cycles_;
+    prev_interval_stats.num_active_only_cycles_ = stats.num_active_only_cycles_;
+    prev_interval_stats.num_active_and_stall_cycles_ =
+        stats.num_active_and_stall_cycles_;
+    prev_interval_stats.num_stall_only_cycles_ = stats.num_stall_only_cycles_;
+    prev_interval_stats.num_stall_issue_ = stats.num_stall_issue_;
+    prev_interval_stats.num_stall_decode_ = stats.num_stall_decode_;
+    prev_interval_stats.num_stall_read_ = stats.num_stall_read_;
+    prev_interval_stats.num_stall_execution_ = stats.num_stall_execution_;
+    prev_interval_stats.num_stall_write_ = stats.num_stall_write_;
+    prev_interval_stats.num_vmem_divergence_ = stats.num_vmem_divergence_;
+
+    // printf("%lld %s ", Timing::getInstance()->getCycle(), exec_unit.c_str());
+    // auto stats = *Timing::statistics[compute_unit->getIndex()];
+    // stats << exec_unit;
+    // Dump(std::cout);
+  }
+}
+
+void ExecutionUnit::Dump(std::ostream& os) const {
+  os << misc::fmt(
+      " util %.2g%% %.2g%% %.2g%% %.2g%% %.2g%%\n",
+      100 * (double)curr_interval_stats.num_active_or_stall_cycles_ /
+          (double)curr_interval_stats.num_total_cycles_,
+      100 * (double)curr_interval_stats.num_idle_cycles_ /
+          (double)curr_interval_stats.num_total_cycles_,
+      100 * (double)curr_interval_stats.num_active_only_cycles_ /
+          (double)curr_interval_stats.num_total_cycles_,
+      100 * (double)curr_interval_stats.num_active_and_stall_cycles_ /
+          (double)curr_interval_stats.num_total_cycles_,
+      100 * (double)curr_interval_stats.num_stall_only_cycles_ /
+          (double)curr_interval_stats.num_total_cycles_);
 }
 
 std::string ExecutionUnit::getUtilization(std::string ExecutionUnitName) {
   return "Util." + ExecutionUnitName +
          misc::fmt(":\t %.2g \t %.2g \t %.2g \t %.2g \t %.2g\n",
-                   100 * (double)count_active_or_stall_cycles /
-                       (double)count_total_cycles,
-                   100 * (double)count_idle_cycles / (double)count_total_cycles,
-                   100 * (double)count_active_only_cycles /
-                       (double)count_total_cycles,
-                   100 * (double)count_active_and_stall_cycles /
-                       (double)count_total_cycles,
-                   100 * (double)count_stall_only_cycles /
-                       (double)count_total_cycles);
+                   100 * (double)stats.num_active_or_stall_cycles_ /
+                       (double)stats.num_total_cycles_,
+                   100 * (double)stats.num_idle_cycles_ /
+                       (double)stats.num_total_cycles_,
+                   100 * (double)stats.num_active_only_cycles_ /
+                       (double)stats.num_total_cycles_,
+                   100 * (double)stats.num_active_and_stall_cycles_ /
+                       (double)stats.num_total_cycles_,
+                   100 * (double)stats.num_stall_only_cycles_ /
+                       (double)stats.num_total_cycles_);
 }
 
 std::string ExecutionUnit::getCounter(std::string ExecutionUnitName) {
@@ -96,11 +164,12 @@ std::string ExecutionUnit::getCounter(std::string ExecutionUnitName) {
          misc::fmt(
              ":\t %lld \t %lld \t %lld \t %lld \t %lld \t %lld[%lld %lld %lld "
              "%lld %lld] \t %lld\n",
-             count_total_cycles, count_active_or_stall_cycles,
-             count_idle_cycles, count_active_only_cycles,
-             count_active_and_stall_cycles, count_stall_only_cycles,
-             count_stall_issue, count_stall_decode, count_stall_read,
-             count_stall_execution, count_stall_write, count_vmem_divergence);
+             stats.num_total_cycles_, stats.num_active_or_stall_cycles_,
+             stats.num_idle_cycles_, stats.num_active_only_cycles_,
+             stats.num_active_and_stall_cycles_, stats.num_stall_only_cycles_,
+             stats.num_stall_issue_, stats.num_stall_decode_,
+             stats.num_stall_read_, stats.num_stall_execution_,
+             stats.num_stall_write_, stats.num_vmem_divergence_);
 }
 
 bool ExecutionUnit::isActive() {

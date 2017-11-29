@@ -11,6 +11,9 @@ libtiming_a_SOURCES = \
 	ExecutionUnit.cc \
 	ExecutionUnit.h \
 	\
+	ExecutionUnitStats.cc \
+	ExecutionUnitStats.h \
+	\
 	FetchBuffer.cc \
 	FetchBuffer.h \
 	\
@@ -40,7 +43,6 @@ libtiming_a_SOURCES = \
 	\
 	Statistics.cc \
 	Statistics.h
-
 
 AM_CPPFLAGS = @M2S_INCLUDES@
 

@@ -23,7 +23,6 @@
 #include <memory/System.h>
 
 #include "ComputeUnit.h"
-#include "Statistics.h"
 #include "Timing.h"
 
 namespace SI {
@@ -54,6 +53,8 @@ misc::Debug Timing::pipeline_debug;
 std::string Timing::m2svis_file;
 
 misc::Debug Timing::m2svis;
+
+std::string Timing::statistics_prefix;
 
 const std::string Timing::help_message =
     "The Southern Islands GPU configuration file is a plain text INI file\n"
@@ -645,6 +646,10 @@ void Timing::RegisterOptions() {
       "--si-vis <file>", m2svis_file,
       "Reports the details of the SI pipeline units for M2SVIS "
       "visualization tool.");
+
+  // Option --si-stats
+  command_line->RegisterString("--si-stats-prefix <file>", statistics_prefix,
+                               "Prefix for the statistics files.");
 }
 
 void Timing::ProcessOptions() {
@@ -1002,9 +1007,6 @@ void Timing::DumpSummary(std::ostream& os) const {
   double cycles_per_second =
       time_in_seconds > 0.0 ? (double)getCycle() / time_in_seconds : 0.0;
   os << misc::fmt("CyclesPerSecond = %.0f\n", cycles_per_second);
-
-  Statistics* statistics = Statistics::getInstance();
-  os << *statistics;
 }
 
 void Timing::DumpReport() const {
@@ -1055,7 +1057,7 @@ void Timing::DumpReport() const {
     long long coalesced_writes =
         compute_unit->getLdsModule()->num_coalesced_writes;
     instructions_per_cycle =
-        getCycle() ? ((double)compute_unit->num_total_instructions /
+        getCycle() ? ((double)compute_unit->stats.num_total_insts_ /
                       (double)getCycle())
                    : 0.0;
 
@@ -1063,40 +1065,32 @@ void Timing::DumpReport() const {
     report << misc::fmt("[ ComputeUnit %d ]\n\n", compute_unit->getIndex());
 
     report << misc::fmt("WorkGroupCount = %lld\n",
-                        compute_unit->num_mapped_work_groups);
+                        compute_unit->stats.num_mapped_work_groups_);
     report << misc::fmt("Instructions = %lld\n",
-                        compute_unit->num_total_instructions);
+                        compute_unit->stats.num_total_insts_);
     report << misc::fmt("ScalarALUInstructions = %lld\n",
-                        compute_unit->num_scalar_alu_instructions);
+                        compute_unit->stats.num_scalar_alu_insts_);
     report << misc::fmt("ScalarMemInstructions = %lld\n",
-                        compute_unit->num_scalar_memory_instructions);
+                        compute_unit->stats.num_scalar_memory_insts_);
     report << misc::fmt("BranchInstructions = %lld\n",
-                        compute_unit->num_branch_instructions);
+                        compute_unit->stats.num_branch_insts_);
     report << misc::fmt("SIMDInstructions = %lld\n",
-                        compute_unit->num_simd_instructions);
+                        compute_unit->stats.num_simd_insts_);
     report << misc::fmt("VectorMemInstructions = %lld\n",
-                        compute_unit->num_vector_memory_instructions);
+                        compute_unit->stats.num_vector_memory_insts_);
     report << misc::fmt("LDSInstructions = %lld\n",
-                        compute_unit->num_lds_instructions);
+                        compute_unit->stats.num_lds_insts_);
     report << misc::fmt("Cycles = %lld\n", getCycle());
     report << misc::fmt("InstructionsPerCycle = %.4g\n\n",
                         instructions_per_cycle);
-    report << misc::fmt(
-        "ALU & Mem instructions overlap for %lld cycles, overlapping ratio = "
-        "%.4g %%\n",
-        compute_unit->num_alu_mem_overlap_cycles,
-        100 * double(compute_unit->num_alu_mem_overlap_cycles) /
-            (double)getCycle());
-
-    report << compute_unit->getUtilization();
-    report << compute_unit->getInstMetrics();
-
-    report << misc::fmt("ScalarRegReads= %lld\n", compute_unit->num_sreg_reads);
+    report << misc::fmt("ScalarRegReads= %lld\n",
+                        compute_unit->stats.num_sreg_reads_);
     report << misc::fmt("ScalarRegWrites= %lld\n",
-                        compute_unit->num_sreg_writes);
-    report << misc::fmt("VectorRegReads= %lld\n", compute_unit->num_vreg_reads);
+                        compute_unit->stats.num_sreg_writes_);
+    report << misc::fmt("VectorRegReads= %lld\n",
+                        compute_unit->stats.num_vreg_reads_);
     report << misc::fmt("VectorRegWrites= %lld\n",
-                        compute_unit->num_vreg_writes);
+                        compute_unit->stats.num_vreg_writes_);
     report << misc::fmt("\n");
     report << misc::fmt("LDS.Accesses = %lld\n",
                         compute_unit->getLdsModule()->num_reads +
@@ -1164,9 +1158,10 @@ bool Timing::Run() {
               ndrange->getGlobalSize1D() / ndrange->getLocalSize1D();
           unsigned avg_wgs = (num_wgs + num_cu - 1) / num_cu;
 
-          printf("%d: %lld %d\n", available_compute_unit->getIndex(),
-                 available_compute_unit->num_mapped_work_groups, avg_wgs);
-          if (available_compute_unit->num_mapped_work_groups >= avg_wgs) {
+          // printf("%d: %lld %d\n", available_compute_unit->getIndex(),
+          // available_compute_unit->num_mapped_work_groups, avg_wgs);
+          if (available_compute_unit->stats.num_mapped_work_groups_ >=
+              avg_wgs) {
             gpu->RemoveFromAvailableComputeUnits(available_compute_unit);
             break;
           }

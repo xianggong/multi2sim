@@ -25,7 +25,7 @@
 #include <memory/Module.h>
 
 #include "ComputeUnit.h"
-#include "Statistics.h"
+#include "ComputeUnitStatistics.h"
 #include "Timing.h"
 #include "WavefrontPool.h"
 
@@ -69,6 +69,21 @@ ComputeUnit::ComputeUnit(int index, Gpu* gpu)
     wavefront_pools[i] = misc::new_unique<WavefrontPool>(i, this);
     fetch_buffers[i] = misc::new_unique<FetchBuffer>(i, this);
     simd_units[i] = misc::new_unique<SimdUnit>(this);
+  }
+
+  // Create statistics file
+  if (!Timing::statistics_prefix.empty()) {
+    std::string cu_id = std::to_string(getIndex());
+
+    // Workgroup
+    std::string workgroup_stats_filename =
+        Timing::statistics_prefix + "_workgroup_cu_" + cu_id + ".stats";
+    workgroup_stats.setPath(workgroup_stats_filename);
+
+    // Wavefront
+    std::string wavefront_stats_filename =
+        Timing::statistics_prefix + "_wavefront_cu_" + cu_id + ".stats";
+    wavefront_stats.setPath(wavefront_stats_filename);
   }
 }
 
@@ -367,7 +382,7 @@ void ComputeUnit::Fetch(FetchBuffer* fetch_buffer,
     fetch_buffer->addUop(std::move(uop));
 
     instructions_processed++;
-    num_total_instructions++;
+    stats.num_total_insts_++;
   }
 }
 
@@ -552,6 +567,12 @@ void ComputeUnit::MapWorkGroup(WorkGroup* work_group) {
   // Insert work group into the list
   AddWorkGroup(work_group);
 
+  // Update info if statistics enables
+  if (!Timing::statistics_prefix.empty()) {
+    auto stats = addWorkgroupStats(work_group->id_in_compute_unit);
+    stats->setCycle(timing->getCycle(), EVENT_MAPPED);
+  }
+
   // Checks
   assert((int)work_groups.size() <= gpu->getWorkGroupsPerComputeUnit());
 
@@ -571,6 +592,12 @@ void ComputeUnit::MapWorkGroup(WorkGroup* work_group) {
     wavefront->id_in_compute_unit = work_group->id_in_compute_unit *
                                         work_group->getWavefrontsInWorkgroup() +
                                     wavefront_id;
+
+    // Update info if statistics enables
+    if (!Timing::statistics_prefix.empty()) {
+      auto stats = addWavefrontStats(wavefront->id_in_compute_unit);
+      stats->setCycle(timing->getCycle(), EVENT_MAPPED);
+    }
 
     // Update internal counter
     wavefront_id++;
@@ -592,7 +619,7 @@ void ComputeUnit::MapWorkGroup(WorkGroup* work_group) {
   SetInitialPC(work_group);
 
   // Increment count of mapped work groups
-  num_mapped_work_groups++;
+  stats.num_mapped_work_groups_++;
 
   // Debug info
   Emulator::scheduler_debug << misc::fmt(
@@ -680,14 +707,26 @@ void ComputeUnit::UnmapWorkGroup(WorkGroup* work_group) {
   Gpu* gpu = getGpu();
 
   // Add work group register access statistics to compute unit
-  num_sreg_reads += work_group->getSregReadCount();
-  num_sreg_writes += work_group->getSregWriteCount();
-  num_vreg_reads += work_group->getVregReadCount();
-  num_vreg_writes += work_group->getVregWriteCount();
+  stats.num_sreg_reads_ += work_group->getSregReadCount();
+  stats.num_sreg_writes_ += work_group->getSregWriteCount();
+  stats.num_vreg_reads_ += work_group->getVregReadCount();
+  stats.num_vreg_writes_ += work_group->getVregWriteCount();
 
   // Remove the work group from the list
   assert(work_groups.size() > 0);
   RemoveWorkGroup(work_group);
+
+  // Update info if statistics enables
+  if (!Timing::statistics_prefix.empty()) {
+    auto stats = getWorkgroupStatsById(work_group->id_in_compute_unit);
+    if (stats) {
+      stats->setCycle(Timing::getInstance()->getCycle(), EVENT_UNMAPPED);
+    }
+    workgroup_stats << work_group->getId() << ": " << *stats;
+
+    // Clean up
+    workgroup_stats_map.erase(work_group->id_in_compute_unit);
+  }
 
   // Unmap wavefronts from instruction buffer
   work_group->wavefront_pool->UnmapWavefronts(work_group);
@@ -773,43 +812,6 @@ void ComputeUnit::Run() {
   // Issue from the active issue buffer
   Issue(fetch_buffers[active_issue_buffer].get());
 
-  Timing::trace << misc::fmt("CU[%d]\n", getIndex());
-  for (auto& fetch_buffer : fetch_buffers) {
-    if (fetch_buffer->getId() == active_issue_buffer)
-      Timing::trace << "  "
-                    << "*";
-    else
-      Timing::trace << "  "
-                    << "_";
-
-    Timing::trace << "  "
-                  << misc::fmt("%d uop in FetchBuf[%d]: \t",
-                               fetch_buffer->getSize(), fetch_buffer->getId());
-    for (auto it = fetch_buffer->begin(), e = fetch_buffer->end(); it != e;
-         ++it) {
-      auto uop = it->get();
-      Timing::trace << "  " << misc::fmt("%lld %s, ", uop->getIdInComputeUnit(),
-                                         uop->getInstruction()->getName());
-    }
-    Timing::trace << "  " << misc::fmt("\n");
-  }
-
-  // SIMDs
-  for (auto& simd_unit : simd_units)
-    Timing::trace << "  " << simd_unit->getStatus();
-
-  // Vector memory
-  Timing::trace << "  " << vector_memory_unit.getStatus();
-
-  // LDS unit
-  Timing::trace << "  " << lds_unit.getStatus();
-
-  // Scalar unit
-  Timing::trace << "  " << scalar_unit.getStatus();
-
-  // Branch unit
-  Timing::trace << "  " << branch_unit.getStatus();
-
   // Update visualization in non-active issue buffers
   for (int i = 0; i < (int)simd_units.size(); i++) {
     if (i != active_issue_buffer) {
@@ -828,16 +830,6 @@ void ComputeUnit::Run() {
     for (int i = 0; i < num_wavefront_pools; i++) {
       Fetch(fetch_buffers[i].get(), wavefront_pools[i].get());
     }
-  }
-
-  // Update overlapping counter
-  UpdateAluMemOverlapCounter();
-
-  // Update statistics
-  auto stats = Statistics::getInstance();
-  if (timing->getCycle() % stats->getSamplingInterval() == 0) {
-    // std::cout << "CU" << getIndex() << " : " << timing->getCycle() << "\n";
-    stats->Sampling(this, timing->getCycle());
   }
 }
 
@@ -864,113 +856,4 @@ void ComputeUnit::Dump(std::ostream& os) const {
   os << '\n';
 }
 
-void ComputeUnit::UpdateAluMemOverlapCounter() {
-  // Check if ALU and MEM instructions overlap in this cycle
-  bool isAluUnitActive = false;
-  bool isMemUnitActive = false;
-
-  // SIMDs
-  for (auto& simd_unit : simd_units) isAluUnitActive |= simd_unit->isActive();
-
-  // Vector memory
-  isMemUnitActive |= vector_memory_unit.isActive();
-
-  // LDS unit
-  isMemUnitActive |= lds_unit.isActive();
-
-  // FIXME: Scalar unit can process both ALU and MEM instructions
-  isAluUnitActive |= scalar_unit.isActive();
-
-  // Branch unit
-  isAluUnitActive |= branch_unit.isActive();
-
-  // OVerlap if both kinds have activity
-  if (isAluUnitActive && isMemUnitActive) num_alu_mem_overlap_cycles++;
-}
-
-std::string ComputeUnit::getUtilization() {
-  std::string util =
-      "Utilization:\t Active or Stall / Idle / Active Only / Active and "
-      "Stall "
-      "/ Stall Only \n";
-
-  // SIMDs
-  for (auto& simd_unit : simd_units) {
-    util += simd_unit->getUtilization("SIMD");
-  }
-
-  // Vector memory
-  util += vector_memory_unit.getUtilization("VMem");
-
-  // LDS unit
-  util += lds_unit.getUtilization("LDS");
-
-  // Scalar unit
-  util += scalar_unit.getUtilization("Scalar");
-
-  // Branch unit
-  util += branch_unit.getUtilization("Branch");
-
-  util +=
-      "\nCounter:\t Total / Active or Stall / Idle / Active Only / Active "
-      "and "
-      "Stall / Stall Only\n";
-
-  // SIMD units
-  for (auto& simd_unit : simd_units) {
-    util += simd_unit->getCounter("SIMD");
-  }
-
-  // Vector memory
-  util += vector_memory_unit.getCounter("VMem");
-
-  // LDS unit
-  util += lds_unit.getCounter("LDS");
-
-  // Scalar unit
-  util += scalar_unit.getCounter("Scalar");
-
-  // Branch unit
-  util += branch_unit.getCounter("Branch");
-
-  util += "\n";
-
-  return util;
-}
-
-std::string ComputeUnit::getInstMetrics() {
-  std::string instMetrics = "Cycles.EU:\t Avg \t Min \t Max\n";
-  instMetrics += misc::fmt(
-      "Cycles.SIMD:\t %.4g \t %lld \t %lld\n",
-      (double)sum_cycle_simd_instructions / (double)num_simd_instructions,
-      min_cycle_simd_instructions, max_cycle_simd_instructions);
-  instMetrics += misc::fmt("Cycles.VMem:\t %.4g \t %lld \t %lld\n",
-                           (double)sum_cycle_vector_memory_instructions /
-                               (double)num_lds_instructions,
-                           min_cycle_vector_memory_instructions,
-                           max_cycle_vector_memory_instructions);
-  instMetrics += misc::fmt(
-      "Cycles.LDS:\t %.4g \t %lld \t %lld\n",
-      (double)sum_cycle_lds_instructions / (double)num_lds_instructions,
-      min_cycle_lds_instructions, max_cycle_lds_instructions);
-  instMetrics += misc::fmt("Cycles.SALU:\t %.4g \t %lld \t %lld\n",
-                           (double)sum_cycle_scalar_alu_instructions /
-                               (double)num_scalar_alu_instructions,
-                           min_cycle_scalar_alu_instructions,
-                           max_cycle_scalar_alu_instructions);
-  instMetrics += misc::fmt("Cycles.SMem:\t %.4g \t %lld \t %lld\n",
-                           (double)sum_cycle_scalar_memory_instructions /
-                               (double)num_scalar_memory_instructions,
-                           min_cycle_scalar_memory_instructions,
-                           max_cycle_scalar_memory_instructions);
-  instMetrics += misc::fmt(
-      "Cycles.Branch:\t %.4g \t %lld \t %lld\n",
-      (double)sum_cycle_branch_instructions / (double)num_branch_instructions,
-      min_cycle_branch_instructions, max_cycle_branch_instructions);
-  instMetrics += misc::fmt("\n");
-
-  instMetrics += "\n";
-
-  return instMetrics;
-}
 }  // Namespace SI

@@ -102,7 +102,7 @@ class BranchUnit : public ExecutionUnit {
   void Decode();
 
   /// Run the actions occurring in one cycle
-  void Run();
+  void Run() override;
 
   //
   // Statistics
@@ -138,7 +138,7 @@ class BranchUnit : public ExecutionUnit {
   /// Return the current size of the write buffer
   unsigned getWriteBufferSize() { return write_buffer.size(); };
 
-  std::string getStatus() const;
+  std::string getStatus() const override;
 };
 }
 

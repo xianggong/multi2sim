@@ -201,6 +201,9 @@ void Instruction::DumpOperandSeries(std::ostream& os, int start, int end) {
         case 240:
           os << "0.5";
           break;
+        case 241:
+          os << "-0.5";
+          break;
         case 242:
           os << "1.0";
           break;

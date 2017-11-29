@@ -26,16 +26,15 @@
 #include <memory/Mmu.h>
 
 #include "ComputeUnit.h"
+#include "Statistics.h"
 
 namespace SI {
 
 /// Class representing a Southern Islands GPU device.
-class Gpu
-{
-public:
+class Gpu {
+ public:
   /// Enumeration depciting the various allocation granularities
-  enum RegisterAllocationGranularity
-  {
+  enum RegisterAllocationGranularity {
     RegisterAllocationInvalid = 0, /* For invalid user input */
     RegisterAllocationWavefront,
     RegisterAllocationWorkGroup
@@ -44,7 +43,7 @@ public:
   /// String map depciting the various allocation granularities
   static const misc::StringMap register_allocation_granularity_map;
 
-private:
+ private:
   //
   // Class members
   //
@@ -60,7 +59,7 @@ private:
 
   // Granularity of the register allocation
   RegisterAllocationGranularity register_allocation_granularity =
-    RegisterAllocationInvalid;
+      RegisterAllocationInvalid;
 
   /// Number of work groups allowed in a wavefront pool
   int work_groups_per_wavefront_pool = 0;
@@ -71,7 +70,10 @@ private:
   /// Mapped NDRange to the GPU
   NDRange* mapped_ndrange = nullptr;
 
-public:
+  // Statistics
+  std::map<unsigned, std::unique_ptr<class CycleStats>> ndrange_stats;
+
+ public:
   //
   // Static members
   //
@@ -85,7 +87,6 @@ public:
   //
   // Configuration
   //
-
 
   //
   // Class members
@@ -110,15 +111,13 @@ public:
   void RemoveFromAvailableComputeUnits(ComputeUnit* compute_unit);
 
   /// Return the compute unit with the given index.
-  ComputeUnit* getComputeUnit(int index) const
-  {
+  ComputeUnit* getComputeUnit(int index) const {
     assert(misc::inRange(index, 0, compute_units.size() - 1));
     return compute_units[index].get();
   }
 
   /// Return the number of work groups per compute unit
-  int getWorkGroupsPerComputeUnit() const
-  {
+  int getWorkGroupsPerComputeUnit() const {
     return work_groups_per_compute_unit;
   }
 
@@ -138,26 +137,22 @@ public:
                                          int local_memory_per_work_group);
 
   /// Return an iterator to the first compute unit
-  std::vector<std::unique_ptr<ComputeUnit>>::iterator getComputeUnitsBegin()
-  {
+  std::vector<std::unique_ptr<ComputeUnit>>::iterator getComputeUnitsBegin() {
     return compute_units.begin();
   }
 
   /// Return a past-the-end iterator to the list of compute units
-  std::vector<std::unique_ptr<ComputeUnit>>::iterator getComputeUnitsEnd()
-  {
+  std::vector<std::unique_ptr<ComputeUnit>>::iterator getComputeUnitsEnd() {
     return compute_units.end();
   }
 
   /// Return an iterator to the first available compute unit
-  std::list<ComputeUnit*>::iterator getAvailableComputeUnitsBegin()
-  {
+  std::list<ComputeUnit*>::iterator getAvailableComputeUnitsBegin() {
     return available_compute_units.begin();
   }
 
   /// Return a past-the-end iterator to the list of compute units
-  std::list<ComputeUnit*>::iterator getAvailableComputeUnitsEnd()
-  {
+  std::list<ComputeUnit*>::iterator getAvailableComputeUnitsEnd() {
     return available_compute_units.end();
   }
 
@@ -169,6 +164,21 @@ public:
 
   /// Getter for the mapped NDRange of the GPU
   NDRange* getNDRange() const { return mapped_ndrange; }
+
+  /// Getter for ndrange_stats
+  class CycleStats* getNDRangeStatsById(unsigned ndrange_id) {
+    auto it = ndrange_stats.find(ndrange_id);
+    if (it != ndrange_stats.end()) {
+      return it->second.get();
+    }
+    return nullptr;
+  }
+
+  /// Setter for ndrage_stats
+  class CycleStats* addNDRangeStats(unsigned ndrange_id) {
+    ndrange_stats[ndrange_id] = misc::new_unique<class CycleStats>();
+    return ndrange_stats[ndrange_id].get();
+  }
 };
 }
 

@@ -118,6 +118,9 @@ class Timing : public comm::Timing {
   // Output for m2s visualization tool
   static misc::Debug m2svis;
 
+  // Prefix for statistic files
+  static std::string statistics_prefix;
+
   //
   // Class members
   //

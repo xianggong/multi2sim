@@ -43,7 +43,7 @@ void SimdUnit::Run() {
   SimdUnit::Execute();
   SimdUnit::Decode();
 
-  SimdUnit::updateCounter();
+  SimdUnit::updateCounter("SIMD");
 }
 
 std::string SimdUnit::getStatus() const {
@@ -96,7 +96,7 @@ bool SimdUnit::isValidUop(Uop* uop) const {
 void SimdUnit::Issue(std::unique_ptr<Uop> uop) {
   // One more instruction of this kind
   ComputeUnit* compute_unit = getComputeUnit();
-  compute_unit->num_simd_instructions++;
+  compute_unit->stats.num_simd_insts_++;
 
   // Issue it
   ExecutionUnit::Issue(std::move(uop));
@@ -142,19 +142,7 @@ void SimdUnit::Complete() {
     WriteStatus = Active;
 
     // Update compute unit statistics
-    compute_unit->sum_cycle_simd_instructions += uop->cycle_length;
-
-    compute_unit->min_cycle_simd_instructions =
-        compute_unit->min_cycle_simd_instructions == 0
-            ? uop->cycle_length
-            : compute_unit->min_cycle_simd_instructions < uop->cycle_length
-                  ? compute_unit->min_cycle_simd_instructions
-                  : uop->cycle_length;
-
-    compute_unit->max_cycle_simd_instructions =
-        compute_unit->max_cycle_simd_instructions > uop->cycle_length
-            ? compute_unit->max_cycle_simd_instructions
-            : uop->cycle_length;
+    statistics.Update(uop, compute_unit->getTiming()->getCycle());
 
     // Trace
     Timing::trace << misc::fmt(
@@ -212,9 +200,9 @@ void SimdUnit::Execute() {
       ExecutionStatus = Stall;
       WriteStatus = Stall;
 
-      count_stall_read++;
-      count_stall_execution++;
-      count_stall_write++;
+      stats.num_stall_read_++;
+      stats.num_stall_execution_++;
+      stats.num_stall_write_++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -242,9 +230,9 @@ void SimdUnit::Execute() {
       ExecutionStatus = Stall;
       WriteStatus = Stall;
 
-      count_stall_read++;
-      count_stall_execution++;
-      count_stall_write++;
+      stats.num_stall_read_++;
+      stats.num_stall_execution_++;
+      stats.num_stall_write_++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -340,7 +328,7 @@ void SimdUnit::Decode() {
       // Update pipeline stage status
       DecodeStatus = Stall;
 
-      count_stall_decode++;
+      stats.num_stall_decode_++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -366,7 +354,7 @@ void SimdUnit::Decode() {
       // Update pipeline stage status
       DecodeStatus = Stall;
 
-      count_stall_decode++;
+      stats.num_stall_decode_++;
 
       // Trace
       Timing::trace << misc::fmt(

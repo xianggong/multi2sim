@@ -23,6 +23,7 @@
 #include <deque>
 #include <memory>
 
+#include "ExecutionUnitStats.h"
 #include "Uop.h"
 
 namespace SI {
@@ -33,6 +34,21 @@ class ComputeUnit;
 // Status of each pipeline stage, for M2SVis
 enum StageStatus { Idle = 1, Active, Stall };
 extern std::map<StageStatus, std::string> stage_status_map;
+
+struct ExecutionUnitCounter {
+  long long num_total_cycles_ = 0;
+  long long num_idle_cycles_ = 0;
+  long long num_active_or_stall_cycles_ = 0;
+  long long num_active_only_cycles_ = 0;
+  long long num_active_and_stall_cycles_ = 0;
+  long long num_stall_only_cycles_ = 0;
+  long long num_stall_issue_ = 0;
+  long long num_stall_decode_ = 0;
+  long long num_stall_read_ = 0;
+  long long num_stall_execution_ = 0;
+  long long num_stall_write_ = 0;
+  long long num_vmem_divergence_ = 0;
+};
 
 /// Abstract base class representing an execution unit where the front-end can
 /// issue instructions. Derived classes are SimdUnit, ScalarUnit, ...
@@ -47,6 +63,9 @@ class ExecutionUnit {
   // Issue buffer absorbing instructions from the front end
   std::deque<std::unique_ptr<Uop>> issue_buffer;
 
+  // Statistics
+  class ExecutionUnitStats statistics;
+
   // Status of pipeline stage
   StageStatus IssueStatus = Idle;
   StageStatus DecodeStatus = Idle;
@@ -58,7 +77,7 @@ class ExecutionUnit {
   void resetStatus();
 
   // Update counter
-  void updateCounter();
+  void updateCounter(std::string exec_unit);
 
  public:
   /// Constructor
@@ -93,21 +112,20 @@ class ExecutionUnit {
   /// Return the compute unit that this execution unit belongs to.
   ComputeUnit* getComputeUnit() const { return compute_unit; }
 
-  // Counters for utilization
-  long long count_total_cycles = 0;
-  long long count_idle_cycles = 0;
-  long long count_active_or_stall_cycles = 0;
-  long long count_active_only_cycles = 0;
-  long long count_active_and_stall_cycles = 0;
-  long long count_stall_only_cycles = 0;
+  // Statistics
+  struct ExecutionUnitCounter stats;
+  struct ExecutionUnitCounter curr_interval_stats;
+  struct ExecutionUnitCounter prev_interval_stats;
 
-  long long count_stall_issue = 0;
-  long long count_stall_decode = 0;
-  long long count_stall_read = 0;
-  long long count_stall_execution = 0;
-  long long count_stall_write = 0;
+  /// Dump statistics
+  void Dump(std::ostream& os = std::cout) const;
 
-  long long count_vmem_divergence = 0;
+  /// Same as Dump()
+  friend std::ostream& operator<<(std::ostream& os,
+                                  const ExecutionUnit& exec_unit) {
+    exec_unit.Dump(os);
+    return os;
+  }
 
   std::string getUtilization(std::string ExecutionUnitName);
   std::string getCounter(std::string ExecutionUnitName);
