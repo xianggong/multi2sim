@@ -78,10 +78,10 @@ class LdsUnit : public ExecutionUnit {
   //
 
   /// Constructor
-  LdsUnit(ComputeUnit* compute_unit) : ExecutionUnit(compute_unit) {}
+  LdsUnit(ComputeUnit* compute_unit) : ExecutionUnit(compute_unit, "LDSH") {}
 
   /// Run the actions occurring in one cycle
-  void Run();
+  void Run() override;
 
   /// Return whether there is room in the issue buffer of the LDS
   /// unit to absorb a new instruction.
@@ -113,9 +113,8 @@ class LdsUnit : public ExecutionUnit {
   /// Statistics
   long long num_instructions;
 
-  std::string getStatus() const;
+  std::string getStatus() const override;
 };
 }
 
 #endif
-  

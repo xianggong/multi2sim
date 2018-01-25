@@ -37,7 +37,7 @@ int LdsUnit::write_buffer_size = 1;
 int LdsUnit::max_in_flight_mem_accesses = 32;
 
 void LdsUnit::Run() {
-  LdsUnit::resetStatus();
+  LdsUnit::PreRun();
 
   // Run pipeline stages in reverse order
   LdsUnit::Complete();
@@ -46,7 +46,7 @@ void LdsUnit::Run() {
   LdsUnit::Read();
   LdsUnit::Decode();
 
-  LdsUnit::updateCounter("LDS ");
+  LdsUnit::PostRun();
 }
 
 std::string LdsUnit::getStatus() const {
@@ -155,8 +155,11 @@ void LdsUnit::Complete() {
     // Update pipeline stage status
     WriteStatus = Active;
 
-    // Update compute unit statistics
-    statistics.Update(uop, compute_unit->getTiming()->getCycle());
+    // Update statistics
+    if (overview_file_)
+      overview_stats_.Complete(uop, compute_unit->getTiming()->getCycle());
+    if (interval_file_)
+      interval_stats_.Complete(uop, compute_unit->getTiming()->getCycle());
 
     // Trace
     Timing::trace << misc::fmt(
@@ -212,7 +215,8 @@ void LdsUnit::Write() {
       // Update pipeline stage status
       WriteStatus = Stall;
 
-      stats.num_stall_write_++;
+      if (overview_file_) overview_stats_.num_stall_write_++;
+      if (interval_file_) interval_stats_.num_stall_write_++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -238,7 +242,8 @@ void LdsUnit::Write() {
       // Update pipeline stage status
       WriteStatus = Stall;
 
-      stats.num_stall_write_++;
+      if (overview_file_) overview_stats_.num_stall_write_++;
+      if (interval_file_) interval_stats_.num_stall_write_++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -322,7 +327,8 @@ void LdsUnit::Mem() {
       // Update pipeline stage status
       ExecutionStatus = Stall;
 
-      stats.num_stall_execution_++;
+      if (overview_file_) overview_stats_.num_stall_execution_++;
+      if (interval_file_) interval_stats_.num_stall_execution_++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -351,7 +357,8 @@ void LdsUnit::Mem() {
       // Update pipeline stage status
       ExecutionStatus = Stall;
 
-      stats.num_stall_execution_++;
+      if (overview_file_) overview_stats_.num_stall_execution_++;
+      if (interval_file_) interval_stats_.num_stall_execution_++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -461,7 +468,8 @@ void LdsUnit::Read() {
       // Update pipeline stage status
       ReadStatus = Stall;
 
-      stats.num_stall_read_++;
+      if (overview_file_) overview_stats_.num_stall_read_++;
+      if (interval_file_) interval_stats_.num_stall_read_++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -484,7 +492,8 @@ void LdsUnit::Read() {
       // Update pipeline stage status
       ReadStatus = Stall;
 
-      stats.num_stall_read_++;
+      if (overview_file_) overview_stats_.num_stall_read_++;
+      if (interval_file_) interval_stats_.num_stall_read_++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -568,7 +577,8 @@ void LdsUnit::Decode() {
       // Update pipeline stage status
       DecodeStatus = Stall;
 
-      stats.num_stall_decode_++;
+      if (overview_file_) overview_stats_.num_stall_decode_++;
+      if (interval_file_) interval_stats_.num_stall_decode_++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -594,7 +604,8 @@ void LdsUnit::Decode() {
       // Update pipeline stage status
       DecodeStatus = Stall;
 
-      stats.num_stall_decode_++;
+      if (overview_file_) overview_stats_.num_stall_decode_++;
+      if (interval_file_) interval_stats_.num_stall_decode_++;
 
       // Trace
       Timing::trace << misc::fmt(

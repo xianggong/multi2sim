@@ -42,7 +42,7 @@ int ScalarUnit::write_latency = 1;
 int ScalarUnit::write_buffer_size = 1;
 
 void ScalarUnit::Run() {
-  resetStatus();
+  ScalarUnit::PreRun();
 
   // Run pipeline stages in reverse order
   ScalarUnit::Complete();
@@ -51,7 +51,7 @@ void ScalarUnit::Run() {
   ScalarUnit::Read();
   ScalarUnit::Decode();
 
-  updateCounter("SCLR");
+  ScalarUnit::PostRun();
 }
 
 std::string ScalarUnit::getStatus() const {
@@ -175,7 +175,8 @@ void ScalarUnit::Complete() {
       // Update pipeline stage status
       WriteStatus = Stall;
 
-      stats.num_stall_write_++;
+      if (overview_file_) overview_stats_.num_stall_write_++;
+      if (interval_file_) interval_stats_.num_stall_write_++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -285,8 +286,11 @@ void ScalarUnit::Complete() {
     // Trace for m2svis
     Timing::m2svis << uop->getLifeCycleInCSV("scalar");
 
-    // Update compute unit statistics
-    statistics.Update(uop, compute_unit->getTiming()->getCycle());
+    // Update statistics
+    if (overview_file_)
+      overview_stats_.Complete(uop, compute_unit->getTiming()->getCycle());
+    if (interval_file_)
+      interval_stats_.Complete(uop, compute_unit->getTiming()->getCycle());
 
     // Trace
     Timing::trace << misc::fmt(
@@ -342,7 +346,8 @@ void ScalarUnit::Write() {
         // Update pipeline status
         WriteStatus = Stall;
 
-        stats.num_stall_write_++;
+        if (overview_file_) overview_stats_.num_stall_write_++;
+        if (interval_file_) interval_stats_.num_stall_write_++;
 
         // Trace
         Timing::trace << misc::fmt(
@@ -368,7 +373,8 @@ void ScalarUnit::Write() {
         // Update pipeline status
         WriteStatus = Stall;
 
-        stats.num_stall_write_++;
+        if (overview_file_) overview_stats_.num_stall_write_++;
+        if (interval_file_) interval_stats_.num_stall_write_++;
 
         // Trace
         Timing::trace << misc::fmt(
@@ -424,7 +430,8 @@ void ScalarUnit::Write() {
         // Update pipeline status
         WriteStatus = Stall;
 
-        stats.num_stall_write_++;
+        if (overview_file_) overview_stats_.num_stall_write_++;
+        if (interval_file_) interval_stats_.num_stall_write_++;
 
         // Trace
         Timing::trace << misc::fmt(
@@ -450,7 +457,8 @@ void ScalarUnit::Write() {
         // Update pipeline status
         WriteStatus = Stall;
 
-        stats.num_stall_write_++;
+        if (overview_file_) overview_stats_.num_stall_write_++;
+        if (interval_file_) interval_stats_.num_stall_write_++;
 
         // Trace
         Timing::trace << misc::fmt(
@@ -530,7 +538,8 @@ void ScalarUnit::Execute() {
       // Update pipeline status
       ExecutionStatus = Stall;
 
-      stats.num_stall_execution_++;
+      if (overview_file_) overview_stats_.num_stall_execution_++;
+      if (interval_file_) interval_stats_.num_stall_execution_++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -556,7 +565,8 @@ void ScalarUnit::Execute() {
       // Update pipeline status
       ExecutionStatus = Stall;
 
-      stats.num_stall_execution_++;
+      if (overview_file_) overview_stats_.num_stall_execution_++;
+      if (interval_file_) interval_stats_.num_stall_execution_++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -681,7 +691,8 @@ void ScalarUnit::Read() {
       // Update pipeline status
       ReadStatus = Stall;
 
-      stats.num_stall_read_++;
+      if (overview_file_) overview_stats_.num_stall_read_++;
+      if (interval_file_) interval_stats_.num_stall_read_++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -707,7 +718,8 @@ void ScalarUnit::Read() {
       // Update pipeline status
       ReadStatus = Stall;
 
-      stats.num_stall_read_++;
+      if (overview_file_) overview_stats_.num_stall_read_++;
+      if (interval_file_) interval_stats_.num_stall_read_++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -782,7 +794,8 @@ void ScalarUnit::Decode() {
       // Update pipeline status
       DecodeStatus = Stall;
 
-      stats.num_stall_decode_++;
+      if (overview_file_) overview_stats_.num_stall_decode_++;
+      if (interval_file_) interval_stats_.num_stall_decode_++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -808,7 +821,8 @@ void ScalarUnit::Decode() {
       // Update pipeline status
       DecodeStatus = Stall;
 
-      stats.num_stall_decode_++;
+      if (overview_file_) overview_stats_.num_stall_decode_++;
+      if (interval_file_) interval_stats_.num_stall_decode_++;
 
       // Trace
       Timing::trace << misc::fmt(

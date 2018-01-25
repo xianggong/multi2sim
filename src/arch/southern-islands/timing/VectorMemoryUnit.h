@@ -78,7 +78,8 @@ class VectorMemoryUnit : public ExecutionUnit {
   //
 
   /// Constructor
-  VectorMemoryUnit(ComputeUnit* compute_unit) : ExecutionUnit(compute_unit) {}
+  VectorMemoryUnit(ComputeUnit* compute_unit)
+      : ExecutionUnit(compute_unit, "VMEM") {}
 
   /// Complete the instruction
   void Complete();
@@ -96,7 +97,7 @@ class VectorMemoryUnit : public ExecutionUnit {
   void Decode();
 
   /// Run the actions occurring in one cycle
-  void Run();
+  void Run() override;
 
   //
   // Statistics
@@ -118,7 +119,7 @@ class VectorMemoryUnit : public ExecutionUnit {
   /// Issue the given instruction into the vector memory unit
   void Issue(std::unique_ptr<Uop> uop) override;
 
-  std::string getStatus() const;
+  std::string getStatus() const override;
 };
 }
 

@@ -37,13 +37,13 @@ int SimdUnit::exec_buffer_size = 2;
 int SimdUnit::read_exec_write_buffer_size = 2;
 
 void SimdUnit::Run() {
-  SimdUnit::resetStatus();
+  SimdUnit::PreRun();
 
   SimdUnit::Complete();
   SimdUnit::Execute();
   SimdUnit::Decode();
 
-  SimdUnit::updateCounter("SIMD");
+  SimdUnit::PostRun();
 }
 
 std::string SimdUnit::getStatus() const {
@@ -141,8 +141,11 @@ void SimdUnit::Complete() {
     // Update pipeline stage status
     WriteStatus = Active;
 
-    // Update compute unit statistics
-    statistics.Update(uop, compute_unit->getTiming()->getCycle());
+    // Update statistics
+    if (overview_file_)
+      overview_stats_.Complete(uop, compute_unit->getTiming()->getCycle());
+    if (interval_file_)
+      interval_stats_.Complete(uop, compute_unit->getTiming()->getCycle());
 
     // Trace
     Timing::trace << misc::fmt(
@@ -200,9 +203,17 @@ void SimdUnit::Execute() {
       ExecutionStatus = Stall;
       WriteStatus = Stall;
 
-      stats.num_stall_read_++;
-      stats.num_stall_execution_++;
-      stats.num_stall_write_++;
+      if (overview_file_) {
+        overview_stats_.num_stall_read_++;
+        overview_stats_.num_stall_execution_++;
+        overview_stats_.num_stall_write_++;
+      }
+
+      if (interval_file_) {
+        interval_stats_.num_stall_read_++;
+        interval_stats_.num_stall_execution_++;
+        interval_stats_.num_stall_write_++;
+      }
 
       // Trace
       Timing::trace << misc::fmt(
@@ -230,9 +241,16 @@ void SimdUnit::Execute() {
       ExecutionStatus = Stall;
       WriteStatus = Stall;
 
-      stats.num_stall_read_++;
-      stats.num_stall_execution_++;
-      stats.num_stall_write_++;
+      if (overview_file_) {
+        overview_stats_.num_stall_read_++;
+        overview_stats_.num_stall_execution_++;
+        overview_stats_.num_stall_write_++;
+      }
+      // if (interval_file_) {
+      //   interval_stats_.num_stall_read_++;
+      //   interval_stats_.num_stall_execution_++;
+      //   interval_stats_.num_stall_write_++;
+      // }
 
       // Trace
       Timing::trace << misc::fmt(
@@ -328,7 +346,8 @@ void SimdUnit::Decode() {
       // Update pipeline stage status
       DecodeStatus = Stall;
 
-      stats.num_stall_decode_++;
+      if (overview_file_) overview_stats_.num_stall_decode_++;
+      if (interval_file_) interval_stats_.num_stall_decode_++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -354,7 +373,8 @@ void SimdUnit::Decode() {
       // Update pipeline stage status
       DecodeStatus = Stall;
 
-      stats.num_stall_decode_++;
+      if (overview_file_) overview_stats_.num_stall_decode_++;
+      if (interval_file_) interval_stats_.num_stall_decode_++;
 
       // Trace
       Timing::trace << misc::fmt(

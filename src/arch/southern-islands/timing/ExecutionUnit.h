@@ -31,28 +31,9 @@ namespace SI {
 // Forward declarations
 class ComputeUnit;
 
-// Status of each pipeline stage, for M2SVis
-enum StageStatus { Idle = 1, Active, Stall };
-extern std::map<StageStatus, std::string> stage_status_map;
-
-struct ExecutionUnitCounter {
-  long long num_total_cycles_ = 0;
-  long long num_idle_cycles_ = 0;
-  long long num_active_or_stall_cycles_ = 0;
-  long long num_active_only_cycles_ = 0;
-  long long num_active_and_stall_cycles_ = 0;
-  long long num_stall_only_cycles_ = 0;
-  long long num_stall_issue_ = 0;
-  long long num_stall_decode_ = 0;
-  long long num_stall_read_ = 0;
-  long long num_stall_execution_ = 0;
-  long long num_stall_write_ = 0;
-  long long num_vmem_divergence_ = 0;
-};
-
 /// Abstract base class representing an execution unit where the front-end can
 /// issue instructions. Derived classes are SimdUnit, ScalarUnit, ...
-class ExecutionUnit {
+class ExecutionUnit : public ExecutionUnitStatisticsModule {
   // Compute unit that it belongs to, assigned in constructor
   ComputeUnit* compute_unit;
 
@@ -63,25 +44,11 @@ class ExecutionUnit {
   // Issue buffer absorbing instructions from the front end
   std::deque<std::unique_ptr<Uop>> issue_buffer;
 
-  // Statistics
-  class ExecutionUnitStats statistics;
-
-  // Status of pipeline stage
-  StageStatus IssueStatus = Idle;
-  StageStatus DecodeStatus = Idle;
-  StageStatus ReadStatus = Idle;
-  StageStatus ExecutionStatus = Idle;
-  StageStatus WriteStatus = Idle;
-
-  // Reset status
-  void resetStatus();
-
-  // Update counter
-  void updateCounter(std::string exec_unit);
-
  public:
   /// Constructor
-  ExecutionUnit(ComputeUnit* compute_unit) : compute_unit(compute_unit) {}
+  ExecutionUnit(ComputeUnit* compute_unit, std::string execution_unit_name)
+      : ExecutionUnitStatisticsModule(compute_unit, execution_unit_name),
+        compute_unit(compute_unit) {}
 
   /// Run the actions occurring in one cycle. This is a pure virtual
   /// function that every execution unit must implement.
@@ -112,25 +79,7 @@ class ExecutionUnit {
   /// Return the compute unit that this execution unit belongs to.
   ComputeUnit* getComputeUnit() const { return compute_unit; }
 
-  // Statistics
-  struct ExecutionUnitCounter stats;
-  struct ExecutionUnitCounter curr_interval_stats;
-  struct ExecutionUnitCounter prev_interval_stats;
-
-  /// Dump statistics
-  void Dump(std::ostream& os = std::cout) const;
-
-  /// Same as Dump()
-  friend std::ostream& operator<<(std::ostream& os,
-                                  const ExecutionUnit& exec_unit) {
-    exec_unit.Dump(os);
-    return os;
-  }
-
-  std::string getUtilization(std::string ExecutionUnitName);
-  std::string getCounter(std::string ExecutionUnitName);
   virtual std::string getStatus() const = 0;
-  bool isActive();
 };
 }
 

@@ -40,15 +40,16 @@ int VectorMemoryUnit::write_latency = 1;
 int VectorMemoryUnit::write_buffer_size = 1;
 
 void VectorMemoryUnit::Run() {
-  resetStatus();
+  VectorMemoryUnit::PreRun();
 
-  Complete();
-  Write();
-  Memory();
-  Read();
-  Decode();
+  // Run pipeline stages in reverse order
+  VectorMemoryUnit::Complete();
+  VectorMemoryUnit::Write();
+  VectorMemoryUnit::Memory();
+  VectorMemoryUnit::Read();
+  VectorMemoryUnit::Decode();
 
-  updateCounter("VMEM");
+  VectorMemoryUnit::PostRun();
 }
 
 std::string VectorMemoryUnit::getStatus() const {
@@ -161,8 +162,11 @@ void VectorMemoryUnit::Complete() {
     // Update pipeline stage status
     WriteStatus = Active;
 
-    // Update compute unit statistics
-    statistics.Update(uop, compute_unit->getTiming()->getCycle());
+    // Update statistics
+    if (overview_file_)
+      overview_stats_.Complete(uop, compute_unit->getTiming()->getCycle());
+    if (interval_file_)
+      interval_stats_.Complete(uop, compute_unit->getTiming()->getCycle());
 
     // Record trace
     Timing::trace << misc::fmt(
@@ -216,7 +220,8 @@ void VectorMemoryUnit::Write() {
       // Update pipeline stage status
       WriteStatus = Stall;
 
-      stats.num_stall_write_++;
+      if (overview_file_) overview_stats_.num_stall_write_++;
+      if (interval_file_) interval_stats_.num_stall_write_++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -242,7 +247,8 @@ void VectorMemoryUnit::Write() {
       // Update pipeline stage status
       WriteStatus = Stall;
 
-      stats.num_stall_write_++;
+      if (overview_file_) overview_stats_.num_stall_write_++;
+      if (interval_file_) interval_stats_.num_stall_write_++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -322,7 +328,8 @@ void VectorMemoryUnit::Memory() {
       // Update pipeline stage status
       ExecutionStatus = Stall;
 
-      stats.num_stall_execution_++;
+      if (overview_file_) overview_stats_.num_stall_execution_++;
+      if (interval_file_) interval_stats_.num_stall_execution_++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -348,7 +355,8 @@ void VectorMemoryUnit::Memory() {
       // Update pipeline stage status
       ExecutionStatus = Stall;
 
-      stats.num_stall_execution_++;
+      if (overview_file_) overview_stats_.num_stall_execution_++;
+      if (interval_file_) interval_stats_.num_stall_execution_++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -441,7 +449,8 @@ void VectorMemoryUnit::Memory() {
     // be re-processed next cycle. Once all work items access
     // the vector cache, the uop will be moved to the write buffer.
     if (!all_work_items_accessed) {
-      stats.num_vmem_divergence_++;
+      if (overview_file_) overview_stats_.num_vmem_divergence_++;
+      if (interval_file_) interval_stats_.num_vmem_divergence_++;
       continue;
     }
 
@@ -503,7 +512,8 @@ void VectorMemoryUnit::Read() {
       // Update pipeline stage status
       ReadStatus = Stall;
 
-      stats.num_stall_read_++;
+      if (overview_file_) overview_stats_.num_stall_read_++;
+      if (interval_file_) interval_stats_.num_stall_read_++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -529,7 +539,8 @@ void VectorMemoryUnit::Read() {
       // Update pipeline stage status
       ReadStatus = Stall;
 
-      stats.num_stall_read_++;
+      if (overview_file_) overview_stats_.num_stall_read_++;
+      if (interval_file_) interval_stats_.num_stall_read_++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -605,7 +616,8 @@ void VectorMemoryUnit::Decode() {
       // Update pipeline stage status
       DecodeStatus = Stall;
 
-      stats.num_stall_decode_++;
+      if (overview_file_) overview_stats_.num_stall_decode_++;
+      if (interval_file_) interval_stats_.num_stall_decode_++;
 
       // Trace
       Timing::trace << misc::fmt(
@@ -631,7 +643,8 @@ void VectorMemoryUnit::Decode() {
       // Update pipeline stage status
       DecodeStatus = Stall;
 
-      stats.num_stall_decode_++;
+      if (overview_file_) overview_stats_.num_stall_decode_++;
+      if (interval_file_) interval_stats_.num_stall_decode_++;
 
       // Trace
       Timing::trace << misc::fmt(

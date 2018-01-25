@@ -79,10 +79,10 @@ class SimdUnit : public ExecutionUnit {
   //
 
   /// Constructor
-  SimdUnit(ComputeUnit* compute_unit) : ExecutionUnit(compute_unit) {}
+  SimdUnit(ComputeUnit* compute_unit) : ExecutionUnit(compute_unit, "SIMD") {}
 
   /// Run the actions occurring in one cycle
-  void Run();
+  void Run() override;
 
   /// Return whether there is room in the issue buffer of the SIMD
   /// unit to absorb a new instruction.
@@ -105,7 +105,7 @@ class SimdUnit : public ExecutionUnit {
   /// Decode stage of the execution pipeline
   void Decode();
 
-  std::string getStatus() const;
+  std::string getStatus() const override;
 };
 }
 

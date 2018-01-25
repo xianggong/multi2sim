@@ -8,6 +8,9 @@ libtiming_a_SOURCES = \
 	ComputeUnit.cc \
 	ComputeUnit.h \
 	\
+	ComputeUnitStatistics.cc \
+	ComputeUnitStatistics.h \
+	\
 	ExecutionUnit.cc \
 	ExecutionUnit.h \
 	\

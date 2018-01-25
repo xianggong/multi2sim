@@ -84,10 +84,10 @@ class ScalarUnit : public ExecutionUnit {
   //
 
   /// Constructor
-  ScalarUnit(ComputeUnit* compute_unit) : ExecutionUnit(compute_unit) {}
+  ScalarUnit(ComputeUnit* compute_unit) : ExecutionUnit(compute_unit, "SCLR") {}
 
   /// Run the actions occurring in one cycle
-  void Run();
+  void Run() override;
 
   /// Return whether there is room in the issue buffer of the scalar
   /// unit to absorb a new instruction.
@@ -123,7 +123,7 @@ class ScalarUnit : public ExecutionUnit {
   /// shared pointer reference to the removed entry.
   std::shared_ptr<Uop> Remove(std::deque<std::shared_ptr<Uop>>::iterator it);
 
-  std::string getStatus() const;
+  std::string getStatus() const override;
 };
 }
 

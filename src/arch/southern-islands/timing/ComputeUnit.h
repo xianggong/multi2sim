@@ -229,7 +229,7 @@ class ComputeUnit {
   // Statistics
   //
 
-  // Statistics container
+  // Statistics container, use id_in_cu as key
   std::map<unsigned, std::unique_ptr<class CycleStats>> workgroup_stats_map;
   std::map<unsigned, std::unique_ptr<class CycleStats>> wavefront_stats_map;
 

@@ -84,7 +84,7 @@ class BranchUnit : public ExecutionUnit {
   //
 
   /// Constructor
-  BranchUnit(ComputeUnit* compute_unit) : ExecutionUnit(compute_unit) {}
+  BranchUnit(ComputeUnit* compute_unit) : ExecutionUnit(compute_unit, "BRCH") {}
 
   /// Complete the instruction
   void Complete();

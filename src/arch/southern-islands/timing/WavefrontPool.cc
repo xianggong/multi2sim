@@ -128,7 +128,7 @@ void WavefrontPool::UnmapWavefronts(WorkGroup* work_group) {
       // Dump
       compute_unit->wavefront_stats << wavefront->getId() << ": " << *stats;
 
-      // Clean up
+      // Remove the stats as soon as the wavefront is unmapped
       compute_unit->wavefront_stats_map.erase(wavefront->id_in_compute_unit);
     }
   }
