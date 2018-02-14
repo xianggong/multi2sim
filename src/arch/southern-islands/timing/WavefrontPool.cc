@@ -17,6 +17,7 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include <arch/southern-islands/emulator/NDRange.h>
 #include <arch/southern-islands/emulator/WorkGroup.h>
 
 #include "ComputeUnit.h"
@@ -118,7 +119,7 @@ void WavefrontPool::UnmapWavefronts(WorkGroup* work_group) {
     wavefront_pool_entries[wf_id_in_wfp]->Clear();
 
     // Update info if statistics enables
-    if (!Timing::statistics_prefix.empty()) {
+    if (Timing::statistics_level >= 1) {
       auto stats =
           compute_unit->getWavefrontStatsById(wavefront->id_in_compute_unit);
       if (stats) {
@@ -126,7 +127,11 @@ void WavefrontPool::UnmapWavefronts(WorkGroup* work_group) {
       }
 
       // Dump
-      compute_unit->wavefront_stats << wavefront->getId() << ": " << *stats;
+      auto ndrange_id = wavefront->getWorkGroup()->getNDRange()->getId();
+      auto workgroup_id = wavefront->getWorkGroup()->getId();
+      auto wavefront_id = wavefront->getId();
+      compute_unit->wavefront_stats << ndrange_id << "," << workgroup_id << ","
+                                    << wavefront_id << "," << *stats;
 
       // Remove the stats as soon as the wavefront is unmapped
       compute_unit->wavefront_stats_map.erase(wavefront->id_in_compute_unit);

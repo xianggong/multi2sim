@@ -48,7 +48,7 @@ Uop::Uop(Wavefront* wavefront, WavefrontPoolEntry* wavefront_pool_entry,
   work_item_info_list.resize(WorkGroup::WavefrontSize);
 
   // Update info if statistics enables
-  if (!Timing::statistics_prefix.empty()) {
+  if (Timing::statistics_level >= 3) {
     auto gpu = compute_unit->getGpu();
 
     // NDRange
@@ -75,7 +75,7 @@ Uop::Uop(Wavefront* wavefront, WavefrontPoolEntry* wavefront_pool_entry,
 
 Uop::~Uop() {
   // Update info if statistics enables
-  if (!Timing::statistics_prefix.empty()) {
+  if (Timing::statistics_level >= 3) {
     auto gpu = compute_unit->getGpu();
 
     // NDRange

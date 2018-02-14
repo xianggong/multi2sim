@@ -48,6 +48,12 @@ Gpu::Gpu() {
     ComputeUnit* compute_unit = compute_units.back().get();
     InsertInAvailableComputeUnits(compute_unit);
   }
+
+  if (Timing::statistics_level >= 1) {
+    ndrange_stats_file.setPath("cu_all.ndrange");
+    ndrange_stats_file << "ndrange_id,len_map,clk_map,clk_unmap,len_uop,clk_"
+                          "uop_begin,clk_uop_end\n";
+  }
 }
 
 ComputeUnit* Gpu::getAvailableComputeUnit() {
@@ -131,7 +137,7 @@ void Gpu::MapNDRange(NDRange* ndrange) {
   mapped_ndrange = ndrange;
 
   // Update info if statistics enables
-  if (!Timing::statistics_prefix.empty()) {
+  if (Timing::statistics_level >= 1) {
     auto stats = addNDRangeStats(ndrange->getId());
     if (stats) {
       stats->setCycle(Timing::getInstance()->getCycle(), EVENT_MAPPED);
@@ -148,18 +154,14 @@ void Gpu::UnmapNDRange(NDRange* ndrange) {
   for (auto& compute_unit : compute_units) compute_unit->Reset();
 
   // Update info if statistics enables
-  if (!Timing::statistics_prefix.empty()) {
+  if (Timing::statistics_level >= 1) {
     auto stats = getNDRangeStatsById(ndrange->getId());
     if (stats) {
       stats->setCycle(Timing::getInstance()->getCycle(), EVENT_UNMAPPED);
 
       // Dump
-      misc::Debug ndrange_stats;
-      std::string ndrange_stats_filename =
-          Timing::statistics_prefix + "_ndrange.stats";
-      ndrange_stats.setPath(ndrange_stats_filename);
-      ndrange_stats << ndrange->getKernelName() << " "
-                    << std::to_string(ndrange->getId()) << ": " << *stats;
+      ndrange_stats_file << ndrange->getKernelName() << "_"
+                         << std::to_string(ndrange->getId()) << "," << *stats;
     }
   }
 }

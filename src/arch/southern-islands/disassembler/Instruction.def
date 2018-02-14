@@ -215,6 +215,14 @@ DEFINST(S_GETREG_B32,
 	0
 )
 
+DEFINST(S_SETREG_IMM32_B32,
+	" s_setreg_imm32_b32    %SDST, %SIMM16",
+	SOPK,
+	21,
+	4,
+	0
+)
+
 /*
  * SOP1
  */
@@ -1782,6 +1790,14 @@ DEFINST(BUFFER_LOAD_SBYTE,
 	" buffer_load_sbyte  %MU_SERIES_VDATA_DST, %VADDR, %SERIES_SRSRC, %MU_MADDR",
 	MUBUF,
 	9,
+	8,
+	0
+)
+
+DEFINST(BUFFER_LOAD_USHORT,
+	" buffer_load_ushort  %MU_SERIES_VDATA_DST, %VADDR, %SERIES_SRSRC, %MU_MADDR",
+	MUBUF,
+	10,
 	8,
 	0
 )

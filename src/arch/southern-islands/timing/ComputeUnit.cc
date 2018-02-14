@@ -68,22 +68,26 @@ ComputeUnit::ComputeUnit(int index, Gpu* gpu)
   for (int i = 0; i < num_wavefront_pools; i++) {
     wavefront_pools[i] = misc::new_unique<WavefrontPool>(i, this);
     fetch_buffers[i] = misc::new_unique<FetchBuffer>(i, this);
-    simd_units[i] = misc::new_unique<SimdUnit>(this);
+    simd_units[i] = misc::new_unique<SimdUnit>(this, i);
   }
 
   // Create statistics file
-  if (!Timing::statistics_prefix.empty()) {
+  if (Timing::statistics_level >= 1) {
     std::string cu_id = std::to_string(getIndex());
 
     // Workgroup
-    std::string workgroup_stats_filename =
-        Timing::statistics_prefix + "_workgroup_cu_" + cu_id + ".stats";
+    std::string workgroup_stats_filename = "cu_" + cu_id + ".workgp";
     workgroup_stats.setPath(workgroup_stats_filename);
+    workgroup_stats
+        << "ndrange_id, wg_id,len_map,clk_map,clk_unmap,len_uop,clk_uop_begin,"
+           "clk_uop_end\n";
 
     // Wavefront
-    std::string wavefront_stats_filename =
-        Timing::statistics_prefix + "_wavefront_cu_" + cu_id + ".stats";
+    std::string wavefront_stats_filename = "cu_" + cu_id + ".waveft";
+
     wavefront_stats.setPath(wavefront_stats_filename);
+    wavefront_stats << "ndrange_id,wg_id,wf_id,len_map,clk_map,clk_unmap,len_"
+                       "uop,clk_uop_begin,clk_uop_end\n";
   }
 }
 
@@ -187,6 +191,25 @@ void ComputeUnit::Issue(FetchBuffer* fetch_buffer) {
     // Update UOP info for m2svis
     uop->cycle_issue_stall++;
 
+    if (branch_unit.isValidUop(uop)) {
+      branch_unit.getIntervalStats()->num_stall_issue_++;
+      branch_unit.getOverviewStats()->num_stall_issue_++;
+    } else if (scalar_unit.isValidUop(uop)) {
+      scalar_unit.getIntervalStats()->num_stall_issue_++;
+      scalar_unit.getOverviewStats()->num_stall_issue_++;
+    } else if (vector_memory_unit.isValidUop(uop)) {
+      vector_memory_unit.getIntervalStats()->num_stall_issue_++;
+      vector_memory_unit.getOverviewStats()->num_stall_issue_++;
+    } else if (lds_unit.isValidUop(uop)) {
+      lds_unit.getIntervalStats()->num_stall_issue_++;
+      lds_unit.getOverviewStats()->num_stall_issue_++;
+    } else if (simd_units[0]->isValidUop(uop)) {
+      // Cannot issue to any simd unit, so issue stall on all of them
+      for (auto& simd_unit : simd_units) {
+        simd_unit.get()->getIntervalStats()->num_stall_issue_++;
+        simd_unit.get()->getOverviewStats()->num_stall_issue_++;
+      }
+    }
     // Trace
     Timing::trace << misc::fmt(
         "si.inst "
@@ -428,7 +451,8 @@ void ComputeUnit::SetInitialPC(WorkGroup* work_group) {
   auto wf_count_per_cu = wg_count_per_cu * wf_count_per_wg;
 
   // Emulator::scheduler_debug
-  //     << misc::fmt("%d wg/cu, %d wf/cu\n", wg_count_per_cu, wf_count_per_cu);
+  //     << misc::fmt("%d wg/cu, %d wf/cu\n", wg_count_per_cu,
+  //     wf_count_per_cu);
 
   int low;
   int high;
@@ -568,7 +592,7 @@ void ComputeUnit::MapWorkGroup(WorkGroup* work_group) {
   AddWorkGroup(work_group);
 
   // Update info if statistics enables
-  if (!Timing::statistics_prefix.empty()) {
+  if (Timing::statistics_level >= 1) {
     auto stats = addWorkgroupStats(work_group->id_in_compute_unit);
     stats->setCycle(timing->getCycle(), EVENT_MAPPED);
   }
@@ -594,7 +618,7 @@ void ComputeUnit::MapWorkGroup(WorkGroup* work_group) {
                                     wavefront_id;
 
     // Update info if statistics enables
-    if (!Timing::statistics_prefix.empty()) {
+    if (Timing::statistics_level >= 1) {
       auto stats = addWavefrontStats(wavefront->id_in_compute_unit);
       stats->setCycle(timing->getCycle(), EVENT_MAPPED);
     }
@@ -717,12 +741,15 @@ void ComputeUnit::UnmapWorkGroup(WorkGroup* work_group) {
   RemoveWorkGroup(work_group);
 
   // Update info if statistics enables
-  if (!Timing::statistics_prefix.empty()) {
+  if (Timing::statistics_level >= 1) {
     auto stats = getWorkgroupStatsById(work_group->id_in_compute_unit);
     if (stats) {
       stats->setCycle(Timing::getInstance()->getCycle(), EVENT_UNMAPPED);
     }
-    workgroup_stats << work_group->getId() << ": " << *stats;
+    auto ndrange_id = work_group->getNDRange()->getId();
+    auto workgroup_id = work_group->getId();
+
+    workgroup_stats << ndrange_id << "," << workgroup_id << "," << *stats;
 
     // Clean up
     workgroup_stats_map.erase(work_group->id_in_compute_unit);

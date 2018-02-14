@@ -79,7 +79,8 @@ class SimdUnit : public ExecutionUnit {
   //
 
   /// Constructor
-  SimdUnit(ComputeUnit* compute_unit) : ExecutionUnit(compute_unit, "SIMD") {}
+  SimdUnit(ComputeUnit* compute_unit, unsigned id)
+      : ExecutionUnit(compute_unit, "SIMD_" + std::to_string(id)) {}
 
   /// Run the actions occurring in one cycle
   void Run() override;

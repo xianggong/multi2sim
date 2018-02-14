@@ -48,9 +48,8 @@ void CycleStats::setCycle(uint64_t cycle, enum CycleEvent event) {
 }
 
 void CycleStats::Dump(std::ostream& os) const {
-  os << misc::fmt("%8ld[%8ld %8ld] %8ld[%8ld %8ld]\n",
-                  cycle_unmapped_ - cycle_mapped_, cycle_mapped_,
-                  cycle_unmapped_, cycle_finish_ - cycle_start_, cycle_start_,
-                  cycle_finish_);
+  os << misc::fmt("%ld,%ld,%ld,%ld,%ld,%ld\n", cycle_unmapped_ - cycle_mapped_,
+                  cycle_mapped_, cycle_unmapped_, cycle_finish_ - cycle_start_,
+                  cycle_start_, cycle_finish_);
 }
 }  // namespace SI

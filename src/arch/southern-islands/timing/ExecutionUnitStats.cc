@@ -29,23 +29,26 @@ std::map<StageStatus, std::string> stage_status_map = {
 
 void ExecutionUnitStatistics::Reset() {
   num_total_cycles_ = 0;
+
   num_idle_cycles_ = 0;
   num_active_or_stall_cycles_ = 0;
   num_active_only_cycles_ = 0;
   num_active_and_stall_cycles_ = 0;
+
   num_stall_only_cycles_ = 0;
   num_stall_issue_ = 0;
   num_stall_decode_ = 0;
   num_stall_read_ = 0;
   num_stall_execution_ = 0;
   num_stall_write_ = 0;
+
   num_vmem_divergence_ = 0;
-  num_inst_issue_ = 0;
-  num_inst_write_ = 0;
+  num_inst_iss_ = 0;
+  num_inst_cpl_ = 0;
+
   len_inst_min_ = 0;
   len_inst_max_ = 0;
   len_inst_sum_ = 0;
-  num_inst_cpl_ = 0;
 }
 
 void ExecutionUnitStatistics::Complete(Uop* uop, long long cycle) {
@@ -55,6 +58,7 @@ void ExecutionUnitStatistics::Complete(Uop* uop, long long cycle) {
   len_inst_min_ = len_inst_min_ == 0 ? uop->cycle_length : min;
   len_inst_max_ = std::max(len_inst_max_, uop->cycle_length);
   num_inst_cpl_++;
+  num_inst_wip_--;
 }
 
 void ExecutionUnitStatistics::DumpUtilization(std::ostream& os) const {
@@ -83,13 +87,14 @@ void ExecutionUnitStatistics::DumpUtilizationField(std::ostream& os) const {
 void ExecutionUnitStatistics::DumpCounter(std::ostream& os) const {
   os << misc::fmt(
       "%lld,%lld,%lld,%lld,%lld,%lld,%lld,%lld,%lld,%lld,%lld,%lld,%lld,%lld,"
-      "%lld,%lld,%lld,",
+      "%lld,%lld,%lld,%lld,%lld,",
       num_total_cycles_, num_active_or_stall_cycles_, num_idle_cycles_,
       num_active_only_cycles_, num_active_and_stall_cycles_,
       num_stall_only_cycles_, num_stall_issue_, num_stall_decode_,
       num_stall_read_, num_stall_execution_, num_stall_write_,
-      num_vmem_divergence_, num_inst_cpl_, len_inst_min_, len_inst_max_,
-      len_inst_sum_, num_inst_cpl_ == 0 ? 0 : len_inst_sum_ / num_inst_cpl_);
+      num_vmem_divergence_, num_inst_iss_, num_inst_wip_, num_inst_cpl_,
+      len_inst_min_, len_inst_max_,
+      num_inst_cpl_ == 0 ? 0 : len_inst_sum_ / num_inst_cpl_, len_inst_sum_);
 }
 
 void ExecutionUnitStatistics::DumpCounterField(std::ostream& os) const {
@@ -106,21 +111,24 @@ void ExecutionUnitStatistics::DumpCounterField(std::ostream& os) const {
   os << "n_stll_exe,";
   os << "n_stll_wrt,";
   os << "n_vmem_dvg,";
+  os << "n_inst_iss,";
+  os << "n_inst_wip,";
   os << "n_inst_cpl,";
   os << "l_inst_min,";
   os << "l_inst_max,";
-  os << "l_inst_sum,";
   os << "l_inst_avg,";
+  os << "l_inst_sum,";
 }
 
 ExecutionUnitStatisticsModule::ExecutionUnitStatisticsModule(
     ComputeUnit* compute_unit, std::string execution_unit_name)
     : compute_unit_(compute_unit), execution_unit_name_(execution_unit_name) {
   // Create output files if statistics enables
-  if (!Timing::statistics_prefix.empty()) {
-    auto overview_path = Timing::statistics_prefix + "_cu_" +
-                         std::to_string(compute_unit->getIndex()) + "_" +
-                         execution_unit_name_ + "_overview.stats";
+  if (Timing::statistics_level >= 1) {
+    sampling_interval_ = Timing::statistics_sampling_cycle;
+
+    auto overview_path = "cu_" + std::to_string(compute_unit->getIndex()) +
+                         "_" + execution_unit_name_ + ".overvw";
     overview_file_.setPath(overview_path);
     overview_stats_.DumpCounterField(overview_file_);
     overview_stats_.DumpUtilizationField(overview_file_);
@@ -128,9 +136,8 @@ ExecutionUnitStatisticsModule::ExecutionUnitStatisticsModule(
     overview_dump_.setStatistics(&overview_stats_);
     overview_dump_.setOutputStream(&overview_file_);
 
-    auto interval_path = Timing::statistics_prefix + "_cu_" +
-                         std::to_string(compute_unit->getIndex()) + "_" +
-                         execution_unit_name_ + "_interval.stats";
+    auto interval_path = "cu_" + std::to_string(compute_unit->getIndex()) +
+                         "_" + execution_unit_name_ + ".intrvl";
     interval_file_.setPath(interval_path);
     interval_stats_.DumpCounterField(interval_file_);
     interval_stats_.DumpUtilizationField(interval_file_);

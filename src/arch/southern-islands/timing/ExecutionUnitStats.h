@@ -52,14 +52,13 @@ class ExecutionUnitStatistics {
   long long num_stall_write_ = 0;
 
   long long num_vmem_divergence_ = 0;
-
-  long long num_inst_issue_ = 0;
-  long long num_inst_write_ = 0;
+  long long num_inst_iss_ = 0;
+  long long num_inst_wip_ = 0;
+  long long num_inst_cpl_ = 0;
 
   long long len_inst_min_ = 0;
   long long len_inst_max_ = 0;
   long long len_inst_sum_ = 0;
-  long long num_inst_cpl_ = 0;
 
  public:
   /// Member functions
@@ -171,6 +170,9 @@ class ExecutionUnitStatisticsModule {
 
   /// Getters
   unsigned getInterval() const { return sampling_interval_; }
+
+  ExecutionUnitStatistics* getIntervalStats() { return &interval_stats_; }
+  ExecutionUnitStatistics* getOverviewStats() { return &overview_stats_; }
 
   /// Setters
   void setInterval(unsigned interval) { sampling_interval_ = interval; }

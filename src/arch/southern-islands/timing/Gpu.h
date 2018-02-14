@@ -72,6 +72,7 @@ class Gpu {
 
   // Statistics
   std::map<unsigned, std::unique_ptr<class CycleStats>> ndrange_stats;
+  misc::Debug ndrange_stats_file;
 
  public:
   //

@@ -355,7 +355,8 @@ void Disassembler::DisassembleBinary(const std::string& path) {
   // Load ELF file
   ELFReader::File file(path);
 
-  std::string arguments = "";
+  std::unordered_map<std::string, std::string> kernel_arguments;
+
   for (int i = 0; i < file.getNumSymbols(); i++) {
     // Get symbol
     ELFReader::Symbol* symbol = file.getSymbol(i);
@@ -365,6 +366,11 @@ void Disassembler::DisassembleBinary(const std::string& path) {
     if (getenv("M2CDISASM")) {
       if (misc::StringPrefix(symbol_name, "__OpenCL_") &&
           misc::StringSuffix(symbol_name, "_metadata")) {
+        // Init entry in hashtable
+        std::string kernel_name =
+            symbol_name.substr(9, symbol_name.length() - 18);
+        std::string arguments = "";
+
         ELFReader::Symbol* metadata_symbol = symbol;
         std::istringstream metadata_stream;
         metadata_symbol->getStream(metadata_stream);
@@ -463,6 +469,8 @@ void Disassembler::DisassembleBinary(const std::string& path) {
 
           token_list.clear();
         }
+
+        kernel_arguments[kernel_name] = arguments;
       }
     }
   }
@@ -539,7 +547,7 @@ void Disassembler::DisassembleBinary(const std::string& path) {
 
         // Arguments
         std::cout << ".args\n";
-        std::cout << arguments;
+        std::cout << kernel_arguments[kernel_name];
 
         std::cout << "\n";
 
@@ -547,9 +555,6 @@ void Disassembler::DisassembleBinary(const std::string& path) {
         std::cout << ".text\n";
         DisassembleBuffer(std::cout, section->getBuffer(), section->getSize());
         std::cout << "\n\n\n";
-
-        arguments = "";
-
       } else {
         // Get kernel name
         std::string kernel_name =

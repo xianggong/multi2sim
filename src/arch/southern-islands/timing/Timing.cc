@@ -50,11 +50,10 @@ std::string Timing::pipeline_debug_file;
 
 misc::Debug Timing::pipeline_debug;
 
-std::string Timing::m2svis_file;
-
 misc::Debug Timing::m2svis;
 
-std::string Timing::statistics_prefix;
+int Timing::statistics_level = 0;
+int Timing::statistics_sampling_cycle = 1000;
 
 const std::string Timing::help_message =
     "The Southern Islands GPU configuration file is a plain text INI file\n"
@@ -641,15 +640,14 @@ void Timing::RegisterOptions() {
       "Reports the details of the SI pipeline units in every "
       "cycle.");
 
-  // Option --si-vis
-  command_line->RegisterString(
-      "--si-vis <file>", m2svis_file,
-      "Reports the details of the SI pipeline units for M2SVIS "
-      "visualization tool.");
+  // Option --si-stats-level
+  command_line->RegisterInt32("--si-stats-level", statistics_level,
+                              "Level of the statistics. 0 == disable, 1 == "
+                              "wf/wg, 2 == sampling, 3 == instruciton");
 
-  // Option --si-stats
-  command_line->RegisterString("--si-stats-prefix <file>", statistics_prefix,
-                               "Prefix for the statistics files.");
+  // Option --si-sampling-cycle
+  command_line->RegisterInt32("--si-sampling-cycle", statistics_sampling_cycle,
+                              "Sampling cycles of the statistics.");
 }
 
 void Timing::ProcessOptions() {
@@ -662,8 +660,24 @@ void Timing::ProcessOptions() {
     // Set the debug file only if this is a detailed simulation
     pipeline_debug.setPath(pipeline_debug_file);
 
-    // Set the m2svis file only if this is a detailed simulation
-    m2svis.setPath(m2svis_file);
+    // Statistics
+    switch (statistics_level) {
+      // Disabled
+      case 0:
+        break;
+      // Wavefront/Workgroup/NDRange
+      case 1:
+        break;
+      // Per Compute Unit Sampling
+      case 2:
+        break;
+      // Every instruction
+      case 3:
+        m2svis.setPath("instruction.instrs");
+        break;
+      default:
+        break;
+    }
 
     // First: parse configuration. This initializes all configuration
     // static variables in class Timing, Gpu, ComputeUnit, ...
@@ -1156,10 +1170,8 @@ bool Timing::Run() {
           int num_cu = gpu->num_compute_units;
           unsigned num_wgs =
               ndrange->getGlobalSize1D() / ndrange->getLocalSize1D();
-          unsigned avg_wgs = (num_wgs + num_cu - 1) / num_cu;
+          unsigned avg_wgs = (num_wgs + num_cu - 1) / num_cu + 1;
 
-          // printf("%d: %lld %d\n", available_compute_unit->getIndex(),
-          // available_compute_unit->num_mapped_work_groups, avg_wgs);
           if (available_compute_unit->stats.num_mapped_work_groups_ >=
               avg_wgs) {
             gpu->RemoveFromAvailableComputeUnits(available_compute_unit);

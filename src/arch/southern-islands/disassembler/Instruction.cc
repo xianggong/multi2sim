@@ -146,7 +146,9 @@ void Instruction::DumpOperand(std::ostream& os, int operand) {
     /* Negative integer constant */
     os << '-' << operand - 192;
   } else if (operand <= 239) {
-    throw Disassembler::Error(misc::fmt("Unused operand code (%d)", operand));
+    // throw Disassembler::Error(misc::fmt("Unused operand code (%d)",
+    // operand));
+    os << "invalid";
   } else if (operand <= 255) {
     os << ssrc_map.MapValue(operand - 240);
   } else if (operand <= 511) {

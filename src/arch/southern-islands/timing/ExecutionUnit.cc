@@ -38,7 +38,9 @@ void ExecutionUnit::Issue(std::unique_ptr<Uop> uop) {
 
   // No need to proceed if statistics is not enabled
   if (!overview_file_ && !interval_file_) return;
-  overview_stats_.num_inst_issue_++;
-  interval_stats_.num_inst_issue_++;
+  overview_stats_.num_inst_iss_++;
+  overview_stats_.num_inst_wip_++;
+  interval_stats_.num_inst_iss_++;
+  interval_stats_.num_inst_wip_++;
 }
 }
