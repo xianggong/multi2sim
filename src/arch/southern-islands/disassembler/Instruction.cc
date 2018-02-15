@@ -146,9 +146,7 @@ void Instruction::DumpOperand(std::ostream& os, int operand) {
     /* Negative integer constant */
     os << '-' << operand - 192;
   } else if (operand <= 239) {
-    // throw Disassembler::Error(misc::fmt("Unused operand code (%d)",
-    // operand));
-    os << "invalid";
+    throw Disassembler::Error(misc::fmt("Unused operand code (%d)", operand));
   } else if (operand <= 255) {
     os << ssrc_map.MapValue(operand - 240);
   } else if (operand <= 511) {
@@ -911,9 +909,14 @@ void Instruction::Decode(const char* buf, unsigned int address) {
 
     /* Some opcodes define a 32-bit literal constant following
      * the instruction */
-    if (bytes.vop2.op == 32) {
-      size = 8;
-      bytes.dword = *(unsigned long long*)buf;
+    switch (bytes.vop2.op) {
+      case 32:  // MADMK
+      case 33:  // MADAK
+        size = 8;
+        bytes.dword = *(unsigned long long*)buf;
+        break;
+      default:
+        break;
     }
   } else if (bytes.vintrp.enc == 0x32) {
     if (!disassembler->getDecTableVintrp(bytes.vintrp.op)) {
