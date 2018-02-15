@@ -281,9 +281,14 @@ void Instruction::DumpSeriesVdata(std::ostream& os, unsigned int vdata,
     case 0:
     case 4:
     case 9:
+    case 10:
+    case 11:
     case 12:
     case 24:
+    case 26:
     case 28:
+    case 48:
+    case 53:
     case 50:
       vdata_end = vdata + 0;
       break;
@@ -300,8 +305,8 @@ void Instruction::DumpSeriesVdata(std::ostream& os, unsigned int vdata,
       vdata_end = vdata + 3;
       break;
     default:
-
-      throw Disassembler::Error("MUBUF/MTBUF opcode not recognized");
+      throw Disassembler::Error(
+          misc::fmt("MUBUF/MTBUF opcode [%d] not recognized.", op));
   }
 
   DumpVectorSeries(os, vdata, vdata_end);

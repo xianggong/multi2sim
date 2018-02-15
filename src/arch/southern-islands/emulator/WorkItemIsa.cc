@@ -6455,6 +6455,12 @@ void WorkItem::ISA_DS_WRITE_B16_Impl(Instruction *instruction) {
 }
 #undef INST
 
+#define INST INST_DS
+void WorkItem::ISA_DS_ADD_RTN_U32_Impl(Instruction *instruction) {
+  ISAUnimplemented(instruction);
+}
+#undef INST
+
 // R = DS[A]; Dword read.
 #define INST INST_DS
 void WorkItem::ISA_DS_READ_B32_Impl(Instruction *instruction) {
@@ -6866,6 +6872,66 @@ void WorkItem::ISA_BUFFER_LOAD_USHORT_Impl(Instruction *instruction) {
 #undef INST
 
 #define INST INST_MUBUF
+void WorkItem::ISA_BUFFER_LOAD_SSHORT_Impl(Instruction *instruction) {
+  assert(!INST.addr64);
+  assert(!INST.glc);
+  assert(!INST.slc);
+  assert(!INST.tfe);
+  assert(!INST.lds);
+
+  BufferDescriptor buffer_descriptor;
+  Instruction::Register value;
+
+  unsigned off_vgpr = 0;
+  unsigned idx_vgpr = 0;
+
+  int bytes_to_read = 2;
+
+  // srsrc is in units of 4 registers
+  ReadBufferResource(INST.srsrc * 4, buffer_descriptor);
+
+  // Figure 8.1 from SI ISA defines address calculation
+  unsigned base = buffer_descriptor.base_addr;
+  unsigned mem_offset = ReadSReg(INST.soffset);
+  unsigned inst_offset = INST.offset;
+  unsigned stride = buffer_descriptor.stride;
+
+  // Table 8.3 from SI ISA
+  if (!INST.idxen && INST.offen) {
+    off_vgpr = ReadVReg(INST.vaddr);
+  } else if (INST.idxen && !INST.offen) {
+    idx_vgpr = ReadVReg(INST.vaddr);
+  } else if (INST.idxen && INST.offen) {
+    idx_vgpr = ReadVReg(INST.vaddr);
+    off_vgpr = ReadVReg(INST.vaddr + 1);
+  }
+
+  /* It wouldn't make sense to have a value for idxen without
+   * having a stride */
+  if (idx_vgpr && !stride)
+    throw misc::Panic("The buffer descriptor is probably invalid");
+
+  unsigned addr = base + mem_offset + inst_offset + off_vgpr +
+                  stride * (idx_vgpr + id_in_wavefront);
+
+  global_mem->Read(addr, bytes_to_read, (char *)&value);
+
+  value.as_int = (int)value.as_byte[0];
+
+  WriteVReg(INST.vdata, value.as_uint);
+
+  // Record last memory access for the detailed simulator.
+  global_memory_access_address = addr;
+  global_memory_access_size = bytes_to_read;
+
+  if (Emulator::isa_debug) {
+    Emulator::isa_debug << misc::fmt("t%d: V%u<=(%u)(%d) ", id, INST.vdata,
+                                     addr, value.as_int);
+  }
+}
+#undef INST
+
+#define INST INST_MUBUF
 void WorkItem::ISA_BUFFER_LOAD_DWORD_Impl(Instruction *instruction) {
   assert(!INST.addr64);
   assert(!INST.glc);
@@ -7056,6 +7122,15 @@ void WorkItem::ISA_BUFFER_STORE_DWORD_Impl(Instruction *instruction) {
     Emulator::isa_debug << misc::fmt("t%d: (%u)<=V%u(%d) ", id, addr,
                                      INST.vdata, value.as_int);
   }
+}
+#undef INST
+
+// Store VDATA dword into SRSRC resource. If GLC flag is set then return
+// previous value from resource to VDATA, otherwise keep VDATA value. Operation
+// is atomic.
+#define INST INST_MUBUF
+void WorkItem::ISA_BUFFER_ATOMIC_SWAP_Impl(Instruction *instruction) {
+  ISAUnimplemented(instruction);
 }
 #undef INST
 
