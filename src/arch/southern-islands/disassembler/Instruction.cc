@@ -288,8 +288,8 @@ void Instruction::DumpSeriesVdata(std::ostream& os, unsigned int vdata,
     case 26:
     case 28:
     case 48:
-    case 53:
     case 50:
+    case 53:
       vdata_end = vdata + 0;
       break;
     case 1:
@@ -606,15 +606,11 @@ void Instruction::Dump(std::ostream& os) const {
       }
       /* S_MEMTIME */
       else if (op == 30) {
-        throw misc::Panic(
-            "S_MEMTIME instruction not "
-            " supported");
+        throw misc::Panic("S_MEMTIME instruction not supported");
       }
       /* S_DCACHE_INV */
       else if (op == 31) {
-        throw misc::Panic(
-            "S_DCACHE_INV instruction "
-            "not supported");
+        throw misc::Panic("S_DCACHE_INV instruction not supported");
       } else {
         throw Disassembler::Error("Invalid smrd opcode");
       }

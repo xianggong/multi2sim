@@ -2651,7 +2651,31 @@ void WorkItem::ISA_V_NOT_B32_Impl(Instruction *instruction) {
 // D.u = position of first 1 in S0 from MSB; D=0xFFFFFFFF if S0==0.
 #define INST INST_VOP1
 void WorkItem::ISA_V_FFBH_U32_Impl(Instruction *instruction) {
-  ISAUnimplemented(instruction);
+  Instruction::Register s0;
+  Instruction::Register result;
+
+  // Load operand from register or as a literal constant.
+  if (INST.src0 == 0xFF)
+    s0.as_uint = INST.lit_cnst;
+  else
+    s0.as_uint = ReadReg(INST.src0);
+
+  result.as_int = -1;
+  for (uint8_t i = 31; i >= 0; i--) {
+    if (((1u << i) & s0.as_uint) != 0) {
+      result.as_int = 31 - i;
+      break;
+    }
+  }
+
+  // Write the results.
+  WriteVReg(INST.vdst, result.as_uint);
+
+  // Print isa debug information.
+  if (Emulator::isa_debug) {
+    Emulator::isa_debug << misc::fmt("t%d: V%u<=(0x%x) ", id, INST.vdst,
+                                     result.as_uint);
+  }
 }
 
 // D.d = FRAC64(S0.d);
