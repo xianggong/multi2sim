@@ -48,8 +48,21 @@ void CycleStats::setCycle(uint64_t cycle, enum CycleEvent event) {
 }
 
 void CycleStats::Dump(std::ostream& os) const {
-  os << misc::fmt("%ld,%ld,%ld,%ld,%ld,%ld\n", cycle_unmapped_ - cycle_mapped_,
-                  cycle_mapped_, cycle_unmapped_, cycle_finish_ - cycle_start_,
-                  cycle_start_, cycle_finish_);
+  os << misc::fmt(
+      "%ld,%ld,%ld,%ld,%ld,%ld,%lld,%lld,%lld,%lld,%lld,%lld,%lld,"
+      "%lld,%lld,%lld,%lld,%lld,%lld,%lld,%lld,%lld,%lld,%lld,%lld,"
+      "%lld,%lld,%lld,%lld,%lld,%lld,%lld,%lld,%lld,%lld,%lld\n",
+      cycle_unmapped_ - cycle_mapped_, cycle_mapped_, cycle_unmapped_,
+      cycle_finish_ - cycle_start_, cycle_start_, cycle_finish_,
+      num_stall_issue_, num_stall_decode_, num_stall_read_,
+      num_stall_execution_, num_stall_write_, brch_num_stall_issue_,
+      brch_num_stall_decode_, brch_num_stall_read_, brch_num_stall_execution_,
+      brch_num_stall_write_, lds_num_stall_issue_, lds_num_stall_decode_,
+      lds_num_stall_read_, lds_num_stall_execution_, lds_num_stall_write_,
+      sclr_num_stall_issue_, sclr_num_stall_decode_, sclr_num_stall_read_,
+      sclr_num_stall_execution_, sclr_num_stall_write_, vmem_num_stall_issue_,
+      vmem_num_stall_decode_, vmem_num_stall_read_, vmem_num_stall_execution_,
+      vmem_num_stall_write_, simd_num_stall_issue_, simd_num_stall_decode_,
+      simd_num_stall_read_, simd_num_stall_execution_, simd_num_stall_write_);
 }
 }  // namespace SI

@@ -237,6 +237,7 @@ class ComputeUnit {
   misc::Debug workgroup_stats;
   misc::Debug wavefront_stats;
 
+  static long long cycle_map_first_wg;
   class ComputeUnitStats stats;
 
   /// Getter for workgroup_stats_map
@@ -268,6 +269,12 @@ class ComputeUnit {
     wavefront_stats_map[wavefront_id] = misc::new_unique<class CycleStats>();
     return wavefront_stats_map[wavefront_id].get();
   }
+
+  /// Flush workgroup stats
+  void FlushWorkgroupStats();
+
+  /// Flush wavefront stats
+  void FlushWavefrontStats();
 };
 }
 

@@ -82,6 +82,11 @@ class Gpu {
   // Maximum number of cycles to simulate
   static long long max_cycles;
 
+  // Maximum wavefront ratio to simulate
+  static double max_wavefront_ratio;
+  static unsigned max_wavefront_count;
+  static unsigned count_completed_wavefronts;
+
   // Number of compute units
   static int num_compute_units;
 
@@ -180,6 +185,9 @@ class Gpu {
     ndrange_stats[ndrange_id] = misc::new_unique<class CycleStats>();
     return ndrange_stats[ndrange_id].get();
   }
+
+  /// Flush statistics info
+  void FlushStats(NDRange* ndrange);
 };
 }
 

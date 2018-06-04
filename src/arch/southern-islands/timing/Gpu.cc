@@ -19,6 +19,7 @@
 
 #include <arch/southern-islands/emulator/Emulator.h>
 #include <arch/southern-islands/emulator/NDRange.h>
+#include <algorithm>
 
 #include "Gpu.h"
 #include "Timing.h"
@@ -28,6 +29,10 @@ namespace SI {
 // Static variables
 int Gpu::num_compute_units = 32;
 long long Gpu::max_cycles = 0;
+
+double Gpu::max_wavefront_ratio = 1.0f;
+unsigned Gpu::max_wavefront_count = 0;
+unsigned Gpu::count_completed_wavefronts = 0;
 
 // String map of the argument's access type
 const misc::StringMap Gpu::register_allocation_granularity_map = {
@@ -125,6 +130,7 @@ void Gpu::MapNDRange(NDRange* ndrange) {
 
   assert(work_groups_per_wavefront_pool <=
          ComputeUnit::max_work_groups_per_wavefront_pool);
+
   // Debug info
   Emulator::scheduler_debug << misc::fmt(
       "NDRange %d calculations:\n"
@@ -135,6 +141,20 @@ void Gpu::MapNDRange(NDRange* ndrange) {
 
   // Map ndrange
   mapped_ndrange = ndrange;
+
+  // Calculate max wavefronts to run in this NDRange
+  auto all_wavefront_count = (ndrange->getGlobalSize1D() + 64 - 1) / 64;
+  max_wavefront_count =
+      static_cast<unsigned>(max_wavefront_ratio * all_wavefront_count);
+
+  // Allow at least 1 wf/cu
+  max_wavefront_count =
+      std::max(max_wavefront_count, static_cast<unsigned>(num_compute_units));
+
+  Emulator::scheduler_debug
+      << misc::fmt("Count max wavefront: %d\n", max_wavefront_count);
+  Emulator::scheduler_debug
+      << misc::fmt("Count all wavefront: %d\n", all_wavefront_count);
 
   // Update info if statistics enables
   if (Timing::statistics_level >= 1) {
@@ -154,16 +174,7 @@ void Gpu::UnmapNDRange(NDRange* ndrange) {
   for (auto& compute_unit : compute_units) compute_unit->Reset();
 
   // Update info if statistics enables
-  if (Timing::statistics_level >= 1) {
-    auto stats = getNDRangeStatsById(ndrange->getId());
-    if (stats) {
-      stats->setCycle(Timing::getInstance()->getCycle(), EVENT_UNMAPPED);
-
-      // Dump
-      ndrange_stats_file << ndrange->getKernelName() << "_"
-                         << std::to_string(ndrange->getId()) << "," << *stats;
-    }
-  }
+  FlushStats(ndrange);
 }
 
 void Gpu::CalcGetWorkGroupsPerWavefrontPool(int work_items_per_work_group,
@@ -181,10 +192,10 @@ void Gpu::CalcGetWorkGroupsPerWavefrontPool(int work_items_per_work_group,
       ComputeUnit::max_wavefronts_per_wavefront_pool /
       wavefronts_per_work_group;
 
-  Emulator::scheduler_debug << misc::fmt("work_items_per_work_group: %d\n",
-                                         work_items_per_work_group);
-  Emulator::scheduler_debug << misc::fmt("wavefronts_per_work_group: %d\n",
-                                         wavefronts_per_work_group);
+  Emulator::scheduler_debug
+      << misc::fmt("\tworkitems/workgroup: %d\n", work_items_per_work_group);
+  Emulator::scheduler_debug
+      << misc::fmt("\twavefronts/workgroup: %d\n", wavefronts_per_work_group);
 
   // Get maximum number of work-groups per SIMD as limited by the number
   // of available registers, given the number of registers used per
@@ -205,15 +216,14 @@ void Gpu::CalcGetWorkGroupsPerWavefrontPool(int work_items_per_work_group,
     scalar_registers_per_work_group =
         scalar_registers_per_wavefront * wavefronts_per_work_group;
   }
-  Emulator::scheduler_debug << misc::fmt("vector_registers_per_work_item: %d\n",
-                                         vector_registers_per_work_item);
-  Emulator::scheduler_debug << misc::fmt("scalar_registers_per_wavefront: %d\n",
-                                         scalar_registers_per_wavefront);
-  Emulator::scheduler_debug << misc::fmt(
-      "vector_registers_per_work_group: %d\n", vector_registers_per_work_group);
-
-  Emulator::scheduler_debug << misc::fmt(
-      "scalar_registers_per_work_group: %d\n", scalar_registers_per_work_group);
+  Emulator::scheduler_debug
+      << misc::fmt("\tvreg/workitem: %d\n", vector_registers_per_work_item);
+  Emulator::scheduler_debug
+      << misc::fmt("\tsreg/wavefront: %d\n", scalar_registers_per_wavefront);
+  Emulator::scheduler_debug
+      << misc::fmt("\tvreg/workgroup: %d\n", vector_registers_per_work_group);
+  Emulator::scheduler_debug
+      << misc::fmt("\tsreg/workgroup: %d\n", scalar_registers_per_work_group);
 
   int max_work_groups_limited_by_num_vector_registers =
       vector_registers_per_work_group
@@ -229,8 +239,6 @@ void Gpu::CalcGetWorkGroupsPerWavefrontPool(int work_items_per_work_group,
       std::min(max_work_groups_limited_by_num_scalar_registers,
                max_work_groups_limited_by_num_vector_registers);
 
-  Emulator::scheduler_debug << misc::fmt("local_memory_per_work_group: %d\n",
-                                         local_memory_per_work_group);
   // Get maximum number of work-groups per SIMD as limited by the
   // amount of available local memory, given the local memory used
   // by each work-group in the NDRange
@@ -241,8 +249,8 @@ void Gpu::CalcGetWorkGroupsPerWavefrontPool(int work_items_per_work_group,
           ? ComputeUnit::lds_size / local_memory_per_work_group
           : ComputeUnit::max_work_groups_per_wavefront_pool;
 
-  Emulator::scheduler_debug << misc::fmt("local_memory_per_work_group: %d\n",
-                                         local_memory_per_work_group);
+  Emulator::scheduler_debug
+      << misc::fmt("\tlds/workgroup: %d\n", local_memory_per_work_group);
 
   // Based on the limits above, calculate the actual limit of work-groups
   // per SIMD.
@@ -256,31 +264,29 @@ void Gpu::CalcGetWorkGroupsPerWavefrontPool(int work_items_per_work_group,
   work_groups_per_wavefront_pool = std::min(
       work_groups_per_wavefront_pool, max_work_groups_limited_by_local_memory);
 
+  Emulator::scheduler_debug << "\n\tMax workgroup, limited by\n";
+  Emulator::scheduler_debug << misc::fmt(
+      "\tmax_wavefronts: %d\n", max_work_groups_limited_by_max_wavefronts);
   Emulator::scheduler_debug
-      << misc::fmt("max_work_groups_limited_by_max_wavefronts: %d\n",
-                   max_work_groups_limited_by_max_wavefronts);
-  Emulator::scheduler_debug
-      << misc::fmt("max_work_groups_limited_by_num_scalar_registers: %d\n",
+      << misc::fmt("\tnum_scalar_registers: %d\n",
                    max_work_groups_limited_by_num_scalar_registers);
   Emulator::scheduler_debug
-      << misc::fmt("max_work_groups_limited_by_num_vector_registers: %d\n",
+      << misc::fmt("\tnum_vector_registers: %d\n",
                    max_work_groups_limited_by_num_vector_registers);
-  Emulator::scheduler_debug
-      << misc::fmt("max_work_groups_limited_by_num_registers: %d\n",
-                   max_work_groups_limited_by_num_registers);
-  Emulator::scheduler_debug
-      << misc::fmt("max_work_groups_limited_by_local_memory: %d\n",
-                   max_work_groups_limited_by_local_memory);
+  Emulator::scheduler_debug << misc::fmt(
+      "\tnum_registers: %d\n", max_work_groups_limited_by_num_registers);
+  Emulator::scheduler_debug << misc::fmt(
+      "\tlocal_memory: %d\n", max_work_groups_limited_by_local_memory);
 
   if (work_groups_per_wavefront_pool ==
       max_work_groups_limited_by_max_wavefronts) {
-    Emulator::scheduler_debug << "WG is limited by max wavefronts\n";
+    Emulator::scheduler_debug << "\tWG is limited by max wavefronts\n";
   } else if (work_groups_per_wavefront_pool ==
              max_work_groups_limited_by_local_memory) {
-    Emulator::scheduler_debug << "WG is limited by local memory\n";
+    Emulator::scheduler_debug << "\tWG is limited by local memory\n";
   } else if (work_groups_per_wavefront_pool ==
              max_work_groups_limited_by_num_registers) {
-    Emulator::scheduler_debug << "WG is limited by number of registers\n";
+    Emulator::scheduler_debug << "\tWG is limited by number of registers\n";
   }
 }
 
@@ -296,6 +302,19 @@ void Gpu::Run() {
     }
   } else {
     for (auto& compute_unit : compute_units) compute_unit->Run();
+  }
+}
+
+void Gpu::FlushStats(NDRange* ndrange) {
+  if (Timing::statistics_level >= 1) {
+    auto stats = getNDRangeStatsById(ndrange->getId());
+    if (stats) {
+      stats->setCycle(Timing::getInstance()->getCycle(), EVENT_UNMAPPED);
+
+      // Dump
+      ndrange_stats_file << ndrange->getKernelName() << "_"
+                         << std::to_string(ndrange->getId()) << "," << *stats;
+    }
   }
 }
 }

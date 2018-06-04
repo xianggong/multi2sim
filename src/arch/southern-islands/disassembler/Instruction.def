@@ -717,7 +717,7 @@ DEFINST(V_MAC_F32,
 )
 
 DEFINST(V_MADMK_F32,
-	" v_madmk_f32   %VDST, %SRC0, %VOP2_LIT, %VSRC1",
+	" v_madmk_f32   %VDST, %SRC0, %VSRC1, %VOP2_LIT",
 	VOP2,
 	32,
 	8,
@@ -725,7 +725,7 @@ DEFINST(V_MADMK_F32,
 )
 
 DEFINST(V_MADAK_F32,
-	" v_madak_f32   %VDST, %SRC0, %VOP2_LIT, %VSRC1",
+	" v_madak_f32   %VDST, %SRC0, %VSRC1, %VOP2_LIT",
 	VOP2,
 	33,
 	8,

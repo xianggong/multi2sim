@@ -20,6 +20,9 @@
 #ifndef ARCH_SOUTHERN_ISLANDS_TIMING_WAVEFRONT_POOL_H
 #define ARCH_SOUTHERN_ISLANDS_TIMING_WAVEFRONT_POOL_H
 
+#include <memory>
+#include <vector>
+
 namespace SI {
 
 // Forward declarations

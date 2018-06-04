@@ -254,6 +254,13 @@ void ScalarUnit::Complete() {
       uop->getWavefrontPoolEntry()->wavefront_finished = true;
       work_group->incWavefrontsCompletedTiming();
 
+      // Global count of completed wavefronts
+      Gpu::count_completed_wavefronts++;
+      printf("Complete WF %d in CU %d, %d completed globally\n",
+             uop->getWavefront()->getIdInComputeUnit(),
+             uop->getComputeUnit()->getIndex(),
+             Gpu::count_completed_wavefronts);
+
       // Set the work group as finished with timing simulation
       // if all the wavefonts in the work group are complete
       if (work_group->getWavefrontsCompletedTiming() ==
@@ -300,6 +307,7 @@ void ScalarUnit::Complete() {
         uop->getIdInComputeUnit(), compute_unit->getIndex());
 
     // Access complete, remove the uop from the queue
+    auto uop_complete = std::move(*it);
     it = write_buffer.erase(it);
     assert(uop->getWorkGroup()->inflight_instructions > 0);
     uop->getWorkGroup()->inflight_instructions--;
@@ -307,6 +315,36 @@ void ScalarUnit::Complete() {
     // Statistics
     num_instructions++;
     gpu->last_complete_cycle = compute_unit->getTiming()->getCycle();
+
+    // Update info if statistics enables
+    if (Timing::statistics_level >= 2) {
+      auto gpu = compute_unit->getGpu();
+      if (gpu) {
+        // NDRange
+        auto ndrange_stats =
+            gpu->getNDRangeStatsById(uop_complete->getNDRangeId());
+        if (ndrange_stats) {
+          ndrange_stats->setCycle(Timing::getInstance()->getCycle(),
+                                  EVENT_FINISH);
+        }
+
+        // Workgroup
+        auto workgroup_stats = compute_unit->getWorkgroupStatsById(
+            uop_complete->getWorkGroup()->id_in_compute_unit);
+        if (workgroup_stats) {
+          workgroup_stats->setCycle(Timing::getInstance()->getCycle(),
+                                    EVENT_FINISH);
+        }
+
+        // Wavefront
+        auto wavefront_stats = compute_unit->getWavefrontStatsById(
+            uop_complete->getWavefront()->id_in_compute_unit);
+        if (wavefront_stats) {
+          wavefront_stats->setCycle(Timing::getInstance()->getCycle(),
+                                    EVENT_FINISH);
+        }
+      }
+    }
   }
 }
 
@@ -343,6 +381,16 @@ void ScalarUnit::Write() {
         // Update write stall
         uop->cycle_write_stall++;
 
+        // Per WF stats
+        unsigned wf_id = uop->getWavefront()->getIdInComputeUnit();
+        compute_unit->getWavefrontStatsById(wf_id)->num_stall_write_++;
+        compute_unit->getWavefrontStatsById(wf_id)->sclr_num_stall_write_++;
+
+        // Per WG stats
+        unsigned wg_id = uop->getWorkGroup()->getIdInComputeUnit();
+        compute_unit->getWorkgroupStatsById(wg_id)->num_stall_write_++;
+        compute_unit->getWorkgroupStatsById(wg_id)->sclr_num_stall_write_++;
+
         // Update pipeline status
         WriteStatus = Stall;
 
@@ -369,6 +417,16 @@ void ScalarUnit::Write() {
       if ((int)write_buffer.size() == write_buffer_size) {
         // Update write stall
         uop->cycle_write_stall++;
+
+        // Per WF stats
+        unsigned wf_id = uop->getWavefront()->getIdInComputeUnit();
+        compute_unit->getWavefrontStatsById(wf_id)->num_stall_write_++;
+        compute_unit->getWavefrontStatsById(wf_id)->sclr_num_stall_write_++;
+
+        // Per WG stats
+        unsigned wg_id = uop->getWorkGroup()->getIdInComputeUnit();
+        compute_unit->getWorkgroupStatsById(wg_id)->num_stall_write_++;
+        compute_unit->getWorkgroupStatsById(wg_id)->sclr_num_stall_write_++;
 
         // Update pipeline status
         WriteStatus = Stall;
@@ -427,6 +485,16 @@ void ScalarUnit::Write() {
         // Update write stall
         uop->cycle_write_stall++;
 
+        // Per WF stats
+        unsigned wf_id = uop->getWavefront()->getIdInComputeUnit();
+        compute_unit->getWavefrontStatsById(wf_id)->num_stall_write_++;
+        compute_unit->getWavefrontStatsById(wf_id)->sclr_num_stall_write_++;
+
+        // Per WG stats
+        unsigned wg_id = uop->getWorkGroup()->getIdInComputeUnit();
+        compute_unit->getWorkgroupStatsById(wg_id)->num_stall_write_++;
+        compute_unit->getWorkgroupStatsById(wg_id)->sclr_num_stall_write_++;
+
         // Update pipeline status
         WriteStatus = Stall;
 
@@ -453,6 +521,16 @@ void ScalarUnit::Write() {
       if ((int)write_buffer.size() == write_buffer_size) {
         // Update write stall
         uop->cycle_write_stall++;
+
+        // Per WF stats
+        unsigned wf_id = uop->getWavefront()->getIdInComputeUnit();
+        compute_unit->getWavefrontStatsById(wf_id)->num_stall_write_++;
+        compute_unit->getWavefrontStatsById(wf_id)->sclr_num_stall_write_++;
+
+        // Per WG stats
+        unsigned wg_id = uop->getWorkGroup()->getIdInComputeUnit();
+        compute_unit->getWorkgroupStatsById(wg_id)->num_stall_write_++;
+        compute_unit->getWorkgroupStatsById(wg_id)->sclr_num_stall_write_++;
 
         // Update pipeline status
         WriteStatus = Stall;
@@ -535,6 +613,16 @@ void ScalarUnit::Execute() {
       // Update execution stall
       uop->cycle_execute_stall++;
 
+      // Per WF stats
+      unsigned wf_id = uop->getWavefront()->getIdInComputeUnit();
+      compute_unit->getWavefrontStatsById(wf_id)->num_stall_execution_++;
+      compute_unit->getWavefrontStatsById(wf_id)->sclr_num_stall_execution_++;
+
+      // Per WG stats
+      unsigned wg_id = uop->getWorkGroup()->getIdInComputeUnit();
+      compute_unit->getWorkgroupStatsById(wg_id)->num_stall_execution_++;
+      compute_unit->getWorkgroupStatsById(wg_id)->sclr_num_stall_execution_++;
+
       // Update pipeline status
       ExecutionStatus = Stall;
 
@@ -561,6 +649,19 @@ void ScalarUnit::Execute() {
     if ((int)exec_buffer.size() == exec_buffer_size) {
       // Update execution stall
       uop->cycle_execute_stall++;
+
+      // Per WF stats
+      unsigned wf_id = uop->getWavefront()->getIdInComputeUnit();
+      auto wfStat = compute_unit->getWavefrontStatsById(wf_id);
+      if (wfStat) {
+        wfStat->num_stall_execution_++;
+        wfStat->sclr_num_stall_execution_++;
+      }
+
+      // Per WG stats
+      unsigned wg_id = uop->getWorkGroup()->getIdInComputeUnit();
+      compute_unit->getWorkgroupStatsById(wg_id)->num_stall_execution_++;
+      compute_unit->getWorkgroupStatsById(wg_id)->sclr_num_stall_execution_++;
 
       // Update pipeline status
       ExecutionStatus = Stall;
@@ -688,6 +789,16 @@ void ScalarUnit::Read() {
       // Update read stall
       uop->cycle_read_stall++;
 
+      // Per WF stats
+      unsigned wf_id = uop->getWavefront()->getIdInComputeUnit();
+      compute_unit->getWavefrontStatsById(wf_id)->num_stall_read_++;
+      compute_unit->getWavefrontStatsById(wf_id)->sclr_num_stall_read_++;
+
+      // Per WG stats
+      unsigned wg_id = uop->getWorkGroup()->getIdInComputeUnit();
+      compute_unit->getWorkgroupStatsById(wg_id)->num_stall_read_++;
+      compute_unit->getWorkgroupStatsById(wg_id)->sclr_num_stall_read_++;
+
       // Update pipeline status
       ReadStatus = Stall;
 
@@ -714,6 +825,16 @@ void ScalarUnit::Read() {
     if ((int)read_buffer.size() == read_buffer_size) {
       // Update read stall
       uop->cycle_read_stall++;
+
+      // Per WF stats
+      unsigned wf_id = uop->getWavefront()->getIdInComputeUnit();
+      compute_unit->getWavefrontStatsById(wf_id)->num_stall_read_++;
+      compute_unit->getWavefrontStatsById(wf_id)->sclr_num_stall_read_++;
+
+      // Per WG stats
+      unsigned wg_id = uop->getWorkGroup()->getIdInComputeUnit();
+      compute_unit->getWorkgroupStatsById(wg_id)->num_stall_read_++;
+      compute_unit->getWorkgroupStatsById(wg_id)->sclr_num_stall_read_++;
 
       // Update pipeline status
       ReadStatus = Stall;
@@ -791,6 +912,16 @@ void ScalarUnit::Decode() {
       // Update decode stall
       uop->cycle_decode_stall++;
 
+      // Per WF stats
+      unsigned wf_id = uop->getWavefront()->getIdInComputeUnit();
+      compute_unit->getWavefrontStatsById(wf_id)->num_stall_decode_++;
+      compute_unit->getWavefrontStatsById(wf_id)->sclr_num_stall_decode_++;
+
+      // Per WG stats
+      unsigned wg_id = uop->getWorkGroup()->getIdInComputeUnit();
+      compute_unit->getWorkgroupStatsById(wg_id)->num_stall_decode_++;
+      compute_unit->getWorkgroupStatsById(wg_id)->sclr_num_stall_decode_++;
+
       // Update pipeline status
       DecodeStatus = Stall;
 
@@ -817,6 +948,16 @@ void ScalarUnit::Decode() {
     if ((int)decode_buffer.size() == decode_buffer_size) {
       // Update decode stall
       uop->cycle_decode_stall++;
+
+      // Per WF stats
+      unsigned wf_id = uop->getWavefront()->getIdInComputeUnit();
+      compute_unit->getWavefrontStatsById(wf_id)->num_stall_decode_++;
+      compute_unit->getWavefrontStatsById(wf_id)->sclr_num_stall_decode_++;
+
+      // Per WG stats
+      unsigned wg_id = uop->getWorkGroup()->getIdInComputeUnit();
+      compute_unit->getWorkgroupStatsById(wg_id)->num_stall_decode_++;
+      compute_unit->getWorkgroupStatsById(wg_id)->sclr_num_stall_decode_++;
 
       // Update pipeline status
       DecodeStatus = Stall;

@@ -142,6 +142,9 @@ class Uop {
   /// Return the unique identifier to the associated wavefront pool
   int getWavefrontPoolId() const { return wavefront_pool_id; }
 
+  /// return the unique identifier of the ndrange
+  int getNDRangeId() const { return ndrange_id; }
+
   /// Return the instruction associated with the uop
   Instruction* getInstruction() { return &instruction; }
 

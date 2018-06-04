@@ -145,9 +145,7 @@ void Memory::AccessAtPageBoundary(unsigned address, unsigned size, char* buffer,
   if (!page) {
     if (safe)
       throw Error(
-          misc::fmt("[0x%x] Segmentation fault in "
-                    "guest program",
-                    address));
+          misc::fmt("[0x%x] Segmentation fault in guest program", address));
     if (access == AccessRead || access == AccessExec) {
       memset(buffer, 0, size);
       return;

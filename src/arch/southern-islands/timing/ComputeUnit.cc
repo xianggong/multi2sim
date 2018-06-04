@@ -48,6 +48,7 @@ int ComputeUnit::lds_num_ports = 2;
 unsigned ComputeUnit::register_allocation_size = 32;
 int ComputeUnit::num_scalar_registers = 2048;
 int ComputeUnit::num_vector_registers = 65536;
+long long ComputeUnit::cycle_map_first_wg = 0;
 
 ComputeUnit::ComputeUnit(int index, Gpu* gpu)
     : gpu(gpu),
@@ -78,16 +79,39 @@ ComputeUnit::ComputeUnit(int index, Gpu* gpu)
     // Workgroup
     std::string workgroup_stats_filename = "cu_" + cu_id + ".workgp";
     workgroup_stats.setPath(workgroup_stats_filename);
-    workgroup_stats
-        << "ndrange_id, wg_id,len_map,clk_map,clk_unmap,len_uop,clk_uop_begin,"
-           "clk_uop_end\n";
+    workgroup_stats << "ndrange_id,wg_id,len_map,clk_map,clk_unmap,len_uop,clk_"
+                       "uop_begin,clk_uop_end,num_stall_issue,num_stall_decode,"
+                       "num_stall_read,num_stall_execution,num_stall_write,"
+                       "brch_num_stall_issue,brch_num_stall_decode,brch_num_"
+                       "stall_read,brch_num_stall_execution,brch_num_stall_"
+                       "write,lds_num_stall_issue,lds_num_stall_decode,lds_num_"
+                       "stall_read,lds_num_stall_execution,lds_num_stall_write,"
+                       "sclr_num_stall_issue,sclr_num_stall_decode,sclr_num_"
+                       "stall_read,sclr_num_stall_execution,sclr_num_stall_"
+                       "write,vmem_num_stall_issue,vmem_num_stall_decode,vmem_"
+                       "num_stall_read,vmem_num_stall_execution,vmem_num_stall_"
+                       "write,simd_num_stall_issue,simd_num_stall_decode,simd_"
+                       "num_stall_read,simd_num_stall_execution,simd_num_stall_"
+                       "write_\n";
 
     // Wavefront
     std::string wavefront_stats_filename = "cu_" + cu_id + ".waveft";
 
     wavefront_stats.setPath(wavefront_stats_filename);
     wavefront_stats << "ndrange_id,wg_id,wf_id,len_map,clk_map,clk_unmap,len_"
-                       "uop,clk_uop_begin,clk_uop_end\n";
+                       "uop,clk_uop_begin,clk_uop_end,num_stall_issue,num_"
+                       "stall_decode,num_stall_read,num_stall_execution,num_"
+                       "stall_write,brch_num_stall_issue,brch_num_stall_decode,"
+                       "brch_num_stall_read,brch_num_stall_execution,brch_num_"
+                       "stall_write,lds_num_stall_issue,lds_num_stall_decode,"
+                       "lds_num_stall_read,lds_num_stall_execution,lds_num_"
+                       "stall_write,sclr_num_stall_issue,sclr_num_stall_decode,"
+                       "sclr_num_stall_read,sclr_num_stall_execution,sclr_num_"
+                       "stall_write,vmem_num_stall_issue,vmem_num_stall_decode,"
+                       "vmem_num_stall_read,vmem_num_stall_execution,vmem_num_"
+                       "stall_write,simd_num_stall_issue,simd_num_stall_decode,"
+                       "simd_num_stall_read,simd_num_stall_execution,simd_num_"
+                       "stall_write_\n";
   }
 }
 
@@ -191,25 +215,55 @@ void ComputeUnit::Issue(FetchBuffer* fetch_buffer) {
     // Update UOP info for m2svis
     uop->cycle_issue_stall++;
 
-    if (branch_unit.isValidUop(uop)) {
-      branch_unit.getIntervalStats()->num_stall_issue_++;
-      branch_unit.getOverviewStats()->num_stall_issue_++;
-    } else if (scalar_unit.isValidUop(uop)) {
-      scalar_unit.getIntervalStats()->num_stall_issue_++;
-      scalar_unit.getOverviewStats()->num_stall_issue_++;
-    } else if (vector_memory_unit.isValidUop(uop)) {
-      vector_memory_unit.getIntervalStats()->num_stall_issue_++;
-      vector_memory_unit.getOverviewStats()->num_stall_issue_++;
-    } else if (lds_unit.isValidUop(uop)) {
-      lds_unit.getIntervalStats()->num_stall_issue_++;
-      lds_unit.getOverviewStats()->num_stall_issue_++;
-    } else if (simd_units[0]->isValidUop(uop)) {
-      // Cannot issue to any simd unit, so issue stall on all of them
-      for (auto& simd_unit : simd_units) {
-        simd_unit.get()->getIntervalStats()->num_stall_issue_++;
-        simd_unit.get()->getOverviewStats()->num_stall_issue_++;
+    if (Timing::statistics_level >= 2) {
+      if (branch_unit.isValidUop(uop)) {
+        branch_unit.getIntervalStats()->num_stall_issue_++;
+        branch_unit.getOverviewStats()->num_stall_issue_++;
+      } else if (scalar_unit.isValidUop(uop)) {
+        scalar_unit.getIntervalStats()->num_stall_issue_++;
+        scalar_unit.getOverviewStats()->num_stall_issue_++;
+      } else if (vector_memory_unit.isValidUop(uop)) {
+        vector_memory_unit.getIntervalStats()->num_stall_issue_++;
+        vector_memory_unit.getOverviewStats()->num_stall_issue_++;
+      } else if (lds_unit.isValidUop(uop)) {
+        lds_unit.getIntervalStats()->num_stall_issue_++;
+        lds_unit.getOverviewStats()->num_stall_issue_++;
+      } else if (simd_units[0]->isValidUop(uop)) {
+        for (auto& simd_unit : simd_units) {
+          simd_unit.get()->getIntervalStats()->num_stall_issue_++;
+          simd_unit.get()->getOverviewStats()->num_stall_issue_++;
+        }
       }
     }
+
+    // Update per WF/WG stats
+    if (Timing::statistics_level >= 1) {
+      // Per WF stats
+      unsigned wf_id = uop->getWavefront()->getIdInComputeUnit();
+      getWavefrontStatsById(wf_id)->num_stall_issue_++;
+
+      // Per WG stats
+      unsigned wg_id = uop->getWorkGroup()->getIdInComputeUnit();
+      getWorkgroupStatsById(wg_id)->num_stall_issue_++;
+
+      if (branch_unit.isValidUop(uop)) {
+        getWavefrontStatsById(wf_id)->brch_num_stall_issue_++;
+        getWorkgroupStatsById(wg_id)->brch_num_stall_issue_++;
+      } else if (scalar_unit.isValidUop(uop)) {
+        getWavefrontStatsById(wf_id)->sclr_num_stall_issue_++;
+        getWorkgroupStatsById(wg_id)->sclr_num_stall_issue_++;
+      } else if (vector_memory_unit.isValidUop(uop)) {
+        getWavefrontStatsById(wf_id)->vmem_num_stall_issue_++;
+        getWorkgroupStatsById(wg_id)->vmem_num_stall_issue_++;
+      } else if (lds_unit.isValidUop(uop)) {
+        getWavefrontStatsById(wf_id)->lds_num_stall_issue_++;
+        getWorkgroupStatsById(wg_id)->lds_num_stall_issue_++;
+      } else if (simd_units[0]->isValidUop(uop)) {
+        getWavefrontStatsById(wf_id)->simd_num_stall_issue_++;
+        getWorkgroupStatsById(wg_id)->simd_num_stall_issue_++;
+      }
+    }
+
     // Trace
     Timing::trace << misc::fmt(
         "si.inst "
@@ -479,14 +533,14 @@ void ComputeUnit::SetInitialPC(WorkGroup* work_group) {
         // Default pattern: greater than
         case 0:
           if (work_group->getId() >
-              (int)(ndrange->getNumWorkGroups() * ratio_val)) {
+              (int)(ndrange->getNumWorkgroups() * ratio_val)) {
             wavefront->setPC(secondPC);
           }
           break;
         // Reverse pattern: less than
         case 1:
           if (work_group->getId() <
-              (int)(ndrange->getNumWorkGroups() * ratio_val)) {
+              (int)(ndrange->getNumWorkgroups() * ratio_val)) {
             wavefront->setPC(secondPC);
           }
           break;
@@ -511,7 +565,7 @@ void ComputeUnit::SetInitialPC(WorkGroup* work_group) {
         // Default to greater than
         default:
           if (wavefront->getId() >
-              (int)(ndrange->getNumWorkGroups() * ratio_val)) {
+              (int)(ndrange->getNumWorkgroups() * ratio_val)) {
             wavefront->setPC(secondPC);
           }
           break;
@@ -590,6 +644,9 @@ void ComputeUnit::MapWorkGroup(WorkGroup* work_group) {
 
   // Insert work group into the list
   AddWorkGroup(work_group);
+
+  // Record the cycle when the first WG is mapped
+  if (cycle_map_first_wg == 0) cycle_map_first_wg = timing->getCycle();
 
   // Update info if statistics enables
   if (Timing::statistics_level >= 1) {
@@ -881,6 +938,34 @@ void ComputeUnit::Dump(std::ostream& os) const {
   os << "Compute unit is available : "
      << (in_available_compute_units ? "True" : "False");
   os << '\n';
+}
+
+void ComputeUnit::FlushWorkgroupStats() {
+  // Update info if statistics enables
+  if (Timing::statistics_level >= 1) {
+    for (auto& stats : workgroup_stats_map) {
+      auto workgroup_id = stats.first;
+      auto& workgroup_st = stats.second;
+      workgroup_st->setCycle(Timing::getInstance()->getCycle(), EVENT_UNMAPPED);
+      workgroup_stats << "-1," << workgroup_id << "," << *workgroup_st;
+      // Clean up
+      workgroup_stats_map.erase(workgroup_id);
+    }
+  }
+}
+
+void ComputeUnit::FlushWavefrontStats() {
+  // Update info if statistics enables
+  if (Timing::statistics_level >= 1) {
+    for (auto& stats : wavefront_stats_map) {
+      auto id = stats.first;
+      auto& st = stats.second;
+      st->setCycle(Timing::getInstance()->getCycle(), EVENT_UNMAPPED);
+      wavefront_stats << "-1,-1," << id << "," << *st;
+      // Clean up
+      wavefront_stats_map.erase(id);
+    }
+  }
 }
 
 }  // Namespace SI

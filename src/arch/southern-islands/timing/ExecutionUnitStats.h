@@ -20,6 +20,8 @@
 #ifndef SRC_ARCH_SOUTHERN_ISLANDS_TIMING_EXECITIONUNITSTATS_H_
 #define SRC_ARCH_SOUTHERN_ISLANDS_TIMING_EXECITIONUNITSTATS_H_
 
+#include <arch/southern-islands/emulator/Wavefront.h>
+#include <arch/southern-islands/emulator/WorkGroup.h>
 #include <lib/cpp/Debug.h>
 #include <iostream>
 #include <map>
@@ -59,6 +61,11 @@ class ExecutionUnitStatistics {
   long long len_inst_min_ = 0;
   long long len_inst_max_ = 0;
   long long len_inst_sum_ = 0;
+
+  int wf_id_inst_min_ = -1;
+  int wf_id_inst_max_ = -1;
+  int wg_id_inst_min_ = -1;
+  int wg_id_inst_max_ = -1;
 
  public:
   /// Member functions

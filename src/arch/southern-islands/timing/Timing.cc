@@ -648,6 +648,10 @@ void Timing::RegisterOptions() {
   // Option --si-sampling-cycle
   command_line->RegisterInt32("--si-sampling-cycle", statistics_sampling_cycle,
                               "Sampling cycles of the statistics.");
+
+  // Option --si-min-ratio
+  command_line->RegisterDouble("--si-max-ratio", Gpu::max_wavefront_ratio,
+                               "Maximum wavefront ratio to simulate.");
 }
 
 void Timing::ProcessOptions() {
@@ -1039,7 +1043,8 @@ void Timing::DumpReport() const {
   report << misc::fmt(";\n; Simulation Statistics\n;\n\n");
   Emulator* emulator = Emulator::getInstance();
   double instructions_per_cycle =
-      getCycle() ? ((double)emulator->getNumInstructions() / (double)getCycle())
+      getCycle() ? ((double)emulator->getNumInstructions() /
+                    (double)(getCycle() - ComputeUnit::cycle_map_first_wg))
                  : 0.0;
   report << misc::fmt("[ Device ]\n\n");
   report << misc::fmt("NDRangeCount = %d\n", emulator->num_ndranges);
@@ -1170,7 +1175,7 @@ bool Timing::Run() {
           int num_cu = gpu->num_compute_units;
           unsigned num_wgs =
               ndrange->getGlobalSize1D() / ndrange->getLocalSize1D();
-          unsigned avg_wgs = (num_wgs + num_cu - 1) / num_cu + 1;
+          unsigned avg_wgs = num_wgs / num_cu + 1;
 
           if (available_compute_unit->stats.num_mapped_work_groups_ >=
               avg_wgs) {
@@ -1206,15 +1211,49 @@ bool Timing::Run() {
     }
   }
 
-  // Stop if maximum number of GPU cycles exceeded
   esim::Engine* esim_engine = esim::Engine::getInstance();
-  if (Gpu::max_cycles && getCycle() >= Gpu::max_cycles)
+
+  // Stop if maximum number of wavefronts exceeded
+  if (Gpu::max_wavefront_count &&
+      Gpu::count_completed_wavefronts >= Gpu::max_wavefront_count) {
+    // Flush all wg/wf stats
+    for (auto it = getGpu()->getComputeUnitsBegin();
+         it != getGpu()->getComputeUnitsEnd(); ++it) {
+      auto cu = it->get();
+      cu->FlushWorkgroupStats();
+      cu->FlushWavefrontStats();
+    }
+    // Flush all statistics info
+    for (auto it = emulator->getNDRangesBegin();
+         it != emulator->getNDRangesEnd(); ++it) {
+      auto ndrange = it->get();
+      gpu->UnmapNDRange(ndrange);
+    }
+    esim_engine->Finish("SIMaxWavefronts");
+  }
+
+  // Stop if maximum number of GPU cycles exceeded
+  if (Gpu::max_cycles && getCycle() >= Gpu::max_cycles) {
+    // Flush all statistics info
+    for (auto it = emulator->getNDRangesBegin();
+         it != emulator->getNDRangesEnd(); ++it) {
+      auto ndrange = it->get();
+      gpu->UnmapNDRange(ndrange);
+    }
     esim_engine->Finish("SIMaxCycles");
+  }
 
   // Stop if maximum number of GPU instructions exceeded
   if (Emulator::getMaxInstructions() &&
-      emulator->getNumInstructions() >= Emulator::getMaxInstructions())
+      emulator->getNumInstructions() >= Emulator::getMaxInstructions()) {
+    // Flush all statistics info
+    for (auto it = emulator->getNDRangesBegin();
+         it != emulator->getNDRangesEnd(); ++it) {
+      auto ndrange = it->get();
+      gpu->UnmapNDRange(ndrange);
+    }
     esim_engine->Finish("SIMaxInstructions");
+  }
 
   // Stop if there was a simulation stall
   if (getCycle() - gpu->last_complete_cycle > 1000000) {

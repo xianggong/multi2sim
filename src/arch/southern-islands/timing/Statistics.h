@@ -35,6 +35,43 @@ class CycleStats {
   uint64_t cycle_finish_ = 0;
 
  public:
+  long long num_stall_issue_ = 0;
+  long long num_stall_decode_ = 0;
+  long long num_stall_read_ = 0;
+  long long num_stall_execution_ = 0;
+  long long num_stall_write_ = 0;
+
+  long long brch_num_stall_issue_ = 0;
+  long long brch_num_stall_decode_ = 0;
+  long long brch_num_stall_read_ = 0;
+  long long brch_num_stall_execution_ = 0;
+  long long brch_num_stall_write_ = 0;
+
+  long long lds_num_stall_issue_ = 0;
+  long long lds_num_stall_decode_ = 0;
+  long long lds_num_stall_read_ = 0;
+  long long lds_num_stall_execution_ = 0;
+  long long lds_num_stall_write_ = 0;
+
+  long long sclr_num_stall_issue_ = 0;
+  long long sclr_num_stall_decode_ = 0;
+  long long sclr_num_stall_read_ = 0;
+  long long sclr_num_stall_execution_ = 0;
+  long long sclr_num_stall_write_ = 0;
+
+  long long vmem_num_stall_issue_ = 0;
+  long long vmem_num_stall_decode_ = 0;
+  long long vmem_num_stall_read_ = 0;
+  long long vmem_num_stall_execution_ = 0;
+  long long vmem_num_stall_write_ = 0;
+
+  long long simd_num_stall_issue_ = 0;
+  long long simd_num_stall_decode_ = 0;
+  long long simd_num_stall_read_ = 0;
+  long long simd_num_stall_execution_ = 0;
+  long long simd_num_stall_write_ = 0;
+
+ public:
   /// Setters
   void setCycle(uint64_t cycle, enum CycleEvent event);
 

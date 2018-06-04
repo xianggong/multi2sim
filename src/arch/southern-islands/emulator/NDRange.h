@@ -52,15 +52,9 @@ class NDRange {
   //
 
   /// UAV Table
-  static const int MaxNumUAVs = 16;
+  static const int MaxNumUAVs = 32;
   static const int UAVTableEntrySize = 32;
   static const int UAVTableSize = MaxNumUAVs * UAVTableEntrySize;
-
-  /// Vertex buffer table
-  static const int MaxNumVertexBuffers = 16;
-  static const int VertexBufferTableEntrySize = 32;
-  static const int VertexBufferTableSize =
-      MaxNumVertexBuffers * VertexBufferTableEntrySize;
 
   /// Constant buffer table
   static const int MaxNumConstBufs = 16;
@@ -72,8 +66,8 @@ class NDRange {
   static const int ResourceTableEntrySize = 32;
   static const int ResourceTableSize = MaxNumResources * ResourceTableEntrySize;
 
-  static const int TotalTableSize = UAVTableSize + ConstBufTableSize +
-                                    ResourceTableSize + VertexBufferTableSize;
+  static const int TotalTableSize =
+      UAVTableSize + ConstBufTableSize + ResourceTableSize;
 
   /// Constant buffers
   static const int ConstBuf0Size = 160;
@@ -165,10 +159,6 @@ class NDRange {
   // Addresses and entries of tables that reside in global memory
   unsigned uav_table = 0;
   TableEntry uav_table_entries[MaxNumUAVs];
-
-  // Addresses and entries of tables that reside in global memory
-  unsigned vertex_buffer_table = 0;
-  TableEntry vertex_buffer_table_entries[MaxNumVertexBuffers];
 
   // Addresses of the constant buffers
   unsigned cb0 = 0;
@@ -360,9 +350,6 @@ class NDRange {
 
   /// Get UAV table address in global memory
   unsigned getUAVTableAddr() const { return uav_table; }
-
-  /// Get Vertex buffer table address in global memory
-  unsigned getVertexBufferTableAddr() const { return vertex_buffer_table; }
 
   /// Returns a pointer to a suspended context. If there is no suspended
   /// context, a nullptr is returned.

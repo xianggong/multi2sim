@@ -54,9 +54,19 @@ void ExecutionUnitStatistics::Reset() {
 void ExecutionUnitStatistics::Complete(Uop* uop, long long cycle) {
   len_inst_sum_ += uop->cycle_length;
 
-  auto min = std::min(len_inst_min_, uop->cycle_length);
-  len_inst_min_ = len_inst_min_ == 0 ? uop->cycle_length : min;
-  len_inst_max_ = std::max(len_inst_max_, uop->cycle_length);
+  if (uop->cycle_length > len_inst_max_) {
+    len_inst_max_ = uop->cycle_length;
+    wf_id_inst_max_ = uop->getWavefront()->getId();
+    wg_id_inst_max_ = uop->getWorkGroup()->getId();
+  } else if (uop->cycle_length < len_inst_min_ || len_inst_min_ == 0) {
+    len_inst_min_ = uop->cycle_length;
+    wf_id_inst_min_ = uop->getWavefront()->getId();
+    wg_id_inst_min_ = uop->getWorkGroup()->getId();
+  }
+
+  // auto min = std::min(len_inst_min_, uop->cycle_length);
+  // len_inst_min_ = len_inst_min_ == 0 ? uop->cycle_length : min;
+  // len_inst_max_ = std::max(len_inst_max_, uop->cycle_length);
   num_inst_cpl_++;
   num_inst_wip_--;
 }
@@ -86,14 +96,15 @@ void ExecutionUnitStatistics::DumpUtilizationField(std::ostream& os) const {
 
 void ExecutionUnitStatistics::DumpCounter(std::ostream& os) const {
   os << misc::fmt(
-      "%lld,%lld,%lld,%lld,%lld,%lld,%lld,%lld,%lld,%lld,%lld,%lld,%lld,%lld,"
-      "%lld,%lld,%lld,%lld,%lld,",
+      "%lld,%lld,%lld,%lld,%lld,%lld,%lld,%lld,%lld,%lld,%lld,%lld,%lld,%lld,%"
+      "lld,%lld,%d,%d,%lld,%d,%d,%lld,%lld,",
       num_total_cycles_, num_active_or_stall_cycles_, num_idle_cycles_,
       num_active_only_cycles_, num_active_and_stall_cycles_,
       num_stall_only_cycles_, num_stall_issue_, num_stall_decode_,
       num_stall_read_, num_stall_execution_, num_stall_write_,
       num_vmem_divergence_, num_inst_iss_, num_inst_wip_, num_inst_cpl_,
-      len_inst_min_, len_inst_max_,
+      len_inst_min_, wf_id_inst_min_, wg_id_inst_min_, len_inst_max_,
+      wf_id_inst_max_, wg_id_inst_max_,
       num_inst_cpl_ == 0 ? 0 : len_inst_sum_ / num_inst_cpl_, len_inst_sum_);
 }
 
@@ -115,7 +126,11 @@ void ExecutionUnitStatistics::DumpCounterField(std::ostream& os) const {
   os << "n_inst_wip,";
   os << "n_inst_cpl,";
   os << "l_inst_min,";
+  os << "i_inst_min_wf_id,";
+  os << "i_inst_min_wg_id,";
   os << "l_inst_max,";
+  os << "i_inst_max_wf_id,";
+  os << "i_inst_max_wg_id,";
   os << "l_inst_avg,";
   os << "l_inst_sum,";
 }

@@ -84,17 +84,21 @@ static void opencl_si_kernel_metadata_line(struct opencl_si_kernel_t *kernel,
   /* Split line in tokens */
   token_list = str_token_list_create(line, ":;");
   token = str_token_list_first(token_list);
+  opencl_debug("\tline = %s", line);
+  printf("\ttoken = %s, line = %s\n", token, line);
 
   /* Version */
-  if (!strcmp(token, "version")) {
+  if (!strncmp(token, "version", 7)) {
     int version;
     char *version_str;
 
     str_token_list_shift(token_list);
     version_str = str_token_list_first(token_list);
     version = atoi(version_str);
+    printf("\tversion = %s[%d]\n", version_str, version);
     if (version != 3)
-      fatal("%s: unsupported metadata version: %s", __FUNCTION__, line);
+      fatal("%s: unsupported metadata version: %d [%s]", __FUNCTION__, version,
+            line);
   }
 
   /* Pointer argument */
@@ -153,10 +157,12 @@ struct opencl_si_kernel_t *opencl_si_kernel_create(
     fatal("%s: unexpected error in metadata symbol", __FUNCTION__);
 
   /* Process metadata */
+  opencl_debug("[%s] processing metadata", __FUNCTION__);
   while (elf_buffer.pos < elf_buffer.size) {
     elf_buffer_read_line(&elf_buffer, line, sizeof line);
     opencl_si_kernel_metadata_line(kernel, line);
   }
+  opencl_debug("[%s] processed metadata", __FUNCTION__);
 
   /* Create kernel object in driver */
   unsigned args[2] = {program->id, (unsigned)func_name};

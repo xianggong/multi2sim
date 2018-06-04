@@ -34,10 +34,6 @@ const int NDRange::MaxNumUAVs;
 const int NDRange::UAVTableEntrySize;
 const int NDRange::UAVTableSize;
 
-const int NDRange::MaxNumVertexBuffers;
-const int NDRange::VertexBufferTableEntrySize;
-const int NDRange::VertexBufferTableSize;
-
 const int NDRange::MaxNumConstBufs;
 const int NDRange::ConstBufTableEntrySize;
 const int NDRange::ConstBufTableSize;
@@ -229,24 +225,6 @@ void NDRange::InsertBufferIntoUAVTable(
   uav_table_entries[uav].valid = 1;
   uav_table_entries[uav].kind = TableEntryKindEmuBufferDesc;
   uav_table_entries[uav].size = (unsigned)sizeof(*buffer_descriptor);
-}
-
-void NDRange::InsertBufferIntoVertexBufferTable(
-    WorkItem::BufferDescriptor* buffer_descriptor, unsigned vertex_buffer) {
-  assert(vertex_buffer < MaxNumVertexBuffers);
-  assert(sizeof(*buffer_descriptor) <= VertexBufferTableEntrySize);
-
-  // Write the buffer resource descriptor into the Vertex Buffer table
-  unsigned addr =
-      vertex_buffer_table + vertex_buffer * VertexBufferTableEntrySize;
-
-  emulator->getGlobalMemory()->Write(addr, (unsigned)sizeof(*buffer_descriptor),
-                                     (char*)buffer_descriptor);
-
-  vertex_buffer_table_entries[vertex_buffer].valid = 1;
-  vertex_buffer_table_entries[vertex_buffer].kind = TableEntryKindEmuBufferDesc;
-  vertex_buffer_table_entries[vertex_buffer].size =
-      (unsigned)sizeof(*buffer_descriptor);
 }
 
 void NDRange::InsertBufferIntoConstantBufferTable(

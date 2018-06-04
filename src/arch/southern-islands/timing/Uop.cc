@@ -48,7 +48,7 @@ Uop::Uop(Wavefront* wavefront, WavefrontPoolEntry* wavefront_pool_entry,
   work_item_info_list.resize(WorkGroup::WavefrontSize);
 
   // Update info if statistics enables
-  if (Timing::statistics_level >= 3) {
+  if (Timing::statistics_level >= 2) {
     auto gpu = compute_unit->getGpu();
 
     // NDRange
@@ -73,34 +73,7 @@ Uop::Uop(Wavefront* wavefront, WavefrontPoolEntry* wavefront_pool_entry,
   }
 }
 
-Uop::~Uop() {
-  // Update info if statistics enables
-  if (Timing::statistics_level >= 3) {
-    auto gpu = compute_unit->getGpu();
-
-    // NDRange
-    auto ndrange_stats = gpu->getNDRangeStatsById(ndrange_id);
-    if (ndrange_stats) {
-      ndrange_stats->setCycle(Timing::getInstance()->getCycle(), EVENT_FINISH);
-    }
-
-    // Workgroup
-    auto workgroup_stats =
-        compute_unit->getWorkgroupStatsById(work_group->id_in_compute_unit);
-    if (workgroup_stats) {
-      workgroup_stats->setCycle(Timing::getInstance()->getCycle(),
-                                EVENT_FINISH);
-    }
-
-    // Wavefront
-    auto wavefront_stats =
-        compute_unit->getWavefrontStatsById(wavefront->id_in_compute_unit);
-    if (wavefront_stats) {
-      wavefront_stats->setCycle(Timing::getInstance()->getCycle(),
-                                EVENT_FINISH);
-    }
-  }
-}
+Uop::~Uop() {}
 
 std::string Uop::getLifeCycleInCSV(const char* execunit) {
   // Sanity check
