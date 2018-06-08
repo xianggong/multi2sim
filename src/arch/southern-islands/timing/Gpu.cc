@@ -114,6 +114,9 @@ void Gpu::MapNDRange(NDRange* ndrange) {
   Emulator::scheduler_debug << misc::fmt("Hardware limit: %d WG per CU\n",
                                          work_groups_per_compute_unit);
 
+  wavefronts_per_compute_unit =
+      work_groups_per_compute_unit * ndrange->getLocalSize1D() / 64;
+
   // Limit work groups per compute unit from environment variable
   char* env = getenv("M2S_WG_LIMIT");
   if (env) {

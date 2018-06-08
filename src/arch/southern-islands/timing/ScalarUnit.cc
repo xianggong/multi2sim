@@ -256,7 +256,7 @@ void ScalarUnit::Complete() {
 
       // Global count of completed wavefronts
       Gpu::count_completed_wavefronts++;
-      printf("Complete WF %d in CU %d, %d completed globally\n",
+      printf("Complete WF %d in CU %d, %d completed globally.\n",
              uop->getWavefront()->getIdInComputeUnit(),
              uop->getComputeUnit()->getIndex(),
              Gpu::count_completed_wavefronts);

@@ -67,6 +67,9 @@ class Gpu {
   /// Number of work_groups allowed in a compute unit
   int work_groups_per_compute_unit = 0;
 
+  /// Number of wavefronts allowed in a compute unit
+  int wavefronts_per_compute_unit = 0;
+
   /// Mapped NDRange to the GPU
   NDRange* mapped_ndrange = nullptr;
 
@@ -125,6 +128,11 @@ class Gpu {
   /// Return the number of work groups per compute unit
   int getWorkGroupsPerComputeUnit() const {
     return work_groups_per_compute_unit;
+  }
+
+  /// Return the number of wavefronts per compute unit
+  int getWavefrontsPerComputeUnit() const {
+    return wavefronts_per_compute_unit;
   }
 
   /// Return the associated MMU
