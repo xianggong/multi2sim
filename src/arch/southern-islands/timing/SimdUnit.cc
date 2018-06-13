@@ -277,15 +277,17 @@ void SimdUnit::Execute() {
       // Update uop stall
       uop->cycle_execute_stall++;
 
-      // Per WF stats
-      unsigned wf_id = uop->getWavefront()->getIdInComputeUnit();
-      compute_unit->getWavefrontStatsById(wf_id)->num_stall_execution_++;
-      compute_unit->getWavefrontStatsById(wf_id)->simd_num_stall_execution_++;
+      if (Timing::statistics_level >= 1) {
+        // Per WF stats
+        unsigned wf_id = uop->getWavefront()->getIdInComputeUnit();
+        compute_unit->getWavefrontStatsById(wf_id)->num_stall_execution_++;
+        compute_unit->getWavefrontStatsById(wf_id)->simd_num_stall_execution_++;
 
-      // Per WG stats
-      unsigned wg_id = uop->getWorkGroup()->getIdInComputeUnit();
-      compute_unit->getWorkgroupStatsById(wg_id)->num_stall_execution_++;
-      compute_unit->getWorkgroupStatsById(wg_id)->simd_num_stall_execution_++;
+        // Per WG stats
+        unsigned wg_id = uop->getWorkGroup()->getIdInComputeUnit();
+        compute_unit->getWorkgroupStatsById(wg_id)->num_stall_execution_++;
+        compute_unit->getWorkgroupStatsById(wg_id)->simd_num_stall_execution_++;
+      }
 
       // Update pipeline stage status
       ReadStatus = Stall;
@@ -394,15 +396,17 @@ void SimdUnit::Decode() {
       // Update uop stall
       uop->cycle_decode_stall++;
 
-      // Per WF stats
-      unsigned wf_id = uop->getWavefront()->getIdInComputeUnit();
-      compute_unit->getWavefrontStatsById(wf_id)->num_stall_decode_++;
-      compute_unit->getWavefrontStatsById(wf_id)->simd_num_stall_decode_++;
+      if (Timing::statistics_level >= 1) {
+        // Per WF stats
+        unsigned wf_id = uop->getWavefront()->getIdInComputeUnit();
+        compute_unit->getWavefrontStatsById(wf_id)->num_stall_decode_++;
+        compute_unit->getWavefrontStatsById(wf_id)->simd_num_stall_decode_++;
 
-      // Per WG stats
-      unsigned wg_id = uop->getWorkGroup()->getIdInComputeUnit();
-      compute_unit->getWorkgroupStatsById(wg_id)->num_stall_decode_++;
-      compute_unit->getWorkgroupStatsById(wg_id)->simd_num_stall_decode_++;
+        // Per WG stats
+        unsigned wg_id = uop->getWorkGroup()->getIdInComputeUnit();
+        compute_unit->getWorkgroupStatsById(wg_id)->num_stall_decode_++;
+        compute_unit->getWorkgroupStatsById(wg_id)->simd_num_stall_decode_++;
+      }
 
       // Update pipeline stage status
       DecodeStatus = Stall;
@@ -431,15 +435,17 @@ void SimdUnit::Decode() {
       // Update uop stall
       uop->cycle_decode_stall++;
 
-      // Per WF stats
-      unsigned wf_id = uop->getWavefront()->getIdInComputeUnit();
-      compute_unit->getWavefrontStatsById(wf_id)->num_stall_decode_++;
-      compute_unit->getWavefrontStatsById(wf_id)->simd_num_stall_decode_++;
+      if (Timing::statistics_level >= 1) {
+        // Per WF stats
+        unsigned wf_id = uop->getWavefront()->getIdInComputeUnit();
+        compute_unit->getWavefrontStatsById(wf_id)->num_stall_decode_++;
+        compute_unit->getWavefrontStatsById(wf_id)->simd_num_stall_decode_++;
 
-      // Per WG stats
-      unsigned wg_id = uop->getWorkGroup()->getIdInComputeUnit();
-      compute_unit->getWorkgroupStatsById(wg_id)->num_stall_decode_++;
-      compute_unit->getWorkgroupStatsById(wg_id)->simd_num_stall_decode_++;
+        // Per WG stats
+        unsigned wg_id = uop->getWorkGroup()->getIdInComputeUnit();
+        compute_unit->getWorkgroupStatsById(wg_id)->num_stall_decode_++;
+        compute_unit->getWorkgroupStatsById(wg_id)->simd_num_stall_decode_++;
+      }
 
       // Update pipeline stage status
       DecodeStatus = Stall;

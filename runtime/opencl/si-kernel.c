@@ -84,8 +84,7 @@ static void opencl_si_kernel_metadata_line(struct opencl_si_kernel_t *kernel,
   /* Split line in tokens */
   token_list = str_token_list_create(line, ":;");
   token = str_token_list_first(token_list);
-  opencl_debug("\tline = %s", line);
-  printf("\ttoken = %s, line = %s\n", token, line);
+  opencl_debug("\ttoken = %s, line = %s\n", token, line);
 
   /* Version */
   if (!strncmp(token, "version", 7)) {
@@ -95,7 +94,7 @@ static void opencl_si_kernel_metadata_line(struct opencl_si_kernel_t *kernel,
     str_token_list_shift(token_list);
     version_str = str_token_list_first(token_list);
     version = atoi(version_str);
-    printf("\tversion = %s[%d]\n", version_str, version);
+    opencl_debug("\tversion = %s[%d]\n", version_str, version);
     if (version != 3)
       fatal("%s: unsupported metadata version: %d [%s]", __FUNCTION__, version,
             line);

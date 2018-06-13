@@ -52,7 +52,7 @@ class NDRange {
   //
 
   /// UAV Table
-  static const int MaxNumUAVs = 32;
+  static const int MaxNumUAVs = 16;
   static const int UAVTableEntrySize = 32;
   static const int UAVTableSize = MaxNumUAVs * UAVTableEntrySize;
 

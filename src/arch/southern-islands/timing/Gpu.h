@@ -196,6 +196,9 @@ class Gpu {
 
   /// Flush statistics info
   void FlushStats(NDRange* ndrange);
+
+  /// GPU compute units statistics
+  std::unique_ptr<ExecutionUnitStatisticsModule> gpu_stats;
 };
 }
 
