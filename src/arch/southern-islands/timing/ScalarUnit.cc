@@ -256,10 +256,10 @@ void ScalarUnit::Complete() {
 
       // Global count of completed wavefronts
       Gpu::count_completed_wavefronts++;
-      printf("Complete WF %d in CU %d, %d completed globally.\n",
-             uop->getWavefront()->getIdInComputeUnit(),
-             uop->getComputeUnit()->getIndex(),
-             Gpu::count_completed_wavefronts);
+      // printf("Complete WF %d in CU %d, %d completed globally.\n",
+      //        uop->getWavefront()->getIdInComputeUnit(),
+      //        uop->getComputeUnit()->getIndex(),
+      //        Gpu::count_completed_wavefronts);
 
       // Set the work group as finished with timing simulation
       // if all the wavefonts in the work group are complete
@@ -421,14 +421,16 @@ void ScalarUnit::Write() {
         uop->cycle_write_stall++;
 
         // Per WF stats
-        unsigned wf_id = uop->getWavefront()->getIdInComputeUnit();
-        compute_unit->getWavefrontStatsById(wf_id)->num_stall_write_++;
-        compute_unit->getWavefrontStatsById(wf_id)->sclr_num_stall_write_++;
+        if (Timing::statistics_level >= 1) {
+          unsigned wf_id = uop->getWavefront()->getIdInComputeUnit();
+          compute_unit->getWavefrontStatsById(wf_id)->num_stall_write_++;
+          compute_unit->getWavefrontStatsById(wf_id)->sclr_num_stall_write_++;
 
-        // Per WG stats
-        unsigned wg_id = uop->getWorkGroup()->getIdInComputeUnit();
-        compute_unit->getWorkgroupStatsById(wg_id)->num_stall_write_++;
-        compute_unit->getWorkgroupStatsById(wg_id)->sclr_num_stall_write_++;
+          // Per WG stats
+          unsigned wg_id = uop->getWorkGroup()->getIdInComputeUnit();
+          compute_unit->getWorkgroupStatsById(wg_id)->num_stall_write_++;
+          compute_unit->getWorkgroupStatsById(wg_id)->sclr_num_stall_write_++;
+        }
 
         // Update pipeline status
         WriteStatus = Stall;
@@ -526,16 +528,17 @@ void ScalarUnit::Write() {
         // Update write stall
         uop->cycle_write_stall++;
 
-        // Per WF stats
-        unsigned wf_id = uop->getWavefront()->getIdInComputeUnit();
-        compute_unit->getWavefrontStatsById(wf_id)->num_stall_write_++;
-        compute_unit->getWavefrontStatsById(wf_id)->sclr_num_stall_write_++;
+        if (Timing::statistics_level >= 1) {
+          // Per WF stats
+          unsigned wf_id = uop->getWavefront()->getIdInComputeUnit();
+          compute_unit->getWavefrontStatsById(wf_id)->num_stall_write_++;
+          compute_unit->getWavefrontStatsById(wf_id)->sclr_num_stall_write_++;
 
-        // Per WG stats
-        unsigned wg_id = uop->getWorkGroup()->getIdInComputeUnit();
-        compute_unit->getWorkgroupStatsById(wg_id)->num_stall_write_++;
-        compute_unit->getWorkgroupStatsById(wg_id)->sclr_num_stall_write_++;
-
+          // Per WG stats
+          unsigned wg_id = uop->getWorkGroup()->getIdInComputeUnit();
+          compute_unit->getWorkgroupStatsById(wg_id)->num_stall_write_++;
+          compute_unit->getWorkgroupStatsById(wg_id)->sclr_num_stall_write_++;
+        }
         // Update pipeline status
         WriteStatus = Stall;
 
@@ -618,14 +621,16 @@ void ScalarUnit::Execute() {
       uop->cycle_execute_stall++;
 
       // Per WF stats
-      unsigned wf_id = uop->getWavefront()->getIdInComputeUnit();
-      compute_unit->getWavefrontStatsById(wf_id)->num_stall_execution_++;
-      compute_unit->getWavefrontStatsById(wf_id)->sclr_num_stall_execution_++;
+      if (Timing::statistics_level >= 1) {
+        unsigned wf_id = uop->getWavefront()->getIdInComputeUnit();
+        compute_unit->getWavefrontStatsById(wf_id)->num_stall_execution_++;
+        compute_unit->getWavefrontStatsById(wf_id)->sclr_num_stall_execution_++;
 
-      // Per WG stats
-      unsigned wg_id = uop->getWorkGroup()->getIdInComputeUnit();
-      compute_unit->getWorkgroupStatsById(wg_id)->num_stall_execution_++;
-      compute_unit->getWorkgroupStatsById(wg_id)->sclr_num_stall_execution_++;
+        // Per WG stats
+        unsigned wg_id = uop->getWorkGroup()->getIdInComputeUnit();
+        compute_unit->getWorkgroupStatsById(wg_id)->num_stall_execution_++;
+        compute_unit->getWorkgroupStatsById(wg_id)->sclr_num_stall_execution_++;
+      }
 
       // Update pipeline status
       ExecutionStatus = Stall;
