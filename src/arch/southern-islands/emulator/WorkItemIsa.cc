@@ -1155,6 +1155,41 @@ void WorkItem::ISA_S_ASHR_I32_Impl(Instruction *instruction) {
 }
 #undef INST
 
+// D.u = ((1 << S0.u[4:0]) - 1) << S1.u[4:0]; bitfield mask.
+#define INST INST_SOP2
+void WorkItem::ISA_S_BFM_B32_Impl(Instruction *instruction) {
+  Instruction::Register s0;
+  Instruction::Register s1;
+  Instruction::Register result;
+
+  // Load operands from registers or as a literal constant.
+  assert(!(INST.ssrc0 == 0xFF && INST.ssrc1 == 0xFF));
+  if (INST.ssrc0 == 0xFF) {
+    s0.as_uint = INST.lit_cnst;
+  } else {
+    s0.as_uint = ReadSReg(INST.ssrc0) & 0x1F;
+  }
+  if (INST.ssrc1 == 0xFF) {
+    assert(INST.lit_cnst < 32);
+    s1.as_uint = INST.lit_cnst;
+  } else {
+    s1.as_uint = ReadSReg(INST.ssrc1) & 0x1F;
+  }
+
+  // D.u = ((1 << S0.u[4:0]) - 1) << S1.u[4:0]
+  result.as_int = ((1 << s0.as_int) - 1) << s1.as_int;
+
+  // Write the results.
+  // Store the data in the destination register
+  WriteSReg(INST.sdst, result.as_uint);
+
+  // Print isa debug information.
+  if (Emulator::isa_debug) {
+    Emulator::isa_debug << misc::fmt("S%u<=(%d) ", INST.sdst, result.as_int);
+  }
+}
+#undef INST
+
 // D.i = S0.i * S1.i.
 #define INST INST_SOP2
 void WorkItem::ISA_S_MUL_I32_Impl(Instruction *instruction) {

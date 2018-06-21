@@ -146,6 +146,14 @@ DEFINST(S_ASHR_I32,
 	0
 )
 
+DEFINST(S_BFM_B32,
+	" s_bfm_b32     %SDST, %SSRC0, %SSRC1",
+	SOP2,
+	36,
+	4,
+	0
+)
+
 DEFINST(S_MUL_I32,
 	" s_mul_i32     %SDST, %SSRC0, %SSRC1",
 	SOP2,
