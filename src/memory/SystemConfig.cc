@@ -506,7 +506,7 @@ Module* System::ConfigReadCache(misc::IniFile* ini_file,
       ini_file->ReadString(geometry_section, "Policy", "LRU");
   std::string write_policy_str =
       ini_file->ReadString(geometry_section, "WritePolicy", "WriteBack");
-  int mshr_size = ini_file->ReadInt(geometry_section, "MSHR", 16);
+  int mshr_size = ini_file->ReadInt(geometry_section, "MSHR", 128);
   int num_ports = ini_file->ReadInt(geometry_section, "Ports", 2);
 
   // Check replacement policy
